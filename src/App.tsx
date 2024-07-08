@@ -1,20 +1,21 @@
 import { Grid, GridItem, Text } from "@chakra-ui/react";
 import "./App.css";
 import Board from "./components/Board";
+import Navbar from "./components/Navbar";
 
 function App() {
   return (
     <Grid
       gap={6}
-      templateAreas={`"header header header"
+      templateAreas={`"navbar navbar navbar"
                       "traits board equipped"
                       "traits champions items"
                       "footer footer footer"`}
       templateColumns="20% 60% 20%"
       w="100%"
     >
-      <GridItem gridArea="header">
-        <Text fontSize="2xl">TFT Team Builder</Text>
+      <GridItem gridArea="navbar">
+        <Navbar />
       </GridItem>
       <GridItem gridArea="traits">
         <Text>Traits</Text>
