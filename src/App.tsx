@@ -29,7 +29,7 @@ function App() {
       w="100%"
     >
       <GridItem gridArea="navbar">
-        <Navbar />
+        <Navbar set={set} sets={Object.keys(data?.sets || {})} setSet={setSet} />
       </GridItem>
       <GridItem gridArea="traits">
         <Text>Traits</Text>
