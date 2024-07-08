@@ -1,7 +1,7 @@
 import { Image } from "@chakra-ui/react";
 import { useState } from "react";
 import { Champion } from "../hooks/useTFT";
-import { convertToPng } from "../services/format";
+import { formatSkin } from "../services/format";
 
 interface ChampionImageProps {
   champion: Champion;
@@ -19,7 +19,6 @@ const ChampionImage = ({ champion, useSkins }: ChampionImageProps) => {
     7: "yellow",
   };
 
-  const getSkinImage = (tileIcon: string) => "https://raw.communitydragon.org/latest/game/" + convertToPng(tileIcon);
   const getRawImage = (name: string) => {
     name = name.toLowerCase().replace(/[^a-z]/g, "");
     return `https://raw.communitydragon.org/latest/game/assets/characters/${name}/hud/${name}_square.png`;
@@ -34,14 +33,14 @@ const ChampionImage = ({ champion, useSkins }: ChampionImageProps) => {
     if (imgSrc === getRawImage(champion.name)) {
       setImgSrc(getRawFallback(champion.name));
     } else {
-      setImgSrc(getSkinImage(champion.tileIcon));
+      setImgSrc(formatSkin(champion.tileIcon));
     }
   };
 
   return (
     <Image
       key={champion.apiName}
-      src={useSkins ? getSkinImage(champion.tileIcon) : imgSrc}
+      src={useSkins ? formatSkin(champion.tileIcon) : imgSrc}
       onError={handleError}
       alt={champion.name}
       w="100%"

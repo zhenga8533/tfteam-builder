@@ -4,6 +4,7 @@ import "./App.css";
 import Board from "./components/Board";
 import Champions from "./components/Champions";
 import Footer from "./components/Footer";
+import Items from "./components/Items";
 import Navbar from "./components/Navbar";
 import useTFT from "./hooks/useTFT";
 import { findGreatest } from "./services/find";
@@ -46,7 +47,7 @@ function App() {
         <Champions champions={data.sets[set]?.champions} />
       </GridItem>
       <GridItem gridArea="items">
-        <Text>Items</Text>
+        <Items items={data.items} set={set} />
       </GridItem>
       <GridItem gridArea="footer">
         <Footer />

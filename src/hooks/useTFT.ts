@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-interface Item {
+export interface Item {
   apiName: string;
   associatedTraits: string[];
   composition: string[];
