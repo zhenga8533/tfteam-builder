@@ -1,10 +1,23 @@
 import { Grid, GridItem, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import Board from "./components/Board";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
+import useTFT from "./hooks/useTFT";
+import { findGreatest } from "./services/find";
 
 function App() {
+  const { data, error, loading } = useTFT();
+  const [set, setSet] = useState("0");
+
+  useEffect(() => {
+    if (data?.sets === undefined) return;
+    setSet(findGreatest(Object.keys(data?.sets)));
+  }, [data]);
+
+  if (loading) return <Text>Loading...</Text>;
+  if (error) return <Text>Error: {error}</Text>;
   return (
     <Grid
       gap={6}
