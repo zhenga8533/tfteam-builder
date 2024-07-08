@@ -1,35 +1,40 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Grid, GridItem, Text } from "@chakra-ui/react";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Grid
+      gap={6}
+      templateAreas={`"header header header"
+                      "traits board equipped"
+                      "traits champions items"
+                      "footer footer footer"`}
+      templateColumns="20% 60% 20%"
+      w="100%"
+    >
+      <GridItem gridArea="header">
+        <Text fontSize="2xl">TFT Team Builder</Text>
+      </GridItem>
+      <GridItem gridArea="traits">
+        <Text>Traits</Text>
+      </GridItem>
+      <GridItem gridArea="board">
+        <Text>Board</Text>
+      </GridItem>
+      <GridItem gridArea="equipped">
+        <Text>Equipped</Text>
+      </GridItem>
+      <GridItem gridArea="champions">
+        <Text>Champions</Text>
+      </GridItem>
+      <GridItem gridArea="items">
+        <Text>Items</Text>
+      </GridItem>
+      <GridItem gridArea="footer">
+        <Text>Footer</Text>
+      </GridItem>
+    </Grid>
+  );
 }
 
-export default App
+export default App;
