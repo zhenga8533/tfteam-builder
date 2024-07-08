@@ -11,7 +11,13 @@ interface ItemsProps {
 
 const Items = ({ items, set }: ItemsProps) => {
   const ref = useRef<HTMLInputElement>(null);
-  const setItems = items.slice(0, 50);
+  const setItems = items.filter(
+    (item) =>
+      (item.apiName.startsWith("TFT_Item") || item.apiName.startsWith(`TFT${set}_Item`)) &&
+      !item.apiName.includes("Grant") &&
+      !item.apiName.includes("Debug") &&
+      item.name
+  );
 
   return (
     <Box background="gray.700" padding={3}>
@@ -22,7 +28,7 @@ const Items = ({ items, set }: ItemsProps) => {
       <hr />
       <Grid gap={3} mt={3} templateColumns="repeat(auto-fill, minmax(26px, 1fr))">
         {setItems.map((item) => (
-          <Image key={item.id} src={formatSkin(item.icon)} />
+          <Image key={item.apiName} src={formatSkin(item.icon)} alt={item.name} />
         ))}
       </Grid>
     </Box>
