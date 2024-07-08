@@ -1,5 +1,6 @@
 import { Grid, GridItem, Text } from "@chakra-ui/react";
 import "./App.css";
+import Board from "./components/Board";
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
         <Text>Traits</Text>
       </GridItem>
       <GridItem gridArea="board">
-        <Text>Board</Text>
+        <Board />
       </GridItem>
       <GridItem gridArea="equipped">
         <Text>Equipped</Text>
