@@ -2,6 +2,7 @@ import { Grid, GridItem, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import "./App.css";
 import Board from "./components/Board";
+import Champions from "./components/Champions";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import useTFT from "./hooks/useTFT";
@@ -18,6 +19,7 @@ function App() {
 
   if (loading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error}</Text>;
+  if (data === undefined) return <Text>No data</Text>;
   return (
     <Grid
       gap={6}
@@ -29,7 +31,7 @@ function App() {
       w="100%"
     >
       <GridItem gridArea="navbar">
-        <Navbar set={set} sets={Object.keys(data?.sets || {})} setSet={setSet} />
+        <Navbar set={set} sets={Object.keys(data.sets)} setSet={setSet} />
       </GridItem>
       <GridItem gridArea="traits">
         <Text>Traits</Text>
@@ -41,7 +43,7 @@ function App() {
         <Text>Equipped</Text>
       </GridItem>
       <GridItem gridArea="champions">
-        <Text>Champions</Text>
+        <Champions champions={data.sets[set]?.champions} />
       </GridItem>
       <GridItem gridArea="items">
         <Text>Items</Text>
