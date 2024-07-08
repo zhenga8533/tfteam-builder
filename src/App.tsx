@@ -1,6 +1,7 @@
 import { Grid, GridItem, Text } from "@chakra-ui/react";
 import "./App.css";
 import Board from "./components/Board";
+import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 
 function App() {
@@ -33,7 +34,7 @@ function App() {
         <Text>Items</Text>
       </GridItem>
       <GridItem gridArea="footer">
-        <Text>Footer</Text>
+        <Footer />
       </GridItem>
     </Grid>
   );
