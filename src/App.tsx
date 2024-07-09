@@ -6,17 +6,33 @@ import Champions from "./components/Champions";
 import Footer from "./components/Footer";
 import Items from "./components/Items";
 import Navbar from "./components/Navbar";
-import useTFT from "./hooks/useTFT";
+import useTFT, { Champion, Item } from "./hooks/useTFT";
 import { findGreatest } from "./services/find";
 
 function App() {
   const { data, error, loading } = useTFT();
   const [set, setSet] = useState("0");
+  const [champions, setChampions] = useState<Champion[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
     if (data?.sets === undefined) return;
     setSet(findGreatest(Object.keys(data?.sets)));
   }, [data]);
+
+  useEffect(() => {
+    if (data === undefined) return;
+    setChampions(data.sets[set].champions);
+    setItems(
+      data.items.filter(
+        (item) =>
+          (item.apiName.startsWith("TFT_Item") || item.apiName.startsWith(`TFT${set}_Item`)) &&
+          !item.apiName.includes("Grant") &&
+          !item.apiName.includes("Debug") &&
+          item.name
+      )
+    );
+  }, [set]);
 
   if (loading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error}</Text>;
@@ -44,10 +60,10 @@ function App() {
         <Text>Equipped</Text>
       </GridItem>
       <GridItem gridArea="champions">
-        <Champions champions={data.sets[set]?.champions} />
+        <Champions champions={champions} />
       </GridItem>
       <GridItem gridArea="items">
-        <Items items={data.items} set={set} />
+        <Items items={items} />
       </GridItem>
       <GridItem gridArea="footer">
         <Footer />
