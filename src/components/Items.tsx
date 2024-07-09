@@ -14,7 +14,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { BsSearch } from "react-icons/bs";
 import { Item } from "../hooks/useTFT";
-import { formatSkin, parseDescription } from "../services/format";
+import { formatComponent, formatSkin, parseDescription } from "../services/format";
 
 interface ItemsProps {
   items: Item[];
@@ -68,12 +68,21 @@ const Items = ({ items }: ItemsProps) => {
                 <Divider />
                 <Text dangerouslySetInnerHTML={{ __html: parseDescription(item.desc) }} />
                 <Divider />
-                <HStack>
-                  <Text>Components:</Text>
-                  {item.composition.map((component) => (
-                    <Image key={component} boxSize="20px" src={formatSkin(component)} />
-                  ))}
-                </HStack>
+                <Box mb={1}>
+                  {item.composition.length > 0 ? (
+                    <HStack>
+                      <Text>Recipe:</Text>
+                      {item.composition.map((component) => (
+                        <>
+                          <Image key={component} boxSize="30px" src={formatComponent(component)} />
+                          {console.log(formatComponent(component))}
+                        </>
+                      ))}
+                    </HStack>
+                  ) : (
+                    <Text>Uncraftable</Text>
+                  )}
+                </Box>
               </VStack>
             }
             placement="right"

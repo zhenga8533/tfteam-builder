@@ -9,6 +9,15 @@ export const convertToPng = (image: string) => {
   return image.toLowerCase().substring(0, image.lastIndexOf(".")) + ".png";
 };
 
+export const formatComponent = (component: string) => {
+  const standard = component
+    .split("_")
+    .pop()
+    ?.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+    .substring(1);
+  return `https://raw.communitydragon.org/latest/game/assets/maps/particles/tft/item_icons/standard/${standard}.png`;
+};
+
 /**
  * Formats a skin to be displayed.
  *
