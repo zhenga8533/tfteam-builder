@@ -26,7 +26,6 @@ const Champions = ({ champions }: ChampionsProps) => {
   };
 
   useEffect(() => {
-    console.log(champions);
     setSortedChampions(
       [...champions].sort((a, b) => {
         if (a.cost !== b.cost && !sorted) {
