@@ -50,10 +50,10 @@ const Champions = ({ champions }: ChampionsProps) => {
             onChange={() => setSortedChampions(filterChampions(ref.current?.value || ""))}
           />
         </InputGroup>
-        <Button borderRadius={1} onClick={() => setSorted(true)}>
+        <Button borderRadius={3} colorScheme={sorted ? "blue" : "gray"} onClick={() => setSorted(true)}>
           A-Z
         </Button>
-        <Button onClick={() => setSorted(false)}>
+        <Button borderRadius={3} colorScheme={sorted ? "gray" : "blue"} onClick={() => setSorted(false)}>
           <FaCoins size={24} />
         </Button>
       </HStack>
