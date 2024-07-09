@@ -33,14 +33,14 @@ const ChampionImage = ({ champion, useSkins }: ChampionImageProps) => {
     if (imgSrc === getRawImage(champion.name)) {
       setImgSrc(getRawFallback(champion.name));
     } else {
-      setImgSrc(formatSkin(champion.tileIcon));
+      setImgSrc(formatSkin(champion.tileIcon || champion.squareIcon));
     }
   };
 
   return (
     <Image
       key={champion.apiName}
-      src={useSkins ? formatSkin(champion.tileIcon) : imgSrc}
+      src={useSkins ? formatSkin(champion.tileIcon || champion.squareIcon) : imgSrc}
       onError={handleError}
       alt={champion.name}
       w="100%"
