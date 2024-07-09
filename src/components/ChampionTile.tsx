@@ -2,9 +2,7 @@ import { Box, HStack, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { FaCoins } from "react-icons/fa";
 import ChampionImage, { ChampionImageProps } from "./ChampionImage";
 
-interface ChampionTileProps extends ChampionImageProps {}
-
-const ChampionTile = ({ champion, useSkins }: ChampionTileProps) => {
+const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
   return (
     <Tooltip
       key={champion.apiName}
