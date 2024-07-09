@@ -7,18 +7,34 @@ import ChampionImage from "./ChampionImage";
 
 interface ChampionsProps {
   champions: Champion[];
-  setChampions: (champions: Champion[]) => void;
 }
 
-const Champions = ({ champions, setChampions }: ChampionsProps) => {
+const Champions = ({ champions }: ChampionsProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const [useSkins, setUseSkins] = useState(true);
   const [sorted, setSorted] = useState(false);
+  const [sortedChampions, setSortedChampions] = useState<Champion[]>(champions);
+
+  const filterChampions = (search: string) => {
+    if (search === "") return champions;
+    return champions.filter(
+      (champion) =>
+        champion.name.toLowerCase().includes(search.toLowerCase()) ||
+        champion.traits.some((trait) => trait.toLowerCase().includes(search.toLowerCase())) ||
+        champion.cost.toString().includes(search)
+    );
+  };
 
   useEffect(() => {
-    setChampions([...champions].sort((a, b) => a.name.localeCompare(b.name)));
-    if (!sorted) setChampions([...champions].sort((a, b) => a.cost - b.cost));
-  }, [sorted]);
+    setSortedChampions(
+      [...champions].sort((a, b) => {
+        if (a.cost !== b.cost && !sorted) {
+          return a.cost - b.cost;
+        }
+        return a.name.localeCompare(b.name);
+      })
+    );
+  }, [champions, sorted]);
 
   return (
     <Box background="gray.700" padding={3}>
@@ -31,6 +47,7 @@ const Champions = ({ champions, setChampions }: ChampionsProps) => {
             placeholder="Search by name, trait, or cost..."
             ref={ref}
             variant="filled"
+            onChange={() => setSortedChampions(filterChampions(ref.current?.value || ""))}
           />
         </InputGroup>
         <Button borderRadius={1} onClick={() => setSorted(true)}>
@@ -42,7 +59,7 @@ const Champions = ({ champions, setChampions }: ChampionsProps) => {
       </HStack>
       <hr />
       <Grid gap={6} my={3} templateColumns="repeat(auto-fill, minmax(40px, 1fr))">
-        {champions?.map(
+        {sortedChampions?.map(
           (champion) =>
             champion.cost < 8 && <ChampionImage key={champion.apiName} champion={champion} useSkins={useSkins} />
         )}
