@@ -1,21 +1,9 @@
-import {
-  Box,
-  Button,
-  Grid,
-  HStack,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Switch,
-  Text,
-  Tooltip,
-  VStack,
-} from "@chakra-ui/react";
+import { Box, Button, Grid, HStack, Input, InputGroup, InputLeftElement, Switch, Text } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { BsSearch } from "react-icons/bs";
 import { FaCoins } from "react-icons/fa";
 import { Champion } from "../hooks/useTFT";
-import ChampionImage from "./ChampionImage";
+import ChampionTile from "./ChampionTile";
 
 interface ChampionsProps {
   champions: Champion[];
@@ -71,41 +59,9 @@ const Champions = ({ champions }: ChampionsProps) => {
       </HStack>
       <hr />
       <Grid gap={6} my={3} templateColumns="repeat(auto-fill, minmax(40px, 1fr))">
-        {sortedChampions?.map((champion) =>
-          champion.cost < 8 ? (
-            <Tooltip
-              key={champion.apiName}
-              background="gray.800"
-              hasArrow
-              placement="right"
-              label={
-                <HStack alignItems="center" pt={1} textColor="white">
-                  <VStack spacing={1}>
-                    <Box boxSize="40px">
-                      <ChampionImage champion={champion} useSkins={useSkins} />
-                    </Box>
-                    <Text>{champion.name}</Text>
-                  </VStack>
-                  <Box height="70px" width="1px" bgColor="gray.600" mx={1} />
-                  <VStack spacing={0}>
-                    {champion.traits.map((trait) => (
-                      <Text key={trait}>{trait}</Text>
-                    ))}
-                    {champion.traits.length === 0 && <Text>Traitless</Text>}
-                  </VStack>
-                  <Box height="70px" width="1px" bgColor="gray.600" mx={1} />
-                  <HStack>
-                    <FaCoins />
-                    <Text>{champion.cost}</Text>
-                  </HStack>
-                </HStack>
-              }
-            >
-              <Box>
-                <ChampionImage champion={champion} useSkins={useSkins} />
-              </Box>
-            </Tooltip>
-          ) : null
+        {sortedChampions?.map(
+          (champion) =>
+            champion.cost < 8 && <ChampionTile key={champion.apiName} champion={champion} useSkins={useSkins} />
         )}
       </Grid>
       <hr />

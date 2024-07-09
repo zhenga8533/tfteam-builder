@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Champion } from "../hooks/useTFT";
 import { formatSkin } from "../services/format";
 
-interface ChampionImageProps {
+export interface ChampionImageProps {
   champion: Champion;
   useSkins: boolean;
 }
