@@ -31,13 +31,16 @@ function App() {
     );
 
     setItems(
-      data.items.filter(
-        (item) =>
-          (item.apiName.startsWith("TFT_Item") || item.apiName.startsWith(`TFT${set}_Item`)) &&
-          !item.apiName.includes("Grant") &&
-          !item.apiName.includes("Debug") &&
-          item.name
-      )
+      data.items
+        .filter(
+          (item) =>
+            (item.apiName.startsWith("TFT_Item") || item.apiName.startsWith(`TFT${set}_Item`)) && // Remove old items
+            !item.apiName.includes("Grant") && // Remove item anvils
+            !item.apiName.includes("Debug") && // Remove developer items
+            item.name && // Remove placeholder items
+            (Object.keys(item.effects).length > 1 || item.desc.startsWith("The holder gains the")) // Remove components
+        )
+        .sort((a, b) => a.name.localeCompare(b.name))
     );
   }, [set]);
 
