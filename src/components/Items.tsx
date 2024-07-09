@@ -25,24 +25,19 @@ const Items = ({ items }: ItemsProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const [craftable, setCraftable] = useState(false);
 
-  useEffect(() => {
-    if (craftable) setFiltered(items.filter((item) => item.composition.length > 0));
-    else setFiltered(items);
-  }, [craftable]);
-
   const [filtered, setFiltered] = useState<Item[]>(items);
   const filterItems = (search: string) => {
-    if (search === "") return items;
     return items.filter(
       (item) =>
-        item.name.toLowerCase().includes(search.toLowerCase()) || item.desc.toLowerCase().includes(search.toLowerCase())
+        (item.composition.length > 0 || !craftable) &&
+        (item.name.toLowerCase().includes(search.toLowerCase()) ||
+          item.desc.toLowerCase().includes(search.toLowerCase()))
     );
   };
 
   useEffect(() => {
-    setFiltered(items);
-    console.log(items);
-  }, [items]);
+    setFiltered(filterItems(""));
+  }, [craftable, items]);
 
   return (
     <Box background="gray.700" padding={3}>
@@ -86,7 +81,6 @@ const Items = ({ items }: ItemsProps) => {
                       {item.composition.map((component) => (
                         <>
                           <Image key={component} boxSize="30px" src={formatComponent(component)} />
-                          {console.log(formatComponent(component))}
                         </>
                       ))}
                     </HStack>
