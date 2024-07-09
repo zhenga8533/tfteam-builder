@@ -22,7 +22,14 @@ function App() {
 
   useEffect(() => {
     if (data === undefined) return;
-    setChampions(data.sets[set].champions);
+
+    setChampions(
+      data.sets[set].champions.sort((a, b) => {
+        if (a.cost !== b.cost) return a.cost - b.cost;
+        else return a.name.localeCompare(b.name);
+      })
+    );
+
     setItems(
       data.items.filter(
         (item) =>
@@ -60,7 +67,7 @@ function App() {
         <Text>Equipped</Text>
       </GridItem>
       <GridItem gridArea="champions">
-        <Champions champions={champions} />
+        <Champions champions={champions} setChampions={setChampions} />
       </GridItem>
       <GridItem gridArea="items">
         <Items items={items} />

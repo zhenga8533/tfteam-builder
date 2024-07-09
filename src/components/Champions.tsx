@@ -1,5 +1,5 @@
 import { Box, Button, Grid, HStack, Input, InputGroup, InputLeftElement, Switch, Text } from "@chakra-ui/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BsSearch } from "react-icons/bs";
 import { FaCoins } from "react-icons/fa";
 import { Champion } from "../hooks/useTFT";
@@ -7,11 +7,18 @@ import ChampionImage from "./ChampionImage";
 
 interface ChampionsProps {
   champions: Champion[];
+  setChampions: (champions: Champion[]) => void;
 }
 
-const Champions = ({ champions }: ChampionsProps) => {
+const Champions = ({ champions, setChampions }: ChampionsProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const [useSkins, setUseSkins] = useState(true);
+  const [sorted, setSorted] = useState(false);
+
+  useEffect(() => {
+    setChampions([...champions].sort((a, b) => a.name.localeCompare(b.name)));
+    if (!sorted) setChampions([...champions].sort((a, b) => a.cost - b.cost));
+  }, [sorted]);
 
   return (
     <Box background="gray.700" padding={3}>
@@ -26,8 +33,10 @@ const Champions = ({ champions }: ChampionsProps) => {
             variant="filled"
           />
         </InputGroup>
-        <Button borderRadius={1}>A-Z</Button>
-        <Button>
+        <Button borderRadius={1} onClick={() => setSorted(true)}>
+          A-Z
+        </Button>
+        <Button onClick={() => setSorted(false)}>
           <FaCoins size={24} />
         </Button>
       </HStack>
