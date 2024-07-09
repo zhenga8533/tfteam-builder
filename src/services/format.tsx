@@ -18,3 +18,24 @@ export const convertToPng = (image: string) => {
 export const formatSkin = (skin: string) => {
   return "https://raw.communitydragon.org/latest/game/" + convertToPng(skin);
 };
+
+/**
+ * Parses a TFT styled description.
+ *
+ * @param desc - The description to be parsed.
+ * @returns - The parsed description.
+ */
+export const parseDescription = (desc: string) => {
+  const stat = /%i:scale([A-Za-z]+)%/g;
+  const variable = /@.*?@/g;
+  const duration = /([A-Za-z]+)?Duration/g;
+  const modified = /Modified([A-Za-z]+)?/g;
+
+  const parsed = desc
+    .replace(stat, (_, p1) => "%" + p1)
+    .replace(variable, "X")
+    .replace(duration, "X")
+    .replace(modified, "X");
+
+  return parsed;
+};
