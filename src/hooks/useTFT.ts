@@ -29,7 +29,16 @@ export interface Champion {
   name: string;
   squareIcon: string;
   stats: {
-    [key: string]: number;
+    armor: number;
+    attackSpeed: number;
+    critChance: number;
+    critMultiplier: number;
+    damage: number;
+    hp: number;
+    initialMana: number;
+    magicResist: number;
+    mana: number;
+    range: number;
   };
   tileIcon: string;
   traits: string[];

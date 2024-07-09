@@ -1,13 +1,15 @@
-import { Box, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
+import { Box, Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { FaCoins } from "react-icons/fa";
 import { formatSkin, parseDescription } from "../services/format";
 import ChampionImage, { ChampionImageProps } from "./ChampionImage";
+import ChampionStats from "./ChampionStats";
 
 const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
   return (
     <Tooltip
       key={champion.apiName}
       background="gray.800"
+      borderRadius={3}
       hasArrow
       placement="right"
       label={
@@ -32,7 +34,10 @@ const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
               <Text>{champion.cost}</Text>
             </HStack>
           </HStack>
-          <HStack>
+          <Divider />
+          <ChampionStats stats={champion.stats} />
+          <Divider />
+          <HStack mb={1}>
             <VStack alignItems="center" textAlign="center" spacing={0} width="148px">
               <Image boxSize="40px" src={formatSkin(champion.ability.icon)} />
               <Text fontSize="sm">{champion.ability.name}</Text>
