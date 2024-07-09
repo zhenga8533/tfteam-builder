@@ -7,6 +7,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  Switch,
   Text,
   Tooltip,
   VStack,
@@ -22,6 +23,12 @@ interface ItemsProps {
 
 const Items = ({ items }: ItemsProps) => {
   const ref = useRef<HTMLInputElement>(null);
+  const [craftable, setCraftable] = useState(false);
+
+  useEffect(() => {
+    if (craftable) setFiltered(items.filter((item) => item.composition.length > 0));
+    else setFiltered(items);
+  }, [craftable]);
 
   const [filtered, setFiltered] = useState<Item[]>(items);
   const filterItems = (search: string) => {
@@ -39,7 +46,7 @@ const Items = ({ items }: ItemsProps) => {
 
   return (
     <Box background="gray.700" padding={3}>
-      <InputGroup mb={2}>
+      <InputGroup>
         <InputLeftElement children={<BsSearch />} />
         <Input
           borderRadius={1}
@@ -50,6 +57,10 @@ const Items = ({ items }: ItemsProps) => {
           variant="filled"
         />
       </InputGroup>
+      <HStack my={1}>
+        <Text>Craftable</Text>
+        <Switch isChecked={craftable} onChange={() => setCraftable(!craftable)} />
+      </HStack>
       <hr />
       <Grid gap={3} mt={3} templateColumns="repeat(auto-fill, minmax(26px, 1fr))">
         {filtered.map((item) => (
