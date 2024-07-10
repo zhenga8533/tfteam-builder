@@ -82,9 +82,7 @@ const ChampionStats = ({ stats }: ChampionStatsProps) => {
         <HStack>
           <Image boxSize="16px" src={mana} />
           <Text>
-            {Array.from({ length: 3 })
-              .map((_, i) => Math.round(stats.mana * 1.5 ** i))
-              .join(" / ")}
+            {stats.initialMana} / {stats.mana}
           </Text>
         </HStack>
       </GridItem>
