@@ -1,4 +1,5 @@
 import { Box, Button, Heading, HStack, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
+import { compressToEncodedURIComponent } from "lz-string";
 import { BsChevronDown } from "react-icons/bs";
 import { Champion } from "../hooks/useTFT";
 
@@ -29,15 +30,17 @@ const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
         </Menu>
       </HStack>
       <HStack>
+        <Button onClick={() => setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)))}>Clear</Button>
+        <Button>Import</Button>
         <Button
+          colorScheme="blue"
           onClick={() => {
-            setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)));
+            const compressed = compressToEncodedURIComponent(JSON.stringify(team));
+            navigator.clipboard.writeText(window.location.href + `?team=${compressed}`);
           }}
         >
-          Clear
+          Share
         </Button>
-        <Button>Import</Button>
-        <Button colorScheme="blue">Share</Button>
       </HStack>
     </HStack>
   );

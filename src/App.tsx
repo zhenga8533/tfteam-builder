@@ -1,4 +1,5 @@
 import { Grid, GridItem, Text } from "@chakra-ui/react";
+import { decompressFromEncodedURIComponent } from "lz-string";
 import { useEffect, useState } from "react";
 import "./App.css";
 import Board from "./components/Board";
@@ -19,6 +20,24 @@ function App() {
   const [traits, setTraits] = useState<Trait[]>([]);
 
   const [team, setTeam] = useState<(Champion | null)[][]>(Array.from({ length: 4 }, () => Array(7).fill(null)));
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const teamParam = queryParams.get("team");
+
+    if (teamParam) {
+      const decompressedTeam = decompressFromEncodedURIComponent(teamParam);
+
+      if (decompressedTeam) {
+        try {
+          const teamData = JSON.parse(decompressedTeam);
+          setTeam(teamData);
+        } catch (error) {
+          console.error("Error parsing team data:", error);
+        }
+      }
+    }
+  }, [window.location.search]);
 
   useEffect(() => {
     if (data?.sets === undefined) return;
