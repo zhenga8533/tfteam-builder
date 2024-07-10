@@ -12,7 +12,7 @@ import { findGreatest } from "./services/find";
 function App() {
   const { data, error, loading } = useTFT();
   const [set, setSet] = useState("0");
-  const [skins, setSkins] = useState(false);
+  const [skins, setSkins] = useState(true);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [items, setItems] = useState<Item[]>([]);
 
