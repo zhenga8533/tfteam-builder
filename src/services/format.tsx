@@ -41,15 +41,15 @@ export const formatSkin = (skin: string) => {
  * @param desc - The description to be parsed.
  * @returns - The parsed description.
  */
-export const parseDescription = (desc: string) => {
+export const parseDescription = (desc: string, values?: { [key: string]: number }) => {
   const stat = /%i:scale([A-Za-z]+)%/g;
-  const variable = /@.*?@/g;
+  const variable = /@([^@]+)@/g;
   const duration = /([A-Za-z]+)?Duration/g;
   const modified = /Modified([A-Za-z]+)?/g;
 
   const parsed = desc
     .replace(stat, (_, p1) => "%" + p1)
-    .replace(variable, "X")
+    .replace(variable, (_, p1) => values?.[p1]?.toString() || "X")
     .replace(duration, "X")
     .replace(modified, "X");
 

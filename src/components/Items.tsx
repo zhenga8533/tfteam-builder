@@ -75,7 +75,10 @@ const Items = ({ items }: ItemsProps) => {
                 </HStack>
                 <ItemStats effects={item.effects} />
                 <Divider />
-                <Text textAlign="center" dangerouslySetInnerHTML={{ __html: parseDescription(item.desc) }} />
+                <Text
+                  textAlign="center"
+                  dangerouslySetInnerHTML={{ __html: parseDescription(item.desc, item.effects) }}
+                />
                 <Divider />
                 {item.composition.length > 0 ? (
                   <HStack>
