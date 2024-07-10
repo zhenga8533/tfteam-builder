@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { BsSearch } from "react-icons/bs";
 import { Item } from "../hooks/useTFT";
 import { formatComponent, formatSkin, parseDescription } from "../services/format";
+import ItemStats from "./ItemStats";
 
 interface ItemsProps {
   items: Item[];
@@ -64,6 +65,7 @@ const Items = ({ items }: ItemsProps) => {
             background="gray.800"
             borderRadius={3}
             hasArrow
+            py={2}
             textColor="white"
             label={
               <VStack>
@@ -71,23 +73,24 @@ const Items = ({ items }: ItemsProps) => {
                   <Image boxSize="40px" src={formatSkin(item.icon)} />
                   <Text fontWeight="bold">{item.name}</Text>
                 </HStack>
+                <ItemStats effects={item.effects} />
                 <Divider />
-                <Text dangerouslySetInnerHTML={{ __html: parseDescription(item.desc) }} />
+                <Text textAlign="center" dangerouslySetInnerHTML={{ __html: parseDescription(item.desc) }} />
                 <Divider />
-                <Box mb={1}>
-                  {item.composition.length > 0 ? (
-                    <HStack>
-                      <Text>Recipe:</Text>
-                      {item.composition.map((component) => (
-                        <>
-                          <Image key={component} boxSize="30px" src={formatComponent(component)} />
-                        </>
-                      ))}
-                    </HStack>
-                  ) : (
-                    <Text>Uncraftable</Text>
-                  )}
-                </Box>
+                {item.composition.length > 0 ? (
+                  <HStack>
+                    <Text>Recipe:</Text>
+                    {item.composition.map((component) => (
+                      <Image
+                        key={component}
+                        boxSize="30px"
+                        src={formatComponent(component).replace("giants", "gaints")} // Fix typo
+                      />
+                    ))}
+                  </HStack>
+                ) : (
+                  <Text>Uncraftable</Text>
+                )}
               </VStack>
             }
             placement="right"
