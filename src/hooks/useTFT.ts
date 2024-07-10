@@ -50,7 +50,7 @@ export interface Champion {
   traits: string[];
 }
 
-interface Trait {
+export interface Trait {
   apiName: string;
   desc: string;
   effects: {

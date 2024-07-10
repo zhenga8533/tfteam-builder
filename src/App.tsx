@@ -6,7 +6,8 @@ import Champions from "./components/Champions";
 import Footer from "./components/Footer";
 import Items from "./components/Items";
 import Navbar from "./components/Navbar";
-import useTFT, { Champion, Item } from "./hooks/useTFT";
+import Traits from "./components/Traits";
+import useTFT, { Champion, Item, Trait } from "./hooks/useTFT";
 import { findGreatest } from "./services/find";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
   const [skins, setSkins] = useState(true);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [traits, setTraits] = useState<Trait[]>([]);
 
   const [team, setTeam] = useState<(Champion | null)[][]>(Array.from({ length: 4 }, () => Array(7).fill(null)));
 
@@ -46,6 +48,8 @@ function App() {
         )
         .sort((a, b) => a.name.localeCompare(b.name))
     );
+
+    setTraits(data.sets[set].traits);
   }, [set]);
 
   if (loading) return <Text>Loading...</Text>;
@@ -65,7 +69,7 @@ function App() {
         <Navbar set={set} sets={Object.keys(data.sets)} setSet={setSet} />
       </GridItem>
       <GridItem gridArea="traits">
-        <Text>Traits</Text>
+        <Traits team={team} traits={traits} />
       </GridItem>
       <GridItem gridArea="board">
         <Board skins={skins} team={team} setTeam={setTeam} />
