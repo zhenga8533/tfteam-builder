@@ -1,31 +1,31 @@
 import { Box, HStack, VStack } from "@chakra-ui/react";
+import { Champion } from "../hooks/useTFT";
+import ChampionTile from "./ChampionTile";
 import Hexagon from "./Hexagon";
 
-const Board = () => {
-  const numRows = 4;
-  const numCols = 7;
+interface BoardProps {
+  team: (Champion | null)[][];
+}
 
-  const renderRow = (rowIndex: number) => {
-    return (
-      <HStack
-        display="flex"
-        flexDirection="row"
-        ml={rowIndex % 2 ? "45px" : "0px"}
-        mr={rowIndex % 2 ? "0px" : "45px"}
-        spacing={4}
-      >
-        {Array.from({ length: numCols }).map((_, colIndex) => (
-          <Hexagon imageUrl={null} key={`hex-${rowIndex}-${colIndex}`} />
-        ))}
-      </HStack>
-    );
-  };
-
+const Board = ({ team }: BoardProps) => {
   return (
     <VStack mx={10} spacing={0}>
-      {Array.from({ length: numRows }).map((_, rowIndex) => (
+      {team.map((row, rowIndex) => (
         <Box key={`row-${rowIndex}`} mt="-10px">
-          {renderRow(rowIndex)}
+          <HStack
+            display="flex"
+            flexDirection="row"
+            ml={rowIndex % 2 ? "45px" : "0px"}
+            mr={rowIndex % 2 ? "0px" : "45px"}
+            spacing={4}
+          >
+            {row.map((champion, colIndex) => (
+              <Hexagon
+                key={`hex-${rowIndex}-${colIndex}`}
+                image={<ChampionTile champion={champion} useSkins={true} />}
+              />
+            ))}
+          </HStack>
         </Box>
       ))}
     </VStack>

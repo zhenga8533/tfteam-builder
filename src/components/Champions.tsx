@@ -18,9 +18,11 @@ import ChampionTile from "./ChampionTile";
 
 interface ChampionsProps {
   champions: Champion[];
+  setTeam: (team: (Champion | null)[][]) => void;
+  team: (Champion | null)[][];
 }
 
-const Champions = ({ champions }: ChampionsProps) => {
+const Champions = ({ champions, setTeam, team }: ChampionsProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const [useSkins, setUseSkins] = useState(true);
   const [sorted, setSorted] = useState(false);
@@ -76,7 +78,25 @@ const Champions = ({ champions }: ChampionsProps) => {
       <Grid gap={6} my={3} templateColumns="repeat(auto-fill, minmax(40px, 1fr))">
         {sortedChampions?.map(
           (champion) =>
-            champion.cost < 8 && <ChampionTile key={champion.apiName} champion={champion} useSkins={useSkins} />
+            champion.cost < 8 && (
+              <Box // Add champion to team on click
+                key={champion.apiName}
+                onClick={() => {
+                  const newTeam = [...team];
+                  for (let row = 0; row < newTeam.length; row++) {
+                    for (let col = 0; col < newTeam[row].length; col++) {
+                      if (newTeam[row][col] === null) {
+                        newTeam[row][col] = champion;
+                        setTeam(newTeam);
+                        return;
+                      }
+                    }
+                  }
+                }}
+              >
+                <ChampionTile champion={champion} useSkins={useSkins} />
+              </Box>
+            )
         )}
       </Grid>
     </Box>

@@ -15,6 +15,8 @@ function App() {
   const [champions, setChampions] = useState<Champion[]>([]);
   const [items, setItems] = useState<Item[]>([]);
 
+  const [team, setTeam] = useState<(Champion | null)[][]>(Array.from({ length: 4 }, () => Array(7).fill(null)));
+
   useEffect(() => {
     if (data?.sets === undefined) return;
     setSet(findGreatest(Object.keys(data?.sets)));
@@ -65,13 +67,13 @@ function App() {
         <Text>Traits</Text>
       </GridItem>
       <GridItem gridArea="board">
-        <Board />
+        <Board team={team} />
       </GridItem>
       <GridItem gridArea="equipped">
         <Text>Equipped</Text>
       </GridItem>
       <GridItem gridArea="champions">
-        <Champions champions={champions} />
+        <Champions champions={champions} setTeam={setTeam} team={team} />
       </GridItem>
       <GridItem gridArea="items">
         <Items items={items} />

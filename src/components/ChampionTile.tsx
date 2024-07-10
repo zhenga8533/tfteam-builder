@@ -5,6 +5,8 @@ import ChampionImage, { ChampionImageProps } from "./ChampionImage";
 import ChampionStats from "./ChampionStats";
 
 const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
+  if (champion === null) return null;
+
   return (
     <Tooltip
       key={champion.apiName}

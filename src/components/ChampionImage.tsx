@@ -4,11 +4,13 @@ import { Champion } from "../hooks/useTFT";
 import { formatSkin } from "../services/format";
 
 export interface ChampionImageProps {
-  champion: Champion;
+  champion: Champion | null;
   useSkins: boolean;
 }
 
 const ChampionImage = ({ champion, useSkins }: ChampionImageProps) => {
+  if (champion === null) return null;
+
   const costColor: { [key: number]: string } = {
     1: "gray",
     2: "green",
