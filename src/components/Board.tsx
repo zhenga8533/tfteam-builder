@@ -22,7 +22,7 @@ const Board = ({ team }: BoardProps) => {
             {row.map((champion, colIndex) => (
               <Hexagon
                 key={`hex-${rowIndex}-${colIndex}`}
-                image={<ChampionTile champion={champion} useSkins={true} />}
+                tile={<ChampionTile champion={champion} useSkins={true} />}
               />
             ))}
           </HStack>
