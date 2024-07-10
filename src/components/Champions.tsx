@@ -18,14 +18,15 @@ import ChampionTile from "./ChampionTile";
 
 interface ChampionsProps {
   champions: Champion[];
-  setTeam: (team: (Champion | null)[][]) => void;
+  skins: boolean;
+  setSkins: (skins: boolean) => void;
   team: (Champion | null)[][];
+  setTeam: (team: (Champion | null)[][]) => void;
 }
 
-const Champions = ({ champions, setTeam, team }: ChampionsProps) => {
+const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps) => {
   const ref = useRef<HTMLInputElement>(null);
-  const [useSkins, setUseSkins] = useState(true);
-  const [sorted, setSorted] = useState(false);
+  const [sorted, setSorted] = useState(true);
   const [sortedChampions, setSortedChampions] = useState<Champion[]>(champions);
 
   const filterChampions = (search: string) => {
@@ -72,7 +73,7 @@ const Champions = ({ champions, setTeam, team }: ChampionsProps) => {
       </HStack>
       <HStack my={1}>
         <Text>Set Skins</Text>
-        <Switch isChecked={useSkins} onChange={() => setUseSkins(!useSkins)} />
+        <Switch isChecked={skins} onChange={() => setSkins(!skins)} />
       </HStack>
       <Divider />
       <Grid gap={6} my={3} templateColumns="repeat(auto-fill, minmax(40px, 1fr))">
@@ -94,7 +95,7 @@ const Champions = ({ champions, setTeam, team }: ChampionsProps) => {
                   }
                 }}
               >
-                <ChampionTile champion={champion} useSkins={useSkins} />
+                <ChampionTile champion={champion} skins={skins} />
               </Box>
             )
         )}

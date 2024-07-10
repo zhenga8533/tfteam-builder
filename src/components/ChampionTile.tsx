@@ -4,7 +4,7 @@ import { formatSkin, parseDescription } from "../services/format";
 import ChampionImage, { ChampionImageProps } from "./ChampionImage";
 import ChampionStats from "./ChampionStats";
 
-const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
+const ChampionTile = ({ champion, skins }: ChampionImageProps) => {
   if (champion === null) return null;
 
   return (
@@ -19,7 +19,7 @@ const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
           <HStack alignItems="center">
             <VStack spacing={1}>
               <Box boxSize="40px">
-                <ChampionImage champion={champion} useSkins={useSkins} />
+                <ChampionImage champion={champion} skins={skins} />
               </Box>
               <Text fontWeight="bold">{champion.name}</Text>
             </VStack>
@@ -59,7 +59,7 @@ const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
       }
     >
       <Box>
-        <ChampionImage champion={champion} useSkins={useSkins} />
+        <ChampionImage champion={champion} skins={skins} />
       </Box>
     </Tooltip>
   );

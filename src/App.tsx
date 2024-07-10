@@ -12,6 +12,7 @@ import { findGreatest } from "./services/find";
 function App() {
   const { data, error, loading } = useTFT();
   const [set, setSet] = useState("0");
+  const [skins, setSkins] = useState(false);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [items, setItems] = useState<Item[]>([]);
 
@@ -67,13 +68,13 @@ function App() {
         <Text>Traits</Text>
       </GridItem>
       <GridItem gridArea="board">
-        <Board team={team} />
+        <Board skins={skins} team={team} />
       </GridItem>
       <GridItem gridArea="equipped">
         <Text>Equipped</Text>
       </GridItem>
       <GridItem gridArea="champions">
-        <Champions champions={champions} setTeam={setTeam} team={team} />
+        <Champions champions={champions} skins={skins} setSkins={setSkins} setTeam={setTeam} team={team} />
       </GridItem>
       <GridItem gridArea="items">
         <Items items={items} />

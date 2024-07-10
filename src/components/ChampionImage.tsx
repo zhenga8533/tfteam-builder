@@ -5,10 +5,10 @@ import { formatSkin } from "../services/format";
 
 export interface ChampionImageProps {
   champion: Champion | null;
-  useSkins: boolean;
+  skins: boolean;
 }
 
-const ChampionImage = ({ champion, useSkins }: ChampionImageProps) => {
+const ChampionImage = ({ champion, skins }: ChampionImageProps) => {
   if (champion === null) return null;
 
   const costColor: { [key: number]: string } = {
@@ -42,7 +42,7 @@ const ChampionImage = ({ champion, useSkins }: ChampionImageProps) => {
   return (
     <Image
       key={champion.apiName}
-      src={useSkins ? formatSkin(champion.tileIcon || champion.squareIcon) : imgSrc}
+      src={skins ? formatSkin(champion.tileIcon || champion.squareIcon) : imgSrc}
       onError={handleError}
       alt={champion.name}
       w="100%"
