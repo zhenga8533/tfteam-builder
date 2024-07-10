@@ -26,7 +26,7 @@ interface ChampionsProps {
 
 const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps) => {
   const ref = useRef<HTMLInputElement>(null);
-  const [sorted, setSorted] = useState(true);
+  const [sorted, setSorted] = useState(false);
   const [sortedChampions, setSortedChampions] = useState<Champion[]>(champions);
 
   const filterChampions = (search: string) => {
