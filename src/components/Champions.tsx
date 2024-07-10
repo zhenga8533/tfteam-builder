@@ -1,4 +1,15 @@
-import { Box, Button, Grid, HStack, Input, InputGroup, InputLeftElement, Switch, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Divider,
+  Grid,
+  HStack,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Switch,
+  Text,
+} from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { BsSearch } from "react-icons/bs";
 import { FaCoins } from "react-icons/fa";
@@ -38,7 +49,7 @@ const Champions = ({ champions }: ChampionsProps) => {
 
   return (
     <Box background="gray.700" padding={3}>
-      <HStack mb={2} spacing={1}>
+      <HStack spacing={1}>
         <InputGroup>
           <InputLeftElement children={<BsSearch />} />
           <Input
@@ -57,18 +68,17 @@ const Champions = ({ champions }: ChampionsProps) => {
           <FaCoins size={24} />
         </Button>
       </HStack>
-      <hr />
+      <HStack my={1}>
+        <Text>Set Skins</Text>
+        <Switch isChecked={useSkins} onChange={() => setUseSkins(!useSkins)} />
+      </HStack>
+      <Divider />
       <Grid gap={6} my={3} templateColumns="repeat(auto-fill, minmax(40px, 1fr))">
         {sortedChampions?.map(
           (champion) =>
             champion.cost < 8 && <ChampionTile key={champion.apiName} champion={champion} useSkins={useSkins} />
         )}
       </Grid>
-      <hr />
-      <HStack mt={1}>
-        <Text>Set Skins</Text>
-        <Switch isChecked={useSkins} onChange={() => setUseSkins(!useSkins)} />
-      </HStack>
     </Box>
   );
 };
