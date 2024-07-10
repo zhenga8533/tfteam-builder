@@ -9,7 +9,6 @@ const ChampionTile = ({ champion, skins }: ChampionImageProps) => {
 
   return (
     <Tooltip
-      key={champion.apiName}
       background="gray.800"
       borderRadius={3}
       hasArrow
