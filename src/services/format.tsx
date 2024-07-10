@@ -86,6 +86,7 @@ export const parseTrait = (desc: string, values: Trait["effects"]) => {
   const parsed = desc;
 
   console.log(desc);
+  console.log(values);
 
   return parsed;
 };
