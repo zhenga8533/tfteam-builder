@@ -53,5 +53,8 @@ export const parseDescription = (desc: string, values?: { [key: string]: number 
     .replace(duration, "X")
     .replace(modified, "X");
 
+  if (desc.startsWith("<spellPassive>Passive</spellPassive>: Gain <scaleHealth>@PermanentHealthPerInt"))
+    console.log(values);
+
   return parsed;
 };

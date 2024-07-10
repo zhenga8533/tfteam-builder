@@ -42,7 +42,16 @@ const ChampionTile = ({ champion, useSkins }: ChampionImageProps) => {
               <Image boxSize="40px" src={formatSkin(champion.ability.icon)} />
               <Text fontSize="sm">{champion.ability.name}</Text>
             </VStack>
-            <Text dangerouslySetInnerHTML={{ __html: parseDescription(champion.ability.desc) }}></Text>
+            <Text
+              dangerouslySetInnerHTML={{
+                __html: parseDescription(
+                  champion.ability.desc,
+                  Object.fromEntries(
+                    Object.entries(champion.ability.variables).map(([_, value]) => [value.name, value.value?.[0]])
+                  )
+                ),
+              }}
+            ></Text>
           </HStack>
         </VStack>
       }

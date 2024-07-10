@@ -21,6 +21,12 @@ export interface Champion {
     desc: string;
     icon: string;
     name: string;
+    variables: {
+      [key: string]: {
+        name: string;
+        value: number[];
+      };
+    };
   };
   apiName: string;
   characterName: string;
