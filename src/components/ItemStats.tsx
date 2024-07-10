@@ -2,6 +2,7 @@ import { HStack, Image, Text } from "@chakra-ui/react";
 import ability_power from "../assets/ability_power.webp";
 import armor from "../assets/armor.webp";
 import attack_speed from "../assets/attack_speed.webp";
+import crit_chance from "../assets/crit_chance.webp";
 import damage from "../assets/damage.webp";
 import health from "../assets/health.webp";
 import magic_resist from "../assets/magic_resist.webp";
@@ -23,25 +24,29 @@ const ItemStats = ({ effects }: ItemStatsProps) => {
       name: "AP",
       icon: ability_power,
     },
+    Armor: {
+      name: "Armor",
+      icon: armor,
+    },
     AS: {
       name: "AP",
       icon: attack_speed,
+    },
+    CritChance: {
+      name: "CC",
+      icon: crit_chance,
+    },
+    Health: {
+      name: "HP",
+      icon: health,
     },
     HexRangeIncrease: {
       name: "Range",
       icon: range,
     },
-    Armor: {
-      name: "Armor",
-      icon: armor,
-    },
     MagicResist: {
       name: "MR",
       icon: magic_resist,
-    },
-    Health: {
-      name: "HP",
-      icon: health,
     },
     Mana: {
       name: "Mana",
