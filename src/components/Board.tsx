@@ -6,9 +6,10 @@ import Hexagon from "./Hexagon";
 interface BoardProps {
   skins: boolean;
   team: (Champion | null)[][];
+  setTeam: (team: (Champion | null)[][]) => void;
 }
 
-const Board = ({ skins, team }: BoardProps) => {
+const Board = ({ skins, team, setTeam }: BoardProps) => {
   return (
     <VStack mx={10} spacing={0}>
       {team.map((row, rowIndex) => (
@@ -21,7 +22,19 @@ const Board = ({ skins, team }: BoardProps) => {
             spacing={4}
           >
             {row.map((champion, colIndex) => (
-              <Hexagon key={`hex-${rowIndex}-${colIndex}`} tile={<ChampionTile champion={champion} skins={skins} />} />
+              <Box
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  const newTeam = [...team];
+                  newTeam[rowIndex][colIndex] = null;
+                  setTeam(newTeam);
+                }}
+              >
+                <Hexagon
+                  key={`hex-${rowIndex}-${colIndex}`}
+                  tile={<ChampionTile champion={champion} skins={skins} />}
+                />
+              </Box>
             ))}
           </HStack>
         </Box>

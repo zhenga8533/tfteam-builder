@@ -68,7 +68,7 @@ function App() {
         <Text>Traits</Text>
       </GridItem>
       <GridItem gridArea="board">
-        <Board skins={skins} team={team} />
+        <Board skins={skins} team={team} setTeam={setTeam} />
       </GridItem>
       <GridItem gridArea="equipped">
         <Text>Equipped</Text>
