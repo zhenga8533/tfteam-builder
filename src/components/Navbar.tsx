@@ -1,4 +1,4 @@
-import { Box, Button, Heading, HStack, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
+import { Box, Button, Heading, HStack, Menu, MenuButton, MenuItem, MenuList, useToast } from "@chakra-ui/react";
 import { compressToEncodedURIComponent } from "lz-string";
 import { BsChevronDown } from "react-icons/bs";
 import { Champion } from "../hooks/useTFT";
@@ -13,6 +13,58 @@ interface NavbarProps {
 }
 
 const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
+  const toast = useToast();
+
+  const onClear = () => {
+    setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)));
+    toast({
+      title: "Team cleared",
+      duration: 3_000,
+      isClosable: true,
+      position: "top",
+      variant: "subtle",
+    });
+  };
+
+  const onImport = () => {
+    navigator.clipboard
+      .readText()
+      .then((clipboard) => {
+        const index = clipboard.indexOf("team=");
+        const compressed = index === -1 ? clipboard : clipboard.slice(index + 5);
+        setTeam(decompressTeam(compressed));
+        toast({
+          title: "Team imported",
+          duration: 3_000,
+          isClosable: true,
+          position: "top",
+          variant: "subtle",
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: "Error reading clipboard",
+          description: error.message,
+          status: "error",
+          duration: 3_000,
+          isClosable: true,
+          position: "top",
+        });
+      });
+  };
+
+  const onShare = () => {
+    const compressed = compressToEncodedURIComponent(JSON.stringify(team));
+    navigator.clipboard.writeText(window.location.href + `?team=${compressed}`);
+    toast({
+      title: "Team copied to clipboard",
+      duration: 3_000,
+      isClosable: true,
+      position: "top",
+      variant: "subtle",
+    });
+  };
+
   return (
     <HStack justifyContent="space-between">
       <HStack>
@@ -31,30 +83,9 @@ const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
         </Menu>
       </HStack>
       <HStack>
-        <Button onClick={() => setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)))}>Clear</Button>
-        <Button
-          onClick={() => {
-            navigator.clipboard
-              .readText()
-              .then((clipboard) => {
-                const index = clipboard.indexOf("team=");
-                const compressed = index === -1 ? clipboard : clipboard.slice(index + 5);
-                setTeam(decompressTeam(compressed));
-              })
-              .catch((error) => {
-                console.error(error);
-              });
-          }}
-        >
-          Import
-        </Button>
-        <Button
-          colorScheme="blue"
-          onClick={() => {
-            const compressed = compressToEncodedURIComponent(JSON.stringify(team));
-            navigator.clipboard.writeText(window.location.href + `?team=${compressed}`);
-          }}
-        >
+        <Button onClick={onClear}>Clear</Button>
+        <Button onClick={onImport}>Import</Button>
+        <Button colorScheme="blue" onClick={onShare}>
           Share
         </Button>
       </HStack>
