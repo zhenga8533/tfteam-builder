@@ -1,3 +1,5 @@
+import { decompressFromEncodedURIComponent } from "lz-string";
+
 /**
  * Converts an image to png.
  *
@@ -7,6 +9,23 @@
 export const convertToPng = (image: string) => {
   if (!image) return "";
   return image.toLowerCase().substring(0, image.lastIndexOf(".")) + ".png";
+};
+
+/**
+ * Decompresses a team.
+ *
+ * @param data - The data to be decompressed.
+ * @returns - The decompressed team.
+ */
+export const decompressTeam = (data: string) => {
+  const decompData = decompressFromEncodedURIComponent(data);
+  try {
+    const parsed = JSON.parse(decompData);
+    if (parsed.length === 4 && parsed.every((row: any) => row.length === 7)) return parsed;
+    else return Array.from({ length: 4 }, () => Array(7).fill(null));
+  } catch (error) {
+    return Array.from({ length: 4 }, () => Array(7).fill(null));
+  }
 };
 
 /**

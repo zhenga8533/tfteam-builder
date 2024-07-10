@@ -2,6 +2,7 @@ import { Box, Button, Heading, HStack, Menu, MenuButton, MenuItem, MenuList } fr
 import { compressToEncodedURIComponent } from "lz-string";
 import { BsChevronDown } from "react-icons/bs";
 import { Champion } from "../hooks/useTFT";
+import { decompressTeam } from "../services/format";
 
 interface NavbarProps {
   set: string;
@@ -31,7 +32,22 @@ const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
       </HStack>
       <HStack>
         <Button onClick={() => setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)))}>Clear</Button>
-        <Button>Import</Button>
+        <Button
+          onClick={() => {
+            navigator.clipboard
+              .readText()
+              .then((clipboard) => {
+                const index = clipboard.indexOf("team=");
+                const compressed = index === -1 ? clipboard : clipboard.slice(index + 5);
+                setTeam(decompressTeam(compressed));
+              })
+              .catch((error) => {
+                console.error(error);
+              });
+          }}
+        >
+          Import
+        </Button>
         <Button
           colorScheme="blue"
           onClick={() => {

@@ -1,5 +1,4 @@
 import { Grid, GridItem, Text } from "@chakra-ui/react";
-import { decompressFromEncodedURIComponent } from "lz-string";
 import { useEffect, useState } from "react";
 import "./App.css";
 import Board from "./components/Board";
@@ -10,6 +9,7 @@ import Navbar from "./components/Navbar";
 import Traits from "./components/Traits";
 import useTFT, { Champion, Item, Trait } from "./hooks/useTFT";
 import { findGreatest } from "./services/find";
+import { decompressTeam } from "./services/format";
 
 function App() {
   const { data, error, loading } = useTFT();
@@ -24,19 +24,7 @@ function App() {
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
     const teamParam = queryParams.get("team");
-
-    if (teamParam) {
-      const decompressedTeam = decompressFromEncodedURIComponent(teamParam);
-
-      if (decompressedTeam) {
-        try {
-          const teamData = JSON.parse(decompressedTeam);
-          setTeam(teamData);
-        } catch (error) {
-          console.error("Error parsing team data:", error);
-        }
-      }
-    }
+    if (teamParam) setTeam(decompressTeam(teamParam));
   }, [window.location.search]);
 
   useEffect(() => {
