@@ -1,13 +1,16 @@
 import { Box, Button, Heading, HStack, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
 import { BsChevronDown } from "react-icons/bs";
+import { Champion } from "../hooks/useTFT";
 
 interface NavbarProps {
   set: string;
   sets: string[];
   setSet: (set: string) => void;
+  team: (Champion | null)[][];
+  setTeam: (team: (Champion | null)[][]) => void;
 }
 
-const Navbar = ({ set, sets, setSet }: NavbarProps) => {
+const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
   return (
     <HStack justifyContent="space-between">
       <HStack>
@@ -26,7 +29,13 @@ const Navbar = ({ set, sets, setSet }: NavbarProps) => {
         </Menu>
       </HStack>
       <HStack>
-        <Button>Clear</Button>
+        <Button
+          onClick={() => {
+            setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)));
+          }}
+        >
+          Clear
+        </Button>
         <Button>Import</Button>
         <Button colorScheme="blue">Share</Button>
       </HStack>

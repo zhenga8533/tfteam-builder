@@ -67,7 +67,7 @@ function App() {
       w="100%"
     >
       <GridItem gridArea="navbar">
-        <Navbar set={set} sets={Object.keys(data.sets)} setSet={setSet} />
+        <Navbar set={set} sets={Object.keys(data.sets)} setSet={setSet} team={team} setTeam={setTeam} />
       </GridItem>
       <GridItem gridArea="traits">
         <Traits team={team} traits={traits} />
