@@ -50,6 +50,7 @@ function App() {
     );
 
     setTraits(data.sets[set].traits);
+    console.log(data.sets[set].traits);
   }, [set]);
 
   if (loading) return <Text>Loading...</Text>;

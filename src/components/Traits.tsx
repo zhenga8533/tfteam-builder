@@ -9,20 +9,43 @@ interface TraitsProps {
 }
 
 const Traits = ({ team, traits }: TraitsProps) => {
-  const [activeTraits, setActiveTraits] = useState<string[]>([]);
+  const [activeTraits, setActiveTraits] = useState<{ [key: string]: number }>({});
 
-  useEffect(() => {}, [team]);
+  useEffect(() => {
+    const teamTraits: { [key: string]: number } = {};
+
+    team.forEach((row) => {
+      row.forEach((champion) => {
+        if (champion === null) return;
+
+        champion.traits.forEach((trait) => {
+          if (teamTraits[trait] === undefined) teamTraits[trait] = 0;
+          teamTraits[trait]++;
+        });
+      });
+    });
+
+    setActiveTraits(teamTraits);
+  }, [team]);
 
   return (
     <VStack backgroundColor="gray.700" p={3}>
       <Heading size="sm">Traits</Heading>
       <Divider />
-      {activeTraits.length === 0 ? (
+      {Object.keys(activeTraits).length === 0 ? (
         <VStack color="gray.400" spacing={0}>
           <IoMdInformationCircle size={24} />
           <Text>No active synergies</Text>
         </VStack>
-      ) : null}
+      ) : (
+        Object.entries(activeTraits).map(([trait, count]) => (
+          <VStack key={trait} spacing={0}>
+            <Text>
+              {trait} ({count})
+            </Text>
+          </VStack>
+        ))
+      )}
     </VStack>
   );
 };
