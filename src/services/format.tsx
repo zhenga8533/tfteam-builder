@@ -1,4 +1,5 @@
 import { decompressFromEncodedURIComponent } from "lz-string";
+import { Trait } from "../hooks/useTFT";
 
 /**
  * Converts an image to png.
@@ -71,6 +72,20 @@ export const parseDescription = (desc: string, values?: { [key: string]: number 
     .replace(variable, (_, p1) => values?.[p1]?.toString() || "X")
     .replace(duration, "X")
     .replace(modified, "X");
+
+  return parsed;
+};
+
+/**
+ * Parses a TFT styled trait description.
+ *
+ * @param desc - The description to be parsed.
+ * @param values - The values to be parsed.
+ */
+export const parseTrait = (desc: string, values: Trait["effects"]) => {
+  const parsed = desc;
+
+  console.log(desc);
 
   return parsed;
 };
