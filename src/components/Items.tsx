@@ -83,9 +83,9 @@ const Items = ({ items }: ItemsProps) => {
                 {item.composition.length > 0 ? (
                   <HStack>
                     <Text>Recipe:</Text>
-                    {item.composition.map((component) => (
+                    {item.composition.map((component, index) => (
                       <Image
-                        key={component}
+                        key={component + index}
                         boxSize="30px"
                         src={formatComponent(component).replace("giants", "gaints")} // Fix typo
                       />
