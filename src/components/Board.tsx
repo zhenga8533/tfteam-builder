@@ -37,8 +37,8 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
           <HStack
             display="flex"
             flexDirection="row"
-            ml={rowIndex % 2 ? "45px" : "0px"}
-            mr={rowIndex % 2 ? "0px" : "45px"}
+            ml={rowIndex % 2 ? "48px" : "0px"}
+            mr={rowIndex % 2 ? "0px" : "48px"}
             spacing={4}
           >
             {row.map((champion, colIndex) => (
