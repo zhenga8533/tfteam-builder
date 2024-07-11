@@ -33,6 +33,7 @@ function App() {
   }, [data]);
 
   useEffect(() => {
+    setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)));
     if (data === undefined) return;
 
     setChampions(
@@ -57,7 +58,6 @@ function App() {
     );
 
     setTraits(data.sets[set].traits);
-    console.log(data.sets[set].traits);
   }, [set]);
 
   if (loading)
