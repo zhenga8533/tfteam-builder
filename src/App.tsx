@@ -1,4 +1,4 @@
-import { Box, Grid, GridItem, Spinner, Text } from "@chakra-ui/react";
+import { Box, Grid, GridItem, Spinner, Text, useColorMode } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import "./App.css";
 import Board from "./components/Board";
@@ -12,6 +12,9 @@ import { findGreatest } from "./services/find";
 import { decompressTeam } from "./services/format";
 
 function App() {
+  const { setColorMode } = useColorMode();
+  setColorMode("dark");
+
   const { data, error, loading } = useTFT();
   const [set, setSet] = useState("0");
   const [skins, setSkins] = useState(true);
