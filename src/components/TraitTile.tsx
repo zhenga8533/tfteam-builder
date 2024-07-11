@@ -73,7 +73,7 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
                     >
                       {effect.minUnits}
                     </Text>
-                    {index < data.effects.length - 1 && <Text color="gray.400">{" > "}</Text>}
+                    {index < data.effects.length - 1 && <Text color="gray.400">{"﹥"}</Text>}
                   </Fragment>
                 ))}
               </HStack>
