@@ -1,4 +1,4 @@
-import { Divider, Heading, Text, VStack } from "@chakra-ui/react";
+import { Divider, Heading, HStack, Switch, Text, VStack } from "@chakra-ui/react";
 import { Fragment, useEffect, useState } from "react";
 import { IoMdInformationCircle } from "react-icons/io";
 import { Champion, Trait } from "../hooks/useTFT";
@@ -18,6 +18,7 @@ const Traits = ({ team, traits }: TraitsProps) => {
   const [activeTraits, setActiveTraits] = useState<{
     [key: string]: ActiveTrait;
   }>({});
+  const [showPartial, setShowPartial] = useState(true);
 
   useEffect(() => {
     const teamTraits: {
@@ -49,7 +50,13 @@ const Traits = ({ team, traits }: TraitsProps) => {
 
   return (
     <VStack align="left" backgroundColor="gray.700" p={3}>
-      <Heading size="sm">Traits</Heading>
+      <HStack my={1} justifyContent="space-between" px={5}>
+        <Heading size="sm">Traits</Heading>
+        <HStack>
+          <Text color="gray.400">Partial</Text>
+          <Switch isChecked={showPartial} onChange={() => setShowPartial(!showPartial)} />
+        </HStack>
+      </HStack>
       {Object.keys(activeTraits).length === 0 ? (
         <>
           <Divider />

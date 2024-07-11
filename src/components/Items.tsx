@@ -54,7 +54,7 @@ const Items = ({ items }: ItemsProps) => {
         />
       </InputGroup>
       <HStack my={1}>
-        <Text>Craftable</Text>
+        <Text color="gray.400">Craftable</Text>
         <Switch isChecked={craftable} onChange={() => setCraftable(!craftable)} />
       </HStack>
       <hr />

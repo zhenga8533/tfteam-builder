@@ -72,7 +72,7 @@ const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps
         </Button>
       </HStack>
       <HStack my={1}>
-        <Text>Set Skins</Text>
+        <Text color="gray.400">Set Skins</Text>
         <Switch isChecked={skins} onChange={() => setSkins(!skins)} />
       </HStack>
       <Divider />
