@@ -1,6 +1,7 @@
 import { Box, HStack, VStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { Unit } from "../hooks/useTFT";
+import BoardStars from "./BoardStars";
 import ChampionTile from "./ChampionTile";
 import Hexagon from "./Hexagon";
 
@@ -33,7 +34,7 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
   return (
     <VStack mx={10} spacing={0}>
       {team.map((row, rowIndex) => (
-        <Box key={`row-${rowIndex}`} mt="-10px">
+        <Box key={`row-${rowIndex}`} mt="-6px">
           <HStack
             display="flex"
             flexDirection="row"
@@ -42,20 +43,22 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
             spacing={4}
           >
             {row.map((champion, colIndex) => (
-              <Box
-                key={`hex-${rowIndex}-${colIndex}`}
-                draggable
-                onDragStart={() => handleDragStart(rowIndex, colIndex)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={() => handleDrop(rowIndex, colIndex)}
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  const newTeam = [...team];
-                  newTeam[rowIndex][colIndex] = null;
-                  setTeam(newTeam);
-                }}
-              >
-                <Hexagon tile={<ChampionTile champion={champion} skins={skins} />} />
+              <Box key={`hex-${rowIndex}-${colIndex}`} position="relative">
+                {champion !== null && <BoardStars unit={champion} />}
+                <Box
+                  draggable
+                  onDragStart={() => handleDragStart(rowIndex, colIndex)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => handleDrop(rowIndex, colIndex)}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    const newTeam = [...team];
+                    newTeam[rowIndex][colIndex] = null;
+                    setTeam(newTeam);
+                  }}
+                >
+                  <Hexagon tile={<ChampionTile champion={champion} skins={skins} />} />
+                </Box>
               </Box>
             ))}
           </HStack>
