@@ -13,14 +13,35 @@ interface BoardTileProps {
   onDragStart: (rowIndex: number, colIndex: number) => void;
   onDrop: (rowIndex: number, colIndex: number) => void;
   onContextMenu: (event: MouseEvent) => void;
+  team: (Unit | null)[][];
+  setTeam: (team: (Unit | null)[][]) => void;
 }
 
-const BoardTile = ({ rowIndex, colIndex, champion, skins, onDragStart, onDrop, onContextMenu }: BoardTileProps) => {
+const BoardTile = ({
+  rowIndex,
+  colIndex,
+  champion,
+  skins,
+  onDragStart,
+  onDrop,
+  onContextMenu,
+  team,
+  setTeam,
+}: BoardTileProps) => {
   const [hovered, setHovered] = useState(false);
 
   return (
     <Box position="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      {champion !== null && <BoardStars unit={champion} show={hovered} />}
+      {champion !== null && (
+        <BoardStars
+          champion={champion}
+          colIndex={colIndex}
+          rowIndex={rowIndex}
+          show={hovered}
+          team={team}
+          setTeam={setTeam}
+        />
+      )}
       <Box
         draggable
         onDragStart={() => onDragStart(rowIndex, colIndex)}

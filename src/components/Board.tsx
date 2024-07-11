@@ -50,6 +50,8 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
                 onDragStart={handleDragStart}
                 onDrop={handleDrop}
                 onContextMenu={(event) => event.preventDefault()}
+                team={team}
+                setTeam={setTeam}
               />
             ))}
           </HStack>
