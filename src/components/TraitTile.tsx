@@ -1,4 +1,4 @@
-import { HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
+import { Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { Fragment } from "react";
 import { parseTrait } from "../services/format";
 import { ActiveTrait } from "./Traits";
@@ -21,7 +21,8 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
             <Image src={data.icon} boxSize="28px" />
             <Text fontWeight="bold">{trait}</Text>
           </HStack>
-          {<Text dangerouslySetInnerHTML={{ __html: parseTrait(data.desc, data.effects) }} />}
+          <Divider />
+          {parseTrait(data.desc, data.effects, data.units)}
         </VStack>
       }
     >
