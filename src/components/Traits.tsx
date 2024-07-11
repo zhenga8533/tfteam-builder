@@ -66,12 +66,14 @@ const Traits = ({ team, traits }: TraitsProps) => {
           </VStack>
         </>
       ) : (
-        Object.entries(activeTraits).map(([trait, data]) => (
-          <Fragment key={trait}>
-            <Divider />
-            <TraitTile data={data} trait={trait} />
-          </Fragment>
-        ))
+        Object.entries(activeTraits).map(([trait, data]) =>
+          showPartial || data.units >= data.effects[0].minUnits ? (
+            <Fragment key={trait}>
+              <Divider />
+              <TraitTile data={data} trait={trait} />
+            </Fragment>
+          ) : null
+        )
       )}
     </VStack>
   );
