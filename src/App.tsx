@@ -73,10 +73,17 @@ function App() {
   return (
     <Grid
       gap={6}
-      templateAreas={`"navbar navbar navbar"
-                      "traits board equipped"
-                      "traits champions items"
-                      "footer footer footer"`}
+      templateAreas={{
+        base: `"navbar navbar navbar"
+               "board board board"
+               "traits equipped items"
+               "champions champions items"
+               "footer footer footer"`,
+        lg: `"navbar navbar navbar"
+             "traits board equipped"
+             "traits champions items"
+             "footer footer footer"`,
+      }}
       templateColumns="20% 60% 20%"
       w="100%"
     >
