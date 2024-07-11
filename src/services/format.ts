@@ -61,16 +61,27 @@ export const formatSkin = (skin: string) => {
  * @returns - The parsed description.
  */
 export const parseDescription = (desc: string, values?: { [key: string]: number }) => {
+  const keyword = /<TFTKeyword>([A-Za-z]+)<\/TFTKeyword>/g;
   const stat = /%i:scale([A-Za-z]+)%/g;
   const percent = /@([^@]+)\*100@/g;
   const variable = /@([^@]+)@/g;
   const duration = /([A-Za-z]+)?Duration/g;
   const modified = /Modified([A-Za-z]+)?/g;
 
+  const roundValue = (value: number | undefined, mult: number) => {
+    if (value === undefined) return "X";
+    return Math.round(value * mult).toString();
+  };
+
+  console.log(values);
+  console.log(desc);
+
   const parsed = desc
-    .replace(stat, (_, p1) => p1)
-    .replace(percent, (_, p1) => Math.round((values?.[p1] ?? 0) * 100)?.toString() || "X")
-    .replace(variable, (_, p1) => Math.round(values?.[p1] ?? 0)?.toString() || "X")
+    .replace(keyword, (_, p1) => `<b>${p1}</b>`)
+    .replace(stat, (_, p1) => `<i>${p1}</i>`)
+    .replace(/<\/i><i>/g, "/")
+    .replace(percent, (_, p1) => roundValue(values?.[p1], 100))
+    .replace(variable, (_, p1) => roundValue(values?.[p1], 1))
     .replace(duration, "X")
     .replace(modified, "X");
 
