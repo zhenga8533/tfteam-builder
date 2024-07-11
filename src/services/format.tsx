@@ -1,6 +1,4 @@
-import { HStack, Text } from "@chakra-ui/react";
 import { decompressFromEncodedURIComponent } from "lz-string";
-import { Trait } from "../hooks/useTFT";
 
 /**
  * Converts an image to png.
@@ -73,36 +71,6 @@ export const parseDescription = (desc: string, values?: { [key: string]: number 
     .replace(variable, (_, p1) => values?.[p1]?.toString() || "X")
     .replace(duration, "X")
     .replace(modified, "X");
-
-  return parsed;
-};
-
-/**
- * Parses a TFT styled trait description.
- *
- * @param desc - The description to be parsed.
- * @param values - The values to be parsed.
- */
-export const parseTrait = (desc: string, values: Trait["effects"], units: number) => {
-  const level = values.findIndex((effect) => units >= effect.minUnits && units <= effect.maxUnits);
-  const lines = desc.split("<br>");
-
-  const parsed = lines.map((line, index) => {
-    if (index < 2 || index > values.length + 1) {
-      return <Text key={index} color="gray.400" dangerouslySetInnerHTML={{ __html: line }} />;
-    } else {
-      return (
-        <HStack key={index}>
-          <Text>{values[index - 2]?.minUnits} </Text>
-          <Text
-            color={level === index - 2 ? "white" : "gray.500"}
-            fontWeight={level === index - 2 ? "bold" : "normal"}
-            dangerouslySetInnerHTML={{ __html: line }}
-          />
-        </HStack>
-      );
-    }
-  });
 
   return parsed;
 };

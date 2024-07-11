@@ -1,6 +1,6 @@
 import { Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { Fragment } from "react";
-import { parseTrait } from "../services/format";
+import { parseDescription } from "../services/format";
 import { ActiveTrait } from "./Traits";
 
 interface TraitTileProps {
@@ -16,13 +16,20 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
       hasArrow
       placement="right"
       label={
-        <VStack textColor="white" p={1} spacing={1}>
+        <VStack align="left" textColor="white" p={1} spacing={1}>
           <HStack>
             <Image src={data.icon} boxSize="28px" />
             <Text fontWeight="bold">{trait}</Text>
           </HStack>
           <Divider />
-          {parseTrait(data.desc, data.effects, data.units)}
+          {data.desc.split("<br>").map((line, index) => (
+            <Text
+              key={index}
+              textAlign="left"
+              color="gray.400"
+              dangerouslySetInnerHTML={{ __html: parseDescription(line) }}
+            />
+          ))}
         </VStack>
       }
     >
