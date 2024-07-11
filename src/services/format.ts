@@ -62,13 +62,15 @@ export const formatSkin = (skin: string) => {
  */
 export const parseDescription = (desc: string, values?: { [key: string]: number }) => {
   const stat = /%i:scale([A-Za-z]+)%/g;
+  const percent = /@([^@]+)\*100@/g;
   const variable = /@([^@]+)@/g;
   const duration = /([A-Za-z]+)?Duration/g;
   const modified = /Modified([A-Za-z]+)?/g;
 
   const parsed = desc
-    .replace(stat, (_, p1) => "%" + p1)
-    .replace(variable, (_, p1) => values?.[p1]?.toString() || "X")
+    .replace(stat, (_, p1) => p1)
+    .replace(percent, (_, p1) => Math.round((values?.[p1] ?? 0) * 100)?.toString() || "X")
+    .replace(variable, (_, p1) => Math.round(values?.[p1] ?? 0)?.toString() || "X")
     .replace(duration, "X")
     .replace(modified, "X");
 

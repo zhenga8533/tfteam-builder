@@ -9,6 +9,29 @@ interface TraitTileProps {
 }
 
 const TraitTile = ({ data, trait }: TraitTileProps) => {
+  const parseTrait = (desc: string) => {
+    const lines: JSX.Element[] = [];
+    let level = -1;
+
+    desc.split("<br>").forEach((line, index) => {
+      if (line.startsWith("<row>(@MinUnits@)")) level++;
+      const effectLevel = Math.max(level, 0);
+      const variables = data.effects[effectLevel].variables;
+      variables["MinUnits"] = data.effects[effectLevel].minUnits;
+
+      lines.push(
+        <Text
+          key={index}
+          textAlign="left"
+          color="gray.400"
+          dangerouslySetInnerHTML={{ __html: parseDescription(line, data.effects[effectLevel].variables) }}
+        />
+      );
+    });
+
+    return lines;
+  };
+
   return (
     <Tooltip
       background="gray.800"
@@ -22,14 +45,7 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
             <Text fontWeight="bold">{trait}</Text>
           </HStack>
           <Divider />
-          {data.desc.split("<br>").map((line, index) => (
-            <Text
-              key={index}
-              textAlign="left"
-              color="gray.400"
-              dangerouslySetInnerHTML={{ __html: parseDescription(line) }}
-            />
-          ))}
+          {parseTrait(data.desc)}
         </VStack>
       }
     >
