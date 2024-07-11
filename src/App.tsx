@@ -1,4 +1,4 @@
-import { Grid, GridItem, Text } from "@chakra-ui/react";
+import { Box, Grid, GridItem, Spinner, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import "./App.css";
 import Board from "./components/Board";
@@ -60,9 +60,13 @@ function App() {
     console.log(data.sets[set].traits);
   }, [set]);
 
-  if (loading) return <Text>Loading...</Text>;
+  if (loading)
+    return (
+      <Box w="100%" h="100vh" display="flex" justifyContent="center" alignItems="center">
+        <Spinner size="xl" />
+      </Box>
+    );
   if (error) return <Text>Error: {error}</Text>;
-  if (data === undefined) return <Text>No data</Text>;
   return (
     <Grid
       gap={6}
@@ -74,7 +78,7 @@ function App() {
       w="100%"
     >
       <GridItem gridArea="navbar">
-        <Navbar set={set} sets={Object.keys(data.sets)} setSet={setSet} team={team} setTeam={setTeam} />
+        <Navbar set={set} sets={Object.keys(data?.sets ?? [])} setSet={setSet} team={team} setTeam={setTeam} />
       </GridItem>
       <GridItem gridArea="traits">
         <Traits team={team} traits={traits} />
