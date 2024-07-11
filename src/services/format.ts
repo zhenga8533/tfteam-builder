@@ -73,9 +73,6 @@ export const parseDescription = (desc: string, values?: { [key: string]: number 
     return Math.round(value * mult).toString();
   };
 
-  console.log(values);
-  console.log(desc);
-
   const parsed = desc
     .replace(keyword, (_, p1) => `<b>${p1}</b>`)
     .replace(stat, (_, p1) => `<i>${p1}</i>`)

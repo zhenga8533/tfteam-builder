@@ -62,7 +62,7 @@ const ItemStats = ({ effects }: ItemStatsProps) => {
         return (
           <HStack key={key} spacing={1}>
             <Text>{stats[key].name}:</Text>
-            <Text>{value < 1 ? Math.round(value * 100) : value}</Text>
+            <Text>{Number.isInteger(value) ? value : Math.round(value * 100)}</Text>
             <Image boxSize="16px" src={stats[key].icon} />
           </HStack>
         );
