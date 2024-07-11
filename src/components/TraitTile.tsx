@@ -11,6 +11,7 @@ interface TraitTileProps {
 const TraitTile = ({ data, trait }: TraitTileProps) => {
   const parseTrait = (desc: string) => {
     const lines: JSX.Element[] = [];
+    const active = data.effects.findIndex((effect) => data.units >= effect.minUnits && data.units <= effect.maxUnits);
     let level = -1;
 
     desc.split("<br>").forEach((line, index) => {
@@ -22,8 +23,9 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
       lines.push(
         <Text
           key={index}
+          color={active !== -1 && active === level ? "white" : "gray.400"}
+          fontWeight={active !== -1 && active === level ? "bold" : "normal"}
           textAlign="left"
-          color="gray.400"
           dangerouslySetInnerHTML={{ __html: parseDescription(line, data.effects[effectLevel].variables) }}
         />
       );
