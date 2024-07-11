@@ -5,13 +5,14 @@ import { Unit } from "../hooks/useTFT";
 
 interface BoardStarsProps {
   unit: Unit;
+  show: boolean;
 }
 
-const BoardStars = ({ unit }: BoardStarsProps) => {
+const BoardStars = ({ unit, show }: BoardStarsProps) => {
   const [hovered, setHovered] = useState(0);
 
   return (
-    <Box>
+    <Box hidden={!show && unit.starLevel < 2}>
       {Array.from({ length: 3 }).map((_, index) => (
         <Box
           key={index}

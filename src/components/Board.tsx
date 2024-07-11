@@ -1,9 +1,7 @@
 import { Box, HStack, VStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { Unit } from "../hooks/useTFT";
-import BoardStars from "./BoardStars";
-import ChampionTile from "./ChampionTile";
-import Hexagon from "./Hexagon";
+import BoardTile from "./BoardTile";
 
 interface BoardProps {
   skins: boolean;
@@ -43,23 +41,16 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
             spacing={4}
           >
             {row.map((champion, colIndex) => (
-              <Box key={`hex-${rowIndex}-${colIndex}`} position="relative">
-                {champion !== null && <BoardStars unit={champion} />}
-                <Box
-                  draggable
-                  onDragStart={() => handleDragStart(rowIndex, colIndex)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => handleDrop(rowIndex, colIndex)}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    const newTeam = [...team];
-                    newTeam[rowIndex][colIndex] = null;
-                    setTeam(newTeam);
-                  }}
-                >
-                  <Hexagon tile={<ChampionTile champion={champion} skins={skins} />} />
-                </Box>
-              </Box>
+              <BoardTile
+                key={`tile-${rowIndex}-${colIndex}`}
+                champion={champion}
+                skins={skins}
+                rowIndex={rowIndex}
+                colIndex={colIndex}
+                onDragStart={handleDragStart}
+                onDrop={handleDrop}
+                onContextMenu={(event) => event.preventDefault()}
+              />
             ))}
           </HStack>
         </Box>
