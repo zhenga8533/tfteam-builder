@@ -57,7 +57,8 @@ const Traits = ({ team, traits }: TraitsProps) => {
           <Switch isChecked={showPartial} onChange={() => setShowPartial(!showPartial)} />
         </HStack>
       </HStack>
-      {Object.keys(activeTraits).length === 0 ? (
+      {Object.keys(activeTraits).length === 0 ||
+      (!showPartial && Object.values(activeTraits).every((trait) => trait.units < trait.effects[0].minUnits)) ? (
         <>
           <Divider />
           <VStack color="gray.400" spacing={0}>
