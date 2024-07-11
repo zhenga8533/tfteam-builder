@@ -65,6 +65,11 @@ export interface Trait {
   name: string;
 }
 
+export interface Unit extends Champion {
+  items: Item[];
+  starLevel: number;
+}
+
 interface TFTData {
   items: Item[];
   setData: {

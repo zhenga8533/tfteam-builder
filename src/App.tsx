@@ -7,7 +7,7 @@ import Footer from "./components/Footer";
 import Items from "./components/Items";
 import Navbar from "./components/Navbar";
 import Traits from "./components/Traits";
-import useTFT, { Champion, Item, Trait } from "./hooks/useTFT";
+import useTFT, { Champion, Item, Trait, Unit } from "./hooks/useTFT";
 import { findGreatest } from "./services/find";
 import { decompressTeam } from "./services/format";
 
@@ -22,7 +22,7 @@ function App() {
   const [items, setItems] = useState<Item[]>([]);
   const [traits, setTraits] = useState<Trait[]>([]);
 
-  const [team, setTeam] = useState<(Champion | null)[][]>(Array.from({ length: 4 }, () => Array(7).fill(null)));
+  const [team, setTeam] = useState<(Unit | null)[][]>(Array.from({ length: 4 }, () => Array(7).fill(null)));
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);

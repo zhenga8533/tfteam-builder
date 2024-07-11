@@ -1,15 +1,15 @@
 import { Box, Button, Heading, HStack, Menu, MenuButton, MenuItem, MenuList, useToast } from "@chakra-ui/react";
 import { compressToEncodedURIComponent } from "lz-string";
 import { BsChevronDown } from "react-icons/bs";
-import { Champion } from "../hooks/useTFT";
+import { Unit } from "../hooks/useTFT";
 import { decompressTeam } from "../services/format";
 
 interface NavbarProps {
   set: string;
   sets: string[];
   setSet: (set: string) => void;
-  team: (Champion | null)[][];
-  setTeam: (team: (Champion | null)[][]) => void;
+  team: (Unit | null)[][];
+  setTeam: (team: (Unit | null)[][]) => void;
 }
 
 const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {

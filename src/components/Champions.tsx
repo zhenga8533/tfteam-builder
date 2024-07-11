@@ -13,15 +13,15 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { BsSearch } from "react-icons/bs";
 import { FaCoins } from "react-icons/fa";
-import { Champion } from "../hooks/useTFT";
+import { Champion, Unit } from "../hooks/useTFT";
 import ChampionTile from "./ChampionTile";
 
 interface ChampionsProps {
   champions: Champion[];
   skins: boolean;
   setSkins: (skins: boolean) => void;
-  team: (Champion | null)[][];
-  setTeam: (team: (Champion | null)[][]) => void;
+  team: (Unit | null)[][];
+  setTeam: (team: (Unit | null)[][]) => void;
 }
 
 const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps) => {
@@ -87,7 +87,11 @@ const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps
                   for (let row = 0; row < newTeam.length; row++) {
                     for (let col = 0; col < newTeam[row].length; col++) {
                       if (newTeam[row][col] === null) {
-                        newTeam[row][col] = champion;
+                        newTeam[row][col] = {
+                          ...champion,
+                          items: [],
+                          starLevel: 1,
+                        };
                         setTeam(newTeam);
                         return;
                       }

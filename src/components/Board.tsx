@@ -1,13 +1,13 @@
 import { Box, HStack, VStack } from "@chakra-ui/react";
 import { useState } from "react";
-import { Champion } from "../hooks/useTFT";
+import { Unit } from "../hooks/useTFT";
 import ChampionTile from "./ChampionTile";
 import Hexagon from "./Hexagon";
 
 interface BoardProps {
   skins: boolean;
-  team: (Champion | null)[][];
-  setTeam: (team: (Champion | null)[][]) => void;
+  team: (Unit | null)[][];
+  setTeam: (team: (Unit | null)[][]) => void;
 }
 
 const Board = ({ skins, team, setTeam }: BoardProps) => {
