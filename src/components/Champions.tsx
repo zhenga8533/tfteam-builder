@@ -99,7 +99,7 @@ const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps
                   }
                 }}
               >
-                <ChampionTile champion={champion} skins={skins} />
+                <ChampionTile champion={champion} skins={skins} showName={false} />
               </Box>
             )
         )}

@@ -49,7 +49,7 @@ const BoardTile = ({
         onDrop={() => onDrop(rowIndex, colIndex)}
         onContextMenu={onContextMenu}
       >
-        <Hexagon tile={<ChampionTile champion={champion} skins={skins} />} />
+        <Hexagon tile={<ChampionTile champion={champion} skins={skins} showName={true} />} />
       </Box>
     </Box>
   );

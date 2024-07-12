@@ -4,7 +4,11 @@ import { formatSkin, parseDescription } from "../services/format";
 import ChampionImage, { ChampionImageProps } from "./ChampionImage";
 import ChampionStats from "./ChampionStats";
 
-const ChampionTile = ({ champion, skins }: ChampionImageProps) => {
+interface ChampionStatsProps extends ChampionImageProps {
+  showName: boolean;
+}
+
+const ChampionTile = ({ champion, skins, showName }: ChampionStatsProps) => {
   if (champion === null) return null;
 
   return (
@@ -57,8 +61,11 @@ const ChampionTile = ({ champion, skins }: ChampionImageProps) => {
         </VStack>
       }
     >
-      <Box>
+      <Box position="relative" display="flex" alignItems="center" justifyContent="center">
         <ChampionImage champion={champion} skins={skins} />
+        <Text position="absolute" color="white" textShadow="1px 1px 2px black" hidden={!showName}>
+          {champion.name}
+        </Text>
       </Box>
     </Tooltip>
   );
