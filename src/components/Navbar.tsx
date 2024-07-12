@@ -30,16 +30,27 @@ const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
     navigator.clipboard
       .readText()
       .then((clipboard) => {
-        const index = clipboard.indexOf("team=");
-        const compressed = index === -1 ? clipboard : clipboard.slice(index + 5);
-        setTeam(decompressTeam(compressed));
-        toast({
-          title: "Team imported",
-          duration: 3_000,
-          isClosable: true,
-          position: "top",
-          variant: "subtle",
-        });
+        const decompressed = decompressTeam(clipboard);
+        if (decompressed !== null) {
+          setSet(decompressed.set);
+          setTimeout(() => setTeam(decompressed.team), 0);
+          toast({
+            title: "Team imported!",
+            duration: 3_000,
+            isClosable: true,
+            position: "top",
+            variant: "subtle",
+          });
+        } else {
+          toast({
+            title: "Invalid import data!",
+            duration: 3_000,
+            isClosable: true,
+            position: "top",
+            status: "error",
+            variant: "subtle",
+          });
+        }
       })
       .catch((error) => {
         toast({
@@ -54,8 +65,9 @@ const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
   };
 
   const onShare = () => {
-    const compressed = compressToEncodedURIComponent(JSON.stringify(team));
-    navigator.clipboard.writeText(window.location.href + `?team=${compressed}`);
+    const data = { team: team, set: set };
+    const compressed = compressToEncodedURIComponent(JSON.stringify(data));
+    navigator.clipboard.writeText(compressed);
     toast({
       title: "Team copied to clipboard",
       duration: 3_000,

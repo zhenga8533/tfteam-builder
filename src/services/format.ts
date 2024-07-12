@@ -21,10 +21,11 @@ export const decompressTeam = (data: string) => {
   const decompData = decompressFromEncodedURIComponent(data);
   try {
     const parsed = JSON.parse(decompData);
-    if (parsed.length === 4 && parsed.every((row: any) => row.length === 7)) return parsed;
-    else return Array.from({ length: 4 }, () => Array(7).fill(null));
+    const team = parsed.team;
+    if (team && team.length === 4 && team.every((row: any) => row.length === 7)) return parsed;
+    else return null;
   } catch (error) {
-    return Array.from({ length: 4 }, () => Array(7).fill(null));
+    return null;
   }
 };
 

@@ -9,7 +9,6 @@ import Navbar from "./components/Navbar";
 import Traits from "./components/Traits";
 import useTFT, { Champion, Item, Trait, Unit } from "./hooks/useTFT";
 import { findGreatest } from "./services/find";
-import { decompressTeam } from "./services/format";
 
 function App() {
   const { setColorMode } = useColorMode();
@@ -23,12 +22,6 @@ function App() {
   const [traits, setTraits] = useState<Trait[]>([]);
 
   const [team, setTeam] = useState<(Unit | null)[][]>(Array.from({ length: 4 }, () => Array(7).fill(null)));
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const teamParam = queryParams.get("team");
-    if (teamParam) setTeam(decompressTeam(teamParam));
-  }, [window.location.search]);
 
   useEffect(() => {
     if (data?.sets === undefined) return;
