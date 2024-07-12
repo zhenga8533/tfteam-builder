@@ -50,7 +50,12 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
                 colIndex={colIndex}
                 onDragStart={handleDragStart}
                 onDrop={handleDrop}
-                onContextMenu={(event) => event.preventDefault()}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  const newTeam = [...team];
+                  newTeam[rowIndex][colIndex] = null;
+                  setTeam(newTeam);
+                }}
                 team={team}
                 setTeam={setTeam}
               />
