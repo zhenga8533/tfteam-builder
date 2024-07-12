@@ -1,6 +1,7 @@
 import { Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { Fragment } from "react";
 import { parseDescription } from "../services/format";
+import Hexagon from "./Hexagon";
 import { ActiveTrait } from "./Traits";
 
 interface TraitTileProps {
@@ -9,30 +10,30 @@ interface TraitTileProps {
 }
 
 const TraitTile = ({ data, trait }: TraitTileProps) => {
-  const parseTrait = (desc: string) => {
-    const lines: JSX.Element[] = [];
-    const active = data.effects.findIndex((effect) => data.units >= effect.minUnits && data.units <= effect.maxUnits);
-    let level = -1;
+  const lines: JSX.Element[] = [];
+  const active = data.units >= data.effects[0].minUnits;
+  const activeLevel = data.effects.findIndex(
+    (effect) => data.units >= effect.minUnits && data.units <= effect.maxUnits
+  );
+  let level = -1;
+  const tier = data.effects.findIndex((effect) => data.units >= effect.minUnits && data.units <= effect.maxUnits) + 1;
 
-    desc.split("<br>").forEach((line, index) => {
-      if (line.startsWith("<row>(@MinUnits@)")) level++;
-      const effectLevel = Math.max(level, 0);
-      const variables = data.effects[effectLevel].variables;
-      variables["MinUnits"] = data.effects[effectLevel].minUnits;
+  data.desc.split("<br>").forEach((line, index) => {
+    if (line.startsWith("<row>(@MinUnits@)")) level++;
+    const effectLevel = Math.max(level, 0);
+    const variables = data.effects[effectLevel].variables;
+    variables["MinUnits"] = data.effects[effectLevel].minUnits;
 
-      lines.push(
-        <Text
-          key={index}
-          color={active !== -1 && active === level ? "white" : "gray.400"}
-          fontWeight={active !== -1 && active === level ? "bold" : "normal"}
-          textAlign="left"
-          dangerouslySetInnerHTML={{ __html: parseDescription(line, data.effects[effectLevel].variables) }}
-        />
-      );
-    });
-
-    return lines;
-  };
+    lines.push(
+      <Text
+        key={index}
+        color={activeLevel !== -1 && activeLevel === level ? "white" : "gray.400"}
+        fontWeight={activeLevel !== -1 && activeLevel === level ? "bold" : "normal"}
+        textAlign="left"
+        dangerouslySetInnerHTML={{ __html: parseDescription(line, data.effects[effectLevel].variables) }}
+      />
+    );
+  });
 
   return (
     <Tooltip
@@ -47,23 +48,27 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
             <Text fontWeight="bold">{trait}</Text>
           </HStack>
           <Divider />
-          {parseTrait(data.desc)}
+          {lines}
         </VStack>
       }
     >
       <HStack ml={2}>
-        <HStack spacing={1}>
-          <Image src={data.icon} boxSize="28px" />
-          <Text color="gray.400" fontWeight="bold">
+        <HStack mr={2} spacing={1}>
+          <Hexagon
+            color={`tier.${Math.min(tier, 4)}`}
+            size="40px"
+            tile={<Image src={data.icon} boxSize="28px" position="relative" top="6px" left="6px" />}
+          />
+          <Text color={active ? `tier.${Math.min(tier, 4)}` : "gray.400"} fontWeight="bold">
             {data.units}
           </Text>
         </HStack>
         <VStack align="left" spacing={0}>
-          <Text textAlign="left" fontWeight="bold">
+          <Text textAlign="left" color={active ? "white" : "gray.600"} fontWeight="bold">
             {trait}
           </Text>
-          {data.units >= data.effects[0].minUnits ? (
-            <Text textAlign="left" color="gray">
+          {active ? (
+            <Text textAlign="left">
               <HStack spacing={1}>
                 {data.effects.map((effect, index) => (
                   <Fragment key={effect.minUnits}>
@@ -83,7 +88,7 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
               </HStack>
             </Text>
           ) : (
-            <Text textAlign="left" color="gray.400">
+            <Text textAlign="left" color="gray.500">
               {data.units} / {data.effects[0].minUnits}
             </Text>
           )}

@@ -54,6 +54,8 @@ const BoardTile = ({
         onContextMenu={onContextMenu}
       >
         <Hexagon
+          color="gray.700"
+          size="80px"
           tile={<ChampionTile champion={champion} skins={skins} hoverInfo={hoverInfo} showNames={showNames} />}
         />
       </Box>
