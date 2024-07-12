@@ -51,7 +51,7 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
         </VStack>
       }
     >
-      <HStack ml={3}>
+      <HStack ml={2}>
         <HStack spacing={1}>
           <Image src={data.icon} boxSize="28px" />
           <Text color="gray.400" fontWeight="bold">
@@ -73,7 +73,11 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
                     >
                       {effect.minUnits}
                     </Text>
-                    {index < data.effects.length - 1 && <Text color="gray.400">{"﹥"}</Text>}
+                    {index < data.effects.length - 1 && (
+                      <Text color="gray.400" fontSize={10}>
+                        {"﹥"}
+                      </Text>
+                    )}
                   </Fragment>
                 ))}
               </HStack>

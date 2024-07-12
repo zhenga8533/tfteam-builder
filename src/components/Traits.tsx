@@ -25,6 +25,7 @@ const Traits = ({ team, traits }: TraitsProps) => {
       [key: string]: ActiveTrait;
     } = {};
 
+    // Loop through the team and count the number of units for each trait
     team.forEach((row) => {
       row.forEach((champion) => {
         if (champion === null) return;
@@ -45,7 +46,15 @@ const Traits = ({ team, traits }: TraitsProps) => {
       });
     });
 
-    setActiveTraits(teamTraits);
+    // Sort the traits by the number of units and if they are active
+    const active = Object.entries(teamTraits)
+      .filter(([_, data]) => data.units >= data.effects[0].minUnits)
+      .sort((a, b) => b[1].units - a[1].units);
+    const inactive = Object.entries(teamTraits)
+      .filter(([_, data]) => data.units < data.effects[0].minUnits)
+      .sort((a, b) => b[1].units - a[1].units);
+
+    setActiveTraits(Object.fromEntries(active.concat(inactive)));
   }, [team]);
 
   return (
