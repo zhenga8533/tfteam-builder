@@ -1,6 +1,7 @@
 import { Box, HStack, VStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { Unit } from "../hooks/useTFT";
+import BoardCost from "./BoardCost";
 import BoardTile from "./BoardTile";
 
 interface BoardProps {
@@ -57,6 +58,7 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
           </HStack>
         </Box>
       ))}
+      <BoardCost team={team} />
     </VStack>
   );
 };
