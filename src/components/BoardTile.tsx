@@ -15,6 +15,7 @@ interface BoardTileProps {
   onContextMenu: (event: MouseEvent) => void;
   team: (Unit | null)[][];
   setTeam: (team: (Unit | null)[][]) => void;
+  hoverInfo: boolean;
   showNames: boolean;
 }
 
@@ -28,6 +29,7 @@ const BoardTile = ({
   onContextMenu,
   team,
   setTeam,
+  hoverInfo,
   showNames,
 }: BoardTileProps) => {
   const [hovered, setHovered] = useState(false);
@@ -51,7 +53,9 @@ const BoardTile = ({
         onDrop={() => onDrop(rowIndex, colIndex)}
         onContextMenu={onContextMenu}
       >
-        <Hexagon tile={<ChampionTile champion={champion} skins={skins} showNames={showNames} />} />
+        <Hexagon
+          tile={<ChampionTile champion={champion} skins={skins} hoverInfo={hoverInfo} showNames={showNames} />}
+        />
       </Box>
     </Box>
   );

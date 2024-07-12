@@ -12,6 +12,7 @@ interface BoardProps {
 
 const Board = ({ skins, team, setTeam }: BoardProps) => {
   const [dragged, setDragged] = useState<{ rowIndex: number; colIndex: number } | null>(null);
+  const [hoverInfo, setHoverInfo] = useState(false);
   const [showNames, setShowNames] = useState(true);
 
   const handleDragStart = (rowIndex: number, colIndex: number) => {
@@ -59,6 +60,7 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
                 }}
                 team={team}
                 setTeam={setTeam}
+                hoverInfo={hoverInfo}
                 showNames={showNames}
               />
             ))}
@@ -66,9 +68,15 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
         </Box>
       ))}
       <HStack justifyContent="space-between" mt={3} w="100%">
-        <HStack>
-          <Text color="gray.400">Names</Text>
-          <Switch isChecked={showNames} onChange={() => setShowNames(!showNames)} />
+        <HStack spacing={5}>
+          <HStack>
+            <Text color="gray.400">Hover Info</Text>
+            <Switch isChecked={hoverInfo} onChange={() => setHoverInfo(!hoverInfo)} />
+          </HStack>
+          <HStack>
+            <Text color="gray.400">Show Names</Text>
+            <Switch isChecked={showNames} onChange={() => setShowNames(!showNames)} />
+          </HStack>
         </HStack>
         <BoardCost team={team} />
       </HStack>
