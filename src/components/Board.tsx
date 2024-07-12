@@ -1,4 +1,4 @@
-import { Box, HStack, VStack } from "@chakra-ui/react";
+import { Box, HStack, Switch, Text, VStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { Unit } from "../hooks/useTFT";
 import BoardCost from "./BoardCost";
@@ -12,6 +12,7 @@ interface BoardProps {
 
 const Board = ({ skins, team, setTeam }: BoardProps) => {
   const [dragged, setDragged] = useState<{ rowIndex: number; colIndex: number } | null>(null);
+  const [showNames, setShowNames] = useState(true);
 
   const handleDragStart = (rowIndex: number, colIndex: number) => {
     setDragged({ rowIndex, colIndex });
@@ -58,12 +59,19 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
                 }}
                 team={team}
                 setTeam={setTeam}
+                showNames={showNames}
               />
             ))}
           </HStack>
         </Box>
       ))}
-      <BoardCost team={team} />
+      <HStack justifyContent="space-between" mt={3} w="100%">
+        <HStack>
+          <Text color="gray.400">Names</Text>
+          <Switch isChecked={showNames} onChange={() => setShowNames(!showNames)} />
+        </HStack>
+        <BoardCost team={team} />
+      </HStack>
     </VStack>
   );
 };

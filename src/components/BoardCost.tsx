@@ -30,7 +30,7 @@ const BoardCost = ({ team }: BoardCostProps) => {
   }, [team]);
 
   return (
-    <HStack mt={3} spacing={3} fontSize="large">
+    <HStack spacing={3} fontSize="large">
       <HStack spacing={1}>
         <Image src={champion} alt="Champion" boxSize="20px" />
         <Text>{count}</Text>

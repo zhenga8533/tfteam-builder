@@ -5,10 +5,10 @@ import ChampionImage, { ChampionImageProps } from "./ChampionImage";
 import ChampionStats from "./ChampionStats";
 
 interface ChampionStatsProps extends ChampionImageProps {
-  showName: boolean;
+  showNames: boolean;
 }
 
-const ChampionTile = ({ champion, skins, showName }: ChampionStatsProps) => {
+const ChampionTile = ({ champion, skins, showNames }: ChampionStatsProps) => {
   if (champion === null) return null;
 
   return (
@@ -63,7 +63,7 @@ const ChampionTile = ({ champion, skins, showName }: ChampionStatsProps) => {
     >
       <Box position="relative" display="flex" alignItems="center" justifyContent="center">
         <ChampionImage champion={champion} skins={skins} />
-        <Text position="absolute" color="white" textShadow="1px 1px 2px black" hidden={!showName}>
+        <Text position="absolute" color="white" textShadow="1px 1px 2px black" hidden={!showNames}>
           {champion.name}
         </Text>
       </Box>
