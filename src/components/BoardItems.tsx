@@ -1,23 +1,23 @@
-import { Box, Image } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { Item, Unit } from "../hooks/useTFT";
-import { formatSkin } from "../services/format";
+import ItemTile from "./ItemTile";
 
 interface BoardItemsProps {
   colIndex: number;
   rowIndex: number;
   items: Item[];
+  hoverInfo: boolean;
+  onDragStart: (item: Item) => void;
   team: (Unit | null)[][];
   setTeam: (team: (Unit | null)[][]) => void;
 }
 
-const BoardItems = ({ colIndex, rowIndex, items, team, setTeam }: BoardItemsProps) => {
+const BoardItems = ({ colIndex, rowIndex, items, hoverInfo, onDragStart, team, setTeam }: BoardItemsProps) => {
   return (
     <Box>
       {items.map((item, index) => (
-        <Image
+        <Box
           key={index}
-          src={formatSkin(item.icon)}
-          alt={item.name}
           position="absolute"
           bottom={index % 2 === 0 ? "0" : "-10px"}
           boxSize="24px"
@@ -32,7 +32,9 @@ const BoardItems = ({ colIndex, rowIndex, items, team, setTeam }: BoardItemsProp
             tile.items.splice(index, 1);
             setTeam(newTeam);
           }}
-        />
+        >
+          <ItemTile item={item} hoverInfo={hoverInfo} onDragStart={onDragStart} />
+        </Box>
       ))}
     </Box>
   );

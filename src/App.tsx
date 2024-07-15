@@ -101,7 +101,7 @@ function App() {
         <Traits team={team} traits={traits} />
       </GridItem>
       <GridItem gridArea="board">
-        <Board skins={skins} team={team} setTeam={setTeam} onDropItem={handleDropItem} />
+        <Board skins={skins} team={team} setTeam={setTeam} onDragItem={handleDragItem} onDropItem={handleDropItem} />
       </GridItem>
       <GridItem gridArea="equipped">
         <Text>Equipped</Text>

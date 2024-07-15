@@ -1,6 +1,6 @@
 import { Box } from "@chakra-ui/react";
 import { MouseEvent, useState } from "react";
-import { Unit } from "../hooks/useTFT";
+import { Item, Unit } from "../hooks/useTFT";
 import BoardItems from "./BoardItems";
 import BoardStars from "./BoardStars";
 import ChampionTile from "./ChampionTile";
@@ -14,6 +14,7 @@ interface BoardTileProps {
   onContextMenu: (event: MouseEvent) => void;
   onDragUnit: (rowIndex: number, colIndex: number) => void;
   onDropUnit: (rowIndex: number, colIndex: number) => void;
+  onDragItem: (item: Item) => void;
   onDropItem: (rowIndex: number, colIndex: number) => void;
   showNames: boolean;
   skins: boolean;
@@ -29,6 +30,7 @@ const BoardTile = ({
   onContextMenu,
   onDragUnit,
   onDropUnit,
+  onDragItem,
   onDropItem,
   showNames,
   skins,
@@ -66,7 +68,15 @@ const BoardTile = ({
         />
       </Box>
       {champion !== null && (
-        <BoardItems colIndex={colIndex} rowIndex={rowIndex} items={champion.items} team={team} setTeam={setTeam} />
+        <BoardItems
+          colIndex={colIndex}
+          rowIndex={rowIndex}
+          items={champion.items}
+          hoverInfo={hoverInfo}
+          onDragStart={onDragItem}
+          team={team}
+          setTeam={setTeam}
+        />
       )}
     </Box>
   );

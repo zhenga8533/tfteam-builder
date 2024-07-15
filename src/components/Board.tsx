@@ -1,6 +1,6 @@
 import { Box, HStack, Switch, Text, VStack } from "@chakra-ui/react";
 import { useState } from "react";
-import { Unit } from "../hooks/useTFT";
+import { Item, Unit } from "../hooks/useTFT";
 import BoardCost from "./BoardCost";
 import BoardTile from "./BoardTile";
 
@@ -8,10 +8,11 @@ interface BoardProps {
   skins: boolean;
   team: (Unit | null)[][];
   setTeam: (team: (Unit | null)[][]) => void;
+  onDragItem: (item: Item) => void;
   onDropItem: (rowIndex: number, colIndex: number) => void;
 }
 
-const Board = ({ skins, team, setTeam, onDropItem }: BoardProps) => {
+const Board = ({ skins, team, setTeam, onDragItem, onDropItem }: BoardProps) => {
   const [dragged, setDragged] = useState<{ rowIndex: number; colIndex: number } | null>(null);
   const [hoverInfo, setHoverInfo] = useState(false);
   const [showNames, setShowNames] = useState(true);
@@ -59,6 +60,7 @@ const Board = ({ skins, team, setTeam, onDropItem }: BoardProps) => {
                 }}
                 onDragUnit={handleDragUnit}
                 onDropUnit={handleDropUnit}
+                onDragItem={onDragItem}
                 onDropItem={onDropItem}
                 showNames={showNames}
                 skins={skins}
