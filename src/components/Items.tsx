@@ -20,9 +20,10 @@ import ItemStats from "./ItemStats";
 
 interface ItemsProps {
   items: Item[];
+  onDragStart: (item: Item) => void;
 }
 
-const Items = ({ items }: ItemsProps) => {
+const Items = ({ items, onDragStart }: ItemsProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const [craftable, setCraftable] = useState(false);
 
@@ -98,7 +99,7 @@ const Items = ({ items }: ItemsProps) => {
             }
             placement="right"
           >
-            <Image src={formatSkin(item.icon)} alt={item.name} />
+            <Image src={formatSkin(item.icon)} alt={item.name} onDragStart={() => onDragStart(item)} />
           </Tooltip>
         ))}
       </Grid>

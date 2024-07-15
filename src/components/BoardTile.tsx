@@ -7,31 +7,33 @@ import ChampionTile from "./ChampionTile";
 import Hexagon from "./Hexagon";
 
 interface BoardTileProps {
-  champion: Unit | null;
-  skins: boolean;
-  rowIndex: number;
   colIndex: number;
-  onDragStart: (rowIndex: number, colIndex: number) => void;
-  onDrop: (rowIndex: number, colIndex: number) => void;
+  rowIndex: number;
+  champion: Unit | null;
+  hoverInfo: boolean;
   onContextMenu: (event: MouseEvent) => void;
+  onDragUnit: (rowIndex: number, colIndex: number) => void;
+  onDropUnit: (rowIndex: number, colIndex: number) => void;
+  onDropItem: (rowIndex: number, colIndex: number) => void;
+  showNames: boolean;
+  skins: boolean;
   team: (Unit | null)[][];
   setTeam: (team: (Unit | null)[][]) => void;
-  hoverInfo: boolean;
-  showNames: boolean;
 }
 
 const BoardTile = ({
-  rowIndex,
   colIndex,
+  rowIndex,
   champion,
-  skins,
-  onDragStart,
-  onDrop,
+  hoverInfo,
   onContextMenu,
+  onDragUnit,
+  onDropUnit,
+  onDropItem,
+  showNames,
+  skins,
   team,
   setTeam,
-  hoverInfo,
-  showNames,
 }: BoardTileProps) => {
   const [hovered, setHovered] = useState(false);
 
@@ -49,9 +51,12 @@ const BoardTile = ({
       )}
       <Box
         draggable
-        onDragStart={() => onDragStart(rowIndex, colIndex)}
+        onDragStart={() => onDragUnit(rowIndex, colIndex)}
         onDragOver={(event) => event.preventDefault()}
-        onDrop={() => onDrop(rowIndex, colIndex)}
+        onDrop={() => {
+          onDropUnit(rowIndex, colIndex);
+          onDropItem(rowIndex, colIndex);
+        }}
         onContextMenu={onContextMenu}
       >
         <Hexagon
@@ -60,7 +65,9 @@ const BoardTile = ({
           tile={<ChampionTile champion={champion} skins={skins} hoverInfo={hoverInfo} showNames={showNames} />}
         />
       </Box>
-      {champion !== null && <BoardItems items={champion.items} />}
+      {champion !== null && (
+        <BoardItems colIndex={colIndex} rowIndex={rowIndex} items={champion.items} team={team} setTeam={setTeam} />
+      )}
     </Box>
   );
 };

@@ -8,18 +8,19 @@ interface BoardProps {
   skins: boolean;
   team: (Unit | null)[][];
   setTeam: (team: (Unit | null)[][]) => void;
+  onDropItem: (rowIndex: number, colIndex: number) => void;
 }
 
-const Board = ({ skins, team, setTeam }: BoardProps) => {
+const Board = ({ skins, team, setTeam, onDropItem }: BoardProps) => {
   const [dragged, setDragged] = useState<{ rowIndex: number; colIndex: number } | null>(null);
   const [hoverInfo, setHoverInfo] = useState(false);
   const [showNames, setShowNames] = useState(true);
 
-  const handleDragStart = (rowIndex: number, colIndex: number) => {
+  const handleDragUnit = (rowIndex: number, colIndex: number) => {
     setDragged({ rowIndex, colIndex });
   };
 
-  const handleDrop = (targetRowIndex: number, targetColIndex: number) => {
+  const handleDropUnit = (targetRowIndex: number, targetColIndex: number) => {
     if (!dragged) return;
 
     const newTeam = [...team];
@@ -46,22 +47,23 @@ const Board = ({ skins, team, setTeam }: BoardProps) => {
             {row.map((champion, colIndex) => (
               <BoardTile
                 key={`tile-${rowIndex}-${colIndex}`}
-                champion={champion}
-                skins={skins}
-                rowIndex={rowIndex}
                 colIndex={colIndex}
-                onDragStart={handleDragStart}
-                onDrop={handleDrop}
+                rowIndex={rowIndex}
+                champion={champion}
+                hoverInfo={hoverInfo}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   const newTeam = [...team];
                   newTeam[rowIndex][colIndex] = null;
                   setTeam(newTeam);
                 }}
+                onDragUnit={handleDragUnit}
+                onDropUnit={handleDropUnit}
+                onDropItem={onDropItem}
+                showNames={showNames}
+                skins={skins}
                 team={team}
                 setTeam={setTeam}
-                hoverInfo={hoverInfo}
-                showNames={showNames}
               />
             ))}
           </HStack>

@@ -1,12 +1,16 @@
 import { Box, Image } from "@chakra-ui/react";
-import { Item } from "../hooks/useTFT";
+import { Item, Unit } from "../hooks/useTFT";
 import { formatSkin } from "../services/format";
 
 interface BoardItemsProps {
+  colIndex: number;
+  rowIndex: number;
   items: Item[];
+  team: (Unit | null)[][];
+  setTeam: (team: (Unit | null)[][]) => void;
 }
 
-const BoardItems = ({ items }: BoardItemsProps) => {
+const BoardItems = ({ colIndex, rowIndex, items, team, setTeam }: BoardItemsProps) => {
   return (
     <Box>
       {items.map((item, index) => (
@@ -19,6 +23,15 @@ const BoardItems = ({ items }: BoardItemsProps) => {
           boxSize="24px"
           left={`${32 * index - 4}px`}
           zIndex={1}
+          onContextMenu={(event) => {
+            const tile = team[colIndex][rowIndex];
+            if (tile === null) return;
+
+            event.preventDefault();
+            const newTeam = [...team];
+            tile.items.splice(index, 1);
+            setTeam(newTeam);
+          }}
         />
       ))}
     </Box>

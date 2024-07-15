@@ -56,6 +56,20 @@ function App() {
     setTraits(data.sets[set].traits);
   }, [set]);
 
+  const [draggedItem, setDraggedItem] = useState<Item | null>(null);
+  const handleDragItem = (item: Item) => {
+    setDraggedItem(item);
+  };
+  const handleDropItem = (rowIndex: number, colIndex: number) => {
+    const newTeam = [...team];
+    const tile = newTeam[rowIndex][colIndex];
+    if (draggedItem === null || tile === null || tile.items.length === 3) return;
+
+    tile.items.push(draggedItem);
+    setTeam(newTeam);
+    setDraggedItem(null);
+  };
+
   if (loading)
     return (
       <Box w="100%" h="100vh" display="flex" justifyContent="center" alignItems="center">
@@ -87,7 +101,7 @@ function App() {
         <Traits team={team} traits={traits} />
       </GridItem>
       <GridItem gridArea="board">
-        <Board skins={skins} team={team} setTeam={setTeam} />
+        <Board skins={skins} team={team} setTeam={setTeam} onDropItem={handleDropItem} />
       </GridItem>
       <GridItem gridArea="equipped">
         <Text>Equipped</Text>
@@ -96,7 +110,7 @@ function App() {
         <Champions champions={champions} skins={skins} setSkins={setSkins} setTeam={setTeam} team={team} />
       </GridItem>
       <GridItem gridArea="items">
-        <Items items={items} />
+        <Items items={items} onDragStart={handleDragItem} />
       </GridItem>
       <GridItem gridArea="footer">
         <Footer />
