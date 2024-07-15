@@ -1,6 +1,7 @@
 import { Box } from "@chakra-ui/react";
 import { MouseEvent, useState } from "react";
 import { Unit } from "../hooks/useTFT";
+import BoardItems from "./BoardItems";
 import BoardStars from "./BoardStars";
 import ChampionTile from "./ChampionTile";
 import Hexagon from "./Hexagon";
@@ -59,6 +60,7 @@ const BoardTile = ({
           tile={<ChampionTile champion={champion} skins={skins} hoverInfo={hoverInfo} showNames={showNames} />}
         />
       </Box>
+      {champion !== null && <BoardItems items={champion.items} />}
     </Box>
   );
 };
