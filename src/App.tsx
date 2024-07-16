@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import Board from "./components/Board";
 import Champions from "./components/Champions";
+import Equipped from "./components/Equipped";
 import Footer from "./components/Footer";
 import Items from "./components/Items";
 import Navbar from "./components/Navbar";
@@ -104,7 +105,7 @@ function App() {
         <Board skins={skins} team={team} setTeam={setTeam} onDragItem={handleDragItem} onDropItem={handleDropItem} />
       </GridItem>
       <GridItem gridArea="equipped">
-        <Text>Equipped</Text>
+        <Equipped team={team} />
       </GridItem>
       <GridItem gridArea="champions">
         <Champions champions={champions} skins={skins} setSkins={setSkins} setTeam={setTeam} team={team} />
