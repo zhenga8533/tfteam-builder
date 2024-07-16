@@ -24,7 +24,7 @@ const BoardItems = ({ colIndex, rowIndex, items, hoverInfo, onDragStart, team, s
           left={`${32 * index - 4}px`}
           zIndex={1}
           onContextMenu={(event) => {
-            const tile = team[colIndex][rowIndex];
+            const tile = team[rowIndex][colIndex];
             if (tile === null) return;
 
             event.preventDefault();
