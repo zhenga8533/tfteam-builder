@@ -45,6 +45,16 @@ export const formatComponent = (component: string) => {
   return `https://raw.communitydragon.org/latest/game/assets/maps/particles/tft/item_icons/standard/${standard}.png`;
 };
 
+export const formatName = (name: string) => {
+  const parts = name.split("_");
+  if (parts.length === 0) return "";
+
+  return parts
+    .pop()
+    ?.split(/(?=[A-Z])/)
+    ?.join(" ");
+};
+
 /**
  * Formats a skin to be displayed.
  *
