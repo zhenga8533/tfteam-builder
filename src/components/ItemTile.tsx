@@ -1,4 +1,5 @@
 import { Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
+import icon from "../assets/item.webp";
 import { Item } from "../hooks/useTFT";
 import { formatComponent, formatSkin, parseDescription } from "../services/format";
 import ItemStats from "./ItemStats";
@@ -13,7 +14,11 @@ const ItemTile = ({ item, hoverInfo, onDragStart }: ItemTileProps) => {
   const label = (
     <VStack>
       <HStack>
-        <Image boxSize="40px" src={formatSkin(item.icon)} />
+        <Image
+          boxSize="40px"
+          src={formatSkin(item.icon)}
+          onError={(e) => ((e.target as HTMLImageElement).src = icon)}
+        />
         <Text fontWeight="bold">{item.name}</Text>
       </HStack>
       <ItemStats effects={item.effects} />
@@ -28,6 +33,7 @@ const ItemTile = ({ item, hoverInfo, onDragStart }: ItemTileProps) => {
               key={component + index}
               boxSize="30px"
               src={formatComponent(component).replace("giants", "gaints")} // Fix typo
+              onError={(e) => ((e.target as HTMLImageElement).src = icon)}
             />
           ))}
         </HStack>
@@ -36,7 +42,15 @@ const ItemTile = ({ item, hoverInfo, onDragStart }: ItemTileProps) => {
       )}
     </VStack>
   );
-  const tile = <Image src={formatSkin(item.icon)} alt={item.name} onDragStart={() => onDragStart(item)} />;
+  const tile = (
+    <Image
+      src={formatSkin(item.icon)}
+      alt={item.name}
+      onDragStart={() => onDragStart(item)}
+      draggable="true"
+      onError={(e) => ((e.target as HTMLImageElement).src = icon)}
+    />
+  );
 
   if (!hoverInfo) return tile;
   return (
