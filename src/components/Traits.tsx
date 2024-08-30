@@ -24,11 +24,14 @@ const Traits = ({ team, traits }: TraitsProps) => {
     const teamTraits: {
       [key: string]: ActiveTrait;
     } = {};
+    const trackedUnits: string[] = [];
 
     // Loop through the team and count the number of units for each trait
     team.forEach((row) => {
       row.forEach((champion) => {
         if (champion === null) return;
+        if (trackedUnits.includes(champion.name)) return;
+        trackedUnits.push(champion.name);
 
         champion.traits.forEach((trait) => {
           if (teamTraits[trait] === undefined) {
