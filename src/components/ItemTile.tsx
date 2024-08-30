@@ -32,7 +32,7 @@ const ItemTile = ({ item, hoverInfo, onDragStart }: ItemTileProps) => {
             <Image
               key={component + index}
               boxSize="30px"
-              src={formatComponent(component).replace("giants", "gaints")} // Fix typo
+              src={formatComponent(component)}
               onError={(e) => ((e.target as HTMLImageElement).src = icon)}
             />
           ))}

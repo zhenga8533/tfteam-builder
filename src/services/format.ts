@@ -41,8 +41,23 @@ export const formatComponent = (component: string) => {
     .pop()
     ?.replace(/([a-z])([A-Z])/g, "$1_$2")
     .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
-    .toLowerCase();
+    .toLowerCase()
+    .replace("giants", "gaints"); // Fix typo in the image path
   return `https://raw.communitydragon.org/latest/game/assets/maps/particles/tft/item_icons/standard/${standard}.png`;
+};
+
+/**
+ * Formats an item name.
+ *
+ * @param name - The name to be formatted.
+ * @returns - The formatted name.
+ */
+export const formatItemName = (name: string) => {
+  return name
+    .split("_")
+    .pop()
+    ?.replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
 };
 
 /**
