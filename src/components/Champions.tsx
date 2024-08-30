@@ -39,6 +39,23 @@ const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps
     );
   };
 
+  const handleChampionClick = (champion: Champion) => {
+    const newTeam = [...team];
+    for (let row = 0; row < newTeam.length; row++) {
+      for (let col = 0; col < newTeam[row].length; col++) {
+        if (newTeam[row][col] === null) {
+          newTeam[row][col] = {
+            ...champion,
+            items: [],
+            starLevel: 1,
+          };
+          setTeam(newTeam);
+          return;
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     setSortedChampions(
       [...champions].sort((a, b) => {
@@ -80,25 +97,7 @@ const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps
         {sortedChampions?.map(
           (champion) =>
             champion.cost < 8 && (
-              <Box // Add champion to team on click
-                key={champion.apiName}
-                onClick={() => {
-                  const newTeam = [...team];
-                  for (let row = 0; row < newTeam.length; row++) {
-                    for (let col = 0; col < newTeam[row].length; col++) {
-                      if (newTeam[row][col] === null) {
-                        newTeam[row][col] = {
-                          ...champion,
-                          items: [],
-                          starLevel: 1,
-                        };
-                        setTeam(newTeam);
-                        return;
-                      }
-                    }
-                  }
-                }}
-              >
+              <Box key={champion.apiName} onClick={() => handleChampionClick(champion)}>
                 <ChampionTile champion={champion} skins={skins} hoverInfo={true} showNames={false} />
               </Box>
             )
