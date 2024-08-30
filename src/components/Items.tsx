@@ -6,10 +6,11 @@ import ItemTile from "./ItemTile";
 
 interface ItemsProps {
   items: Item[];
+  onClick: (item: Item) => void;
   onDragStart: (item: Item) => void;
 }
 
-const Items = ({ items, onDragStart }: ItemsProps) => {
+const Items = ({ items, onClick, onDragStart }: ItemsProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const [craftable, setCraftable] = useState(false);
 
@@ -47,7 +48,7 @@ const Items = ({ items, onDragStart }: ItemsProps) => {
       <hr />
       <Grid gap={3} mt={3} templateColumns="repeat(auto-fill, minmax(26px, 1fr))">
         {filtered.map((item) => (
-          <ItemTile key={item.apiName} item={item} hoverInfo={true} onDragStart={onDragStart} />
+          <ItemTile key={item.apiName} item={item} hoverInfo={true} onClick={onClick} onDragStart={onDragStart} />
         ))}
       </Grid>
     </Box>

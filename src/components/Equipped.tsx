@@ -35,7 +35,13 @@ const Equipped = ({ team }: EquippedProps) => {
         <VStack>
           <Grid gap={3} mt={3} templateColumns="repeat(auto-fill, minmax(26px, 1fr))">
             {items.map((item, index) => (
-              <ItemTile key={item.apiName + index} item={item} hoverInfo={true} onDragStart={() => {}} />
+              <ItemTile
+                key={item.apiName + index}
+                item={item}
+                hoverInfo={true}
+                onClick={() => {}}
+                onDragStart={() => {}}
+              />
             ))}
           </Grid>
           <Divider />

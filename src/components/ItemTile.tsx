@@ -7,10 +7,11 @@ import ItemStats from "./ItemStats";
 interface ItemTileProps {
   item: Item;
   hoverInfo: boolean;
+  onClick: (item: Item) => void;
   onDragStart: (item: Item) => void;
 }
 
-const ItemTile = ({ item, hoverInfo, onDragStart }: ItemTileProps) => {
+const ItemTile = ({ item, hoverInfo, onClick, onDragStart }: ItemTileProps) => {
   const label = (
     <VStack>
       <HStack>
@@ -46,6 +47,7 @@ const ItemTile = ({ item, hoverInfo, onDragStart }: ItemTileProps) => {
     <Image
       src={formatSkin(item.icon)}
       alt={item.name}
+      onClick={() => onClick(item)}
       onDragStart={() => onDragStart(item)}
       draggable="true"
       onError={(e) => ((e.target as HTMLImageElement).src = icon)}

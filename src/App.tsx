@@ -70,6 +70,14 @@ function App() {
     setTeam(newTeam);
     setDraggedItem(null);
   };
+  const handleClickItem = (item: Item) => {
+    const newTeam = [...team];
+    const tile = newTeam.flat().find((unit) => unit !== null && unit.items.length < 3);
+    if (!tile) return;
+
+    tile.items.push(item);
+    setTeam(newTeam);
+  };
 
   if (loading)
     return (
@@ -111,7 +119,7 @@ function App() {
         <Champions champions={champions} skins={skins} setSkins={setSkins} setTeam={setTeam} team={team} />
       </GridItem>
       <GridItem gridArea="items">
-        <Items items={items} onDragStart={handleDragItem} />
+        <Items items={items} onClick={handleClickItem} onDragStart={handleDragItem} />
       </GridItem>
       <GridItem gridArea="footer">
         <Footer />
