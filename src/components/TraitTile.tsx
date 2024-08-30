@@ -1,6 +1,6 @@
 import { Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { Fragment } from "react";
-import { formatName, parseDescription } from "../services/format";
+import { parseDescription } from "../services/format";
 import Hexagon from "./Hexagon";
 import { ActiveTrait } from "./Traits";
 
@@ -45,7 +45,7 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
         <VStack align="left" textColor="white" p={1} spacing={1}>
           <HStack>
             <Image src={data.icon} boxSize="28px" />
-            <Text fontWeight="bold">{formatName(trait)}</Text>
+            <Text fontWeight="bold">{trait}</Text>
           </HStack>
           <Divider />
           {lines}
@@ -65,7 +65,7 @@ const TraitTile = ({ data, trait }: TraitTileProps) => {
         </HStack>
         <VStack align="left" spacing={0}>
           <Text textAlign="left" color={active ? "white" : "gray.600"} fontWeight="bold">
-            {formatName(trait)}
+            {trait}
           </Text>
           {active ? (
             <Text textAlign="left">

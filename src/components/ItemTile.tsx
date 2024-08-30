@@ -1,6 +1,6 @@
 import { Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { Item } from "../hooks/useTFT";
-import { formatComponent, formatName, formatSkin, parseDescription } from "../services/format";
+import { formatComponent, formatSkin, parseDescription } from "../services/format";
 import ItemStats from "./ItemStats";
 
 interface ItemTileProps {
@@ -14,7 +14,7 @@ const ItemTile = ({ item, hoverInfo, onDragStart }: ItemTileProps) => {
     <VStack>
       <HStack>
         <Image boxSize="40px" src={formatSkin(item.icon)} />
-        <Text fontWeight="bold">{formatName(item.name)}</Text>
+        <Text fontWeight="bold">{item.name}</Text>
       </HStack>
       <ItemStats effects={item.effects} />
       <Divider />
