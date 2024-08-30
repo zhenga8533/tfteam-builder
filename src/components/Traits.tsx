@@ -18,7 +18,10 @@ const Traits = ({ team, traits }: TraitsProps) => {
   const [activeTraits, setActiveTraits] = useState<{
     [key: string]: ActiveTrait;
   }>({});
-  const [showPartial, setShowPartial] = useState(true);
+  const [showPartial, setShowPartial] = useState(localStorage.getItem("showPartial") !== "false");
+  useEffect(() => {
+    localStorage.setItem("showPartial", showPartial.toString());
+  }, [showPartial]);
 
   useEffect(() => {
     const teamTraits: {

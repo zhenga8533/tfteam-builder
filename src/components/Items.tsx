@@ -12,7 +12,10 @@ interface ItemsProps {
 
 const Items = ({ items, onClick, onDragStart }: ItemsProps) => {
   const ref = useRef<HTMLInputElement>(null);
-  const [craftable, setCraftable] = useState(false);
+  const [craftable, setCraftable] = useState(localStorage.getItem("craftable") === "true");
+  useEffect(() => {
+    localStorage.setItem("craftable", craftable.toString());
+  }, [craftable]);
 
   const [filtered, setFiltered] = useState<Item[]>(items);
   const filterItems = (search: string) => {

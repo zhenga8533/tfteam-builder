@@ -15,13 +15,16 @@ function App() {
   const { setColorMode } = useColorMode();
   setColorMode("dark");
 
+  const [skins, setSkins] = useState(localStorage.getItem("skins") === "true");
+  useEffect(() => {
+    localStorage.setItem("skins", skins.toString());
+  }, [skins]);
+
   const { data, error, loading } = useTFT();
   const [set, setSet] = useState("0");
-  const [skins, setSkins] = useState(true);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [traits, setTraits] = useState<Trait[]>([]);
-
   const [team, setTeam] = useState<(Unit | null)[][]>(Array.from({ length: 4 }, () => Array(7).fill(null)));
 
   useEffect(() => {
