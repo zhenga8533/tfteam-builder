@@ -102,7 +102,6 @@ const useTFT = () => {
         }
         const jsonData = await response.json();
         setData(jsonData);
-        console.log(jsonData);
       } catch (error: any) {
         setError(error);
       } finally {
