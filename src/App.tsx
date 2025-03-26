@@ -20,6 +20,11 @@ function App() {
     localStorage.setItem("skins", skins.toString());
   }, [skins]);
 
+  const [playable, setPlayable] = useState(localStorage.getItem("playable") === "true");
+  useEffect(() => {
+    localStorage.setItem("playable", playable.toString());
+  }, [playable]);
+
   const [patch, setPatch] = useState(localStorage.getItem("patch") ?? "Latest");
   useEffect(() => {
     localStorage.setItem("patch", patch);
@@ -43,12 +48,17 @@ function App() {
     if (data === undefined) return;
 
     setChampions(
-      data.sets[set].champions.sort((a, b) => {
-        if (a.cost !== b.cost) return a.cost - b.cost;
-        else if (a.name === null) return 1;
-        else if (b.name === null) return -1;
-        else return a.name.localeCompare(b.name);
-      })
+      data.sets[set].champions
+        .filter((champion) => {
+          if (playable) return champion.traits.length > 0;
+          return true;
+        })
+        .sort((a, b) => {
+          if (a.cost !== b.cost) return a.cost - b.cost;
+          else if (a.name === null) return 1;
+          else if (b.name === null) return -1;
+          else return a.name.localeCompare(b.name);
+        })
     );
 
     setItems(
@@ -66,7 +76,7 @@ function App() {
     );
 
     setTraits(data.sets[set].traits);
-  }, [set]);
+  }, [set, playable]);
 
   const [draggedItem, setDraggedItem] = useState<Item | null>(null);
   const handleDragItem = (item: Item) => {
@@ -135,7 +145,15 @@ function App() {
         <Equipped team={team} />
       </GridItem>
       <GridItem gridArea="champions">
-        <Champions champions={champions} skins={skins} setSkins={setSkins} setTeam={setTeam} team={team} />
+        <Champions
+          champions={champions}
+          skins={skins}
+          setSkins={setSkins}
+          playable={playable}
+          setPlayable={setPlayable}
+          setTeam={setTeam}
+          team={team}
+        />
       </GridItem>
       <GridItem gridArea="items">
         <Items items={items} onClick={handleClickItem} onDragStart={handleDragItem} />

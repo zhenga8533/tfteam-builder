@@ -20,11 +20,13 @@ interface ChampionsProps {
   champions: Champion[];
   skins: boolean;
   setSkins: (skins: boolean) => void;
+  playable: boolean;
+  setPlayable: (playable: boolean) => void;
   team: (Unit | null)[][];
   setTeam: (team: (Unit | null)[][]) => void;
 }
 
-const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps) => {
+const Champions = ({ champions, skins, setSkins, playable, setPlayable, setTeam, team }: ChampionsProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const [sorted, setSorted] = useState(false);
   const [sortedChampions, setSortedChampions] = useState<Champion[]>(champions);
@@ -91,6 +93,10 @@ const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps
       <HStack my={1}>
         <Text color="gray.400">Set Skins</Text>
         <Switch isChecked={skins} onChange={() => setSkins(!skins)} />
+        <Text color="gray.400" ml={3}>
+          Playable
+        </Text>
+        <Switch isChecked={playable} onChange={() => setPlayable(!playable)} />
       </HStack>
       <Divider />
       <Grid gap={6} my={3} templateColumns="repeat(auto-fill, minmax(40px, 1fr))">
