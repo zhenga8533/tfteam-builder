@@ -88,15 +88,16 @@ interface TFTData {
   };
 }
 
-const useTFT = () => {
+const useTFT = (patch: String) => {
   const [data, setData] = useState<TFTData>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  patch = patch.toLowerCase();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("https://raw.communitydragon.org/pbe/cdragon/tft/en_us.json");
+        const response = await fetch(`https://raw.communitydragon.org/${patch}/cdragon/tft/en_us.json`);
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
@@ -110,7 +111,7 @@ const useTFT = () => {
     };
 
     fetchData();
-  }, []);
+  }, [patch]);
 
   return { data, loading, error };
 };

@@ -5,6 +5,8 @@ import { Unit } from "../hooks/useTFT";
 import { decompressTeam } from "../services/format";
 
 interface NavbarProps {
+  patch: string;
+  setPatch: (patch: string) => void;
   set: string;
   sets: string[];
   setSet: (set: string) => void;
@@ -12,7 +14,8 @@ interface NavbarProps {
   setTeam: (team: (Unit | null)[][]) => void;
 }
 
-const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
+const Navbar = ({ patch, setPatch, set, sets, setSet, team, setTeam }: NavbarProps) => {
+  const patches = ["Latest", "PBE"];
   const toast = useToast();
 
   const onClear = () => {
@@ -81,6 +84,20 @@ const Navbar = ({ set, sets, setSet, team, setTeam }: NavbarProps) => {
     <HStack justifyContent="space-between">
       <HStack>
         <Heading size="md">TFT Team Builder</Heading>
+
+        <Menu>
+          <MenuButton as={Button} rightIcon={<BsChevronDown />}>
+            <Box mr={3}>{patch} Patch</Box>
+          </MenuButton>
+          <MenuList>
+            {patches.map((patch) => (
+              <MenuItem key={patch} onClick={() => setPatch(patch)}>
+                {patch}
+              </MenuItem>
+            ))}
+          </MenuList>
+        </Menu>
+
         <Menu>
           <MenuButton as={Button} rightIcon={<BsChevronDown />}>
             <Box mr={3}>Set {set}</Box>

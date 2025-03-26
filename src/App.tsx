@@ -20,8 +20,10 @@ function App() {
     localStorage.setItem("skins", skins.toString());
   }, [skins]);
 
-  const { data, error, loading } = useTFT();
+  const [patch, setPatch] = useState("Latest");
   const [set, setSet] = useState("0");
+
+  const { data, error, loading } = useTFT(patch);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [traits, setTraits] = useState<Trait[]>([]);
@@ -30,7 +32,7 @@ function App() {
   useEffect(() => {
     if (data?.sets === undefined) return;
     setSet(findGreatest(Object.keys(data?.sets)));
-  }, [data]);
+  }, [data, patch]);
 
   useEffect(() => {
     setTeam(Array.from({ length: 4 }, () => Array(7).fill(null)));
@@ -109,7 +111,15 @@ function App() {
       w="100%"
     >
       <GridItem gridArea="navbar">
-        <Navbar set={set} sets={Object.keys(data?.sets ?? [])} setSet={setSet} team={team} setTeam={setTeam} />
+        <Navbar
+          patch={patch}
+          setPatch={setPatch}
+          set={set}
+          sets={Object.keys(data?.sets ?? [])}
+          setSet={setSet}
+          team={team}
+          setTeam={setTeam}
+        />
       </GridItem>
       <GridItem gridArea="traits">
         <Traits team={team} traits={traits} />
