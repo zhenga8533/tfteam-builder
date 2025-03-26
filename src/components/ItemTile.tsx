@@ -1,5 +1,5 @@
 import { Divider, HStack, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
-import icon from "../assets/item.webp";
+import icon from "../assets/placeholder.webp";
 import { Item } from "../hooks/useTFT";
 import { formatComponent, formatSkin, parseDescription } from "../services/format";
 import ItemStats from "./ItemStats";

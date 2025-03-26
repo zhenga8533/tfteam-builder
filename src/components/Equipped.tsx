@@ -1,6 +1,6 @@
 import { Box, Divider, Grid, Heading, Image, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { IoMdInformationCircle } from "react-icons/io";
-import icon from "../assets/item.webp";
+import icon from "../assets/placeholder.webp";
 import { Unit } from "../hooks/useTFT";
 import { formatComponent, formatItemName } from "../services/format";
 import ItemTile from "./ItemTile";
