@@ -20,7 +20,11 @@ function App() {
     localStorage.setItem("skins", skins.toString());
   }, [skins]);
 
-  const [patch, setPatch] = useState("Latest");
+  const [patch, setPatch] = useState(localStorage.getItem("patch") ?? "Latest");
+  useEffect(() => {
+    localStorage.setItem("patch", patch);
+  }, [patch]);
+
   const [set, setSet] = useState("0");
 
   const { data, error, loading } = useTFT(patch);
