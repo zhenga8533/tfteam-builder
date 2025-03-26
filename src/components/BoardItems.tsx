@@ -33,7 +33,7 @@ const BoardItems = ({ colIndex, rowIndex, items, hoverInfo, onDragStart, team, s
             setTeam(newTeam);
           }}
         >
-          <ItemTile item={item} hoverInfo={hoverInfo} onDragStart={onDragStart} />
+          <ItemTile item={item} hoverInfo={hoverInfo} onClick={() => {}} onDragStart={onDragStart} />
         </Box>
       ))}
     </Box>
