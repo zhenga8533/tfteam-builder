@@ -1,7 +1,7 @@
 {
   "name": "tfteam-builder",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "homepage": "https://zhenga8533.github.io/tfteam-builder/",
   "scripts": {
