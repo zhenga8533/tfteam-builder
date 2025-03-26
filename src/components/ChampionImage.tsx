@@ -1,5 +1,6 @@
 import { Image } from "@chakra-ui/react";
 import { useState } from "react";
+import icon from "../assets/placeholder.webp";
 import { Champion } from "../hooks/useTFT";
 import { formatSkin } from "../services/format";
 
@@ -34,6 +35,8 @@ const ChampionImage = ({ champion, skins }: ChampionImageProps) => {
   const handleError = () => {
     if (imgSrc === getRawImage(champion.name)) {
       setImgSrc(getRawFallback(champion.name));
+    } else if (imgSrc === getRawFallback(champion.name)) {
+      setImgSrc(icon);
     } else {
       setImgSrc(formatSkin(champion.tileIcon || champion.squareIcon));
     }
