@@ -39,6 +39,8 @@ function App() {
     setChampions(
       data.sets[set].champions.sort((a, b) => {
         if (a.cost !== b.cost) return a.cost - b.cost;
+        else if (a.name === null) return 1;
+        else if (b.name === null) return -1;
         else return a.name.localeCompare(b.name);
       })
     );

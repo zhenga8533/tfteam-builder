@@ -59,10 +59,10 @@ const Champions = ({ champions, skins, setSkins, setTeam, team }: ChampionsProps
   useEffect(() => {
     setSortedChampions(
       [...champions].sort((a, b) => {
-        if (a.cost !== b.cost && !sorted) {
-          return a.cost - b.cost;
-        }
-        return a.name.localeCompare(b.name);
+        if (a.cost !== b.cost && !sorted) return a.cost - b.cost;
+        else if (a.name === null) return 1;
+        else if (b.name === null) return -1;
+        else return a.name.localeCompare(b.name);
       })
     );
   }, [champions, sorted]);
