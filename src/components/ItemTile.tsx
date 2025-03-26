@@ -12,6 +12,7 @@ interface ItemTileProps {
 }
 
 const ItemTile = ({ item, hoverInfo, onClick, onDragStart }: ItemTileProps) => {
+  console.log(item);
   const label = (
     <VStack>
       <HStack>

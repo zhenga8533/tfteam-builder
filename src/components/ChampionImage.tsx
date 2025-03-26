@@ -2,7 +2,7 @@ import { Image } from "@chakra-ui/react";
 import { useState } from "react";
 import icon from "../assets/placeholder.webp";
 import { Champion } from "../hooks/useTFT";
-import { formatSkin } from "../services/format";
+import { convertToPng, formatSkin } from "../services/format";
 
 export interface ChampionImageProps {
   champion: Champion | null;
@@ -22,20 +22,20 @@ const ChampionImage = ({ champion, skins }: ChampionImageProps) => {
     7: "yellow",
   };
 
-  const getRawImage = (name: string) => {
-    name = name.toLowerCase().replace(/[^a-z]/g, "");
-    return `https://raw.communitydragon.org/latest/game/assets/characters/${name}/hud/${name}_square.png`;
+  const getRawImage = (tileIcon: string) => {
+    tileIcon = convertToPng(tileIcon);
+    return `https://raw.communitydragon.org/pbe/game/${tileIcon}`;
   };
-  const getRawFallback = (name: string) => {
-    name = name.toLowerCase().replace(/[^a-z]/g, "");
-    return `https://raw.communitydragon.org/latest/game/assets/characters/${name}/hud/${name}_square_0.png`;
+  const getRawFallback = (tileIcon: string) => {
+    tileIcon = convertToPng(tileIcon);
+    return `https://raw.communitydragon.org/pbe/game/${tileIcon}`;
   };
 
-  const [imgSrc, setImgSrc] = useState(getRawImage(champion.name));
+  const [imgSrc, setImgSrc] = useState(getRawImage(champion.tileIcon));
   const handleError = () => {
-    if (imgSrc === getRawImage(champion.name)) {
-      setImgSrc(getRawFallback(champion.name));
-    } else if (imgSrc === getRawFallback(champion.name)) {
+    if (imgSrc === getRawImage(champion.tileIcon)) {
+      setImgSrc(getRawFallback(champion.tileIcon));
+    } else if (imgSrc === getRawFallback(champion.tileIcon)) {
       setImgSrc(icon);
     } else {
       setImgSrc(formatSkin(champion.tileIcon || champion.squareIcon));

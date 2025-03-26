@@ -67,7 +67,7 @@ export const formatItemName = (name: string) => {
  * @returns - The formatted skin.
  */
 export const formatSkin = (skin: string) => {
-  return "https://raw.communitydragon.org/latest/game/" + convertToPng(skin);
+  return "https://raw.communitydragon.org/pbe/game/" + convertToPng(skin);
 };
 
 /**
