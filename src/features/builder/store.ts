@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { type Board, createBoard } from "./board";
+import { type Board, createBoard } from "@/lib/game/board";
 
 export interface SavedTeam {
   id: string;

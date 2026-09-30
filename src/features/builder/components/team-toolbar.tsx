@@ -1,4 +1,4 @@
-import { ClipboardCopy, ClipboardPaste, Eraser, FolderOpen, Save } from "lucide-react";
+import { ClipboardCopy, ClipboardPaste, Eraser, FileCode, FolderOpen, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatIcon } from "@/components/game/stat-icon";
@@ -7,10 +7,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useGameData } from "@/lib/data/hooks";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
+import { ExportCompDialog } from "./export-comp-dialog";
 import { SavedTeamsSheet, SaveTeamDialog } from "./saved-teams";
 import { ImportTeamCodeDialog } from "./team-code-dialog";
 
-type Panel = "import" | "save" | "saved" | null;
+type Panel = "import" | "save" | "saved" | "export" | null;
 
 export function TeamToolbar() {
   const { champions } = useGameData();
@@ -85,6 +86,16 @@ export function TeamToolbar() {
       <Button variant="outline" size="sm" onClick={() => setPanel("save")} disabled={units.length === 0}>
         <Save /> Save
       </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span>
+            <Button variant="outline" size="sm" onClick={() => setPanel("export")} disabled={units.length === 0}>
+              <FileCode /> Export
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Export the board as a comp guide file for the tier list</TooltipContent>
+      </Tooltip>
       <Button variant="ghost" size="sm" onClick={clearBoard} disabled={units.length === 0}>
         <Eraser /> Clear
       </Button>
@@ -92,6 +103,7 @@ export function TeamToolbar() {
       <ImportTeamCodeDialog {...panelProps("import")} />
       <SaveTeamDialog {...panelProps("save")} />
       <SavedTeamsSheet {...panelProps("saved")} />
+      <ExportCompDialog {...panelProps("export")} />
     </div>
   );
 }

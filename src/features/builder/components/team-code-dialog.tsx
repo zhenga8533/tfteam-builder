@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { useSettings } from "@/stores/settings";
-import { addChampion, type Board, createBoard } from "../board";
+import { addChampion, type Board, createBoard } from "@/lib/game/board";
 import { decodeTeamCode, teamCodeSet } from "../team-code";
 import { useBuilder } from "../use-builder";
 

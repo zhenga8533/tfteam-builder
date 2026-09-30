@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useGameData } from "@/lib/data/hooks";
-import { boardUnits } from "../board";
+import { boardUnits } from "@/lib/game/board";
 import { useBuilderStore } from "../store";
 import { useBuilder } from "../use-builder";
 

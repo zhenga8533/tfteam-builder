@@ -9,7 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
 import { createResolver } from "@/lib/game/description";
 import { cn } from "@/lib/utils";
-import { MAX_ITEMS, STAR_LEVELS, type StarLevel } from "../board";
+import { MAX_ITEMS, STAR_LEVELS, type StarLevel } from "@/lib/game/board";
 import { useBuilder } from "../use-builder";
 
 export function UnitInspector({ className }: { className?: string }) {

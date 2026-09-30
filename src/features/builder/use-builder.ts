@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { computeTraits } from "@/lib/game/traits";
-import * as B from "./board";
+import * as B from "@/lib/game/board";
 import { EMPTY_BOARD, useBuilderStore } from "./store";
 
 /** Board state for the active set plus validated actions that report problems via toasts. */

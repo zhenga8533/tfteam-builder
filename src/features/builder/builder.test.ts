@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Champion, Item, Trait } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
-import { addChampion, createBoard, equipBlocker, moveUnit, placeChampion, setStar, teamCost } from "./board";
+import { addChampion, createBoard, equipBlocker, moveUnit, placeChampion, setStar, teamCost } from "@/lib/game/board";
 import { decodeTeamCode, encodeTeamCode } from "./team-code";
 
 const champion = (apiName: string, cost: number, traits: string[], plannerCode?: number): Champion => ({
