@@ -25,3 +25,5 @@ dist-ssr
 
 # Generated game data (npm run data)
 public/data
+/.stats-local
+/stats
