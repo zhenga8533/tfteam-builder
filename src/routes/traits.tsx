@@ -1,0 +1,81 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { GameHoverCard } from "@/components/game/game-hover-card";
+import { ChampionIcon } from "@/components/game/icons";
+import { ChampionCard, TraitCard } from "@/components/game/cards";
+import { EmptyState } from "@/components/layout/empty-state";
+import { PageHeader } from "@/components/layout/page-header";
+import { SearchInput } from "@/components/layout/search-input";
+import { Card, CardContent } from "@/components/ui/card";
+import { useGameData } from "@/lib/data/hooks";
+import { matches, stringParam } from "@/lib/search";
+
+export const Route = createFileRoute("/traits")({
+  head: () => ({ meta: [{ title: "Traits · TFTeam Builder" }] }),
+  validateSearch: (search: Record<string, unknown>): { q?: string } => ({ q: stringParam(search.q) }),
+  component: TraitsPage,
+});
+
+function TraitsPage() {
+  const { traits, champions } = useGameData();
+  const { q } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  const sections = useMemo(() => {
+    const withChampions = traits
+      .filter((trait) => matches(trait.name, q))
+      .map((trait) => ({ trait, champions: champions.filter((champion) => champion.traits.includes(trait.apiName)) }));
+    // Unique traits belong to a single champion and have a single breakpoint.
+    const isUnique = (entry: (typeof withChampions)[number]) => entry.champions.length <= 1;
+    return [
+      { title: "Traits", entries: withChampions.filter((entry) => !isUnique(entry)) },
+      { title: "Unique traits", entries: withChampions.filter(isUnique) },
+    ].filter((section) => section.entries.length > 0);
+  }, [traits, champions, q]);
+
+  return (
+    <>
+      <PageHeader title="Traits" description="Breakpoints, bonuses and the champions that carry each trait." />
+      <div className="mb-6 flex">
+        <SearchInput
+          value={q ?? ""}
+          onChange={(value) => navigate({ search: { q: value || undefined }, replace: true })}
+          placeholder="Search traits"
+          className="max-w-sm"
+        />
+      </div>
+      {sections.length === 0 ? (
+        <EmptyState>No traits match "{q}".</EmptyState>
+      ) : (
+        <div className="space-y-8">
+          {sections.map((section) => (
+            <section key={section.title}>
+              <h2 className="mb-3 font-display text-lg font-semibold">{section.title}</h2>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {section.entries.map(({ trait, champions: members }) => (
+                  <Card key={trait.apiName} className="py-4">
+                    <CardContent className="space-y-3 px-4">
+                      <TraitCard trait={trait} />
+                      <div className="flex flex-wrap gap-1.5 border-t pt-3">
+                        {members.map((champion) => (
+                          <GameHoverCard key={champion.apiName} content={<ChampionCard champion={champion} />}>
+                            <span
+                              tabIndex={0}
+                              className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <ChampionIcon champion={champion} className="size-9" />
+                            </span>
+                          </GameHoverCard>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}

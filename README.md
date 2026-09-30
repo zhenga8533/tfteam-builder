@@ -10,7 +10,7 @@
 
 <div>
   <p align="center">
-    TFTeam Builder is a browser-based application designed to help players of Teamfight Tactics (TFT) plan and create their ideal team compositions. Built with React, TypeScript, and Vite, the tool provides an intuitive interface that allows users to browse through TFT champions, organize their team setups, and view the synergy and trait bonuses of their chosen units. The application leverages a clean, dynamic design, where users can easily add or remove champions from their team, and see real-time updates on how the traits interact.
+    TFTeam Builder is a Teamfight Tactics (TFT) companion site: plan boards in a drag-and-drop team builder, follow the comp, item and augment tier lists, and browse every champion, trait, item and augment for the current and previous sets.
     <br />
     <br />
     <a href="https://zhenga8533.github.io/tfteam-builder">View Demo</a>
@@ -36,6 +36,15 @@
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#installation">Installation</a></li>
+        <li><a href="#scripts">Scripts</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#architecture">Architecture</a>
+      <ul>
+        <li><a href="#game-data">Game Data</a></li>
+        <li><a href="#comps-and-tier-lists">Comps and Tier Lists</a></li>
+        <li><a href="#deployment">Deployment</a></li>
       </ul>
     </li>
     <li><a href="#contributing">Contributing</a></li>
@@ -49,11 +58,13 @@
 
 ## About The Project
 
-TFTeam Builder was created to simplify the process of planning out team compositions in Teamfight Tactics. Whether you're strategizing before a match or just exploring different trait combinations, this tool makes it easy to visualize your team and understand how each unit contributes to your overall synergy.
+TFTeam Builder was created to simplify planning team compositions in Teamfight Tactics. Whether you're strategizing before a match or exploring trait combinations, it makes it easy to visualize a board and see how each unit contributes to your synergies.
 
-The application emphasizes clarity and speed. With a snappy React + Vite frontend and data-driven logic, users can quickly assemble teams, see real-time updates to traits, and reset or adjust as needed. The design prioritizes usability while remaining lightweight and responsive across devices.
-
-This project also serves as a demonstration of modern frontend architecture using TypeScript, component-based design, and efficient state management. It's ideal for both TFT enthusiasts and developers interested in how a single-page application can be structured around interactive data.
+- **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Save teams locally and import/export in-game Team Planner codes.
+- **Comp Tier List** – ranked comps with final and early boards, carries, items, augments and tips. Open any comp in the Team Builder with one click.
+- **Item & Augment Tier Lists** – curated rankings for the current set.
+- **Database** – searchable champions, traits, items (with a crafting table) and augments, with filters kept in the URL so views can be shared.
+- **Live and PBE data** – switch between the live patch and PBE, and between the current and previous sets.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -62,7 +73,9 @@ This project also serves as a demonstration of modern frontend architecture usin
 - [![React][react-badge]][react-url]
 - [![TypeScript][typescript-badge]][typescript-url]
 - [![Vite][vite-badge]][vite-url]
-- [![ESLint][eslint-badge]][eslint-url]
+- [![Tailwind CSS][tailwind-badge]][tailwind-url]
+- [TanStack Router & Query](https://tanstack.com/), [shadcn/ui](https://ui.shadcn.com/) (Radix UI), [Zustand](https://zustand.docs.pmnd.rs/), [dnd kit](https://dndkit.com/)
+- [Vitest](https://vitest.dev/), [ESLint](https://eslint.org/) and [Prettier](https://prettier.io/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -74,10 +87,8 @@ To get a local copy up and running, follow these simple steps.
 
 ### Prerequisites
 
-Make sure you have the following installed:
-
-- Node.js (v18 or later recommended)
-- npm or yarn
+- Node.js 22 or later
+- npm
 
 ### Installation
 
@@ -92,19 +103,64 @@ cd tfteam-builder
 
 ```bash
 npm install
-# or
-yarn install
 ```
 
-3. Run the development server:
+3. Generate the game data (downloads from CommunityDragon into `public/data`, skipped when already up to date):
+
+```bash
+npm run data
+```
+
+4. Run the development server and open http://localhost:5173/tfteam-builder/:
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
-4. Open your browser and navigate to http://localhost:5173 to see the app in action.
+### Scripts
+
+| Script                                | Description                                               |
+| ------------------------------------- | --------------------------------------------------------- |
+| `npm run dev`                         | Start the Vite dev server                                 |
+| `npm run build`                       | Type-check and build to `dist/`                           |
+| `npm run data` / `npm run data:force` | Regenerate game data when the patch changes / always      |
+| `npm test`                            | Run unit tests and validate comp and tier list content    |
+| `npm run lint` / `npm run format`     | Lint with ESLint / format with Prettier                   |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ARCHITECTURE -->
+
+## Architecture
+
+```
+scripts/            CommunityDragon data pipeline
+src/
+  routes/           file-based routes (TanStack Router)
+  features/         builder/ and comps/ feature modules
+  components/       ui/ (shadcn), game/ (icons, cards, hex grid), layout/
+  content/          authored comps and tier lists
+  lib/              data loading, game logic (board, traits, tooltip parser)
+  stores/           persisted user settings
+```
+
+### Game Data
+
+The full CommunityDragon TFT export is ~24 MB per patch. `scripts/build-data.ts` downloads it for the live and PBE patches and
+trims it to the three most recent sets. It filters out placeholder and duplicate entries, classifies items (components,
+completed, emblems, radiants, artifacts), reads augment tiers, and adds team planner codes. The result is small per-set JSON
+files validated with Zod. The app loads only the set being viewed.
+
+### Comps and Tier Lists
+
+Comps and tier lists are typed modules in [`src/content`](src/content/README.md). The Team Builder's **Export** button
+generates a comp file from the current board. Tests check every champion, item and augment reference against the latest
+data, so a patch that removes or renames something fails CI instead of breaking a guide.
+
+### Deployment
+
+GitHub Actions deploys to GitHub Pages on every push to `main` and daily, which picks up new patches without a code change.
+Pull requests and other branches run lint, formatting, tests and a build.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -185,5 +241,5 @@ Special thanks to the following resources and individuals who made this project 
 [typescript-url]: https://www.typescriptlang.org/
 [vite-badge]: https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white
 [vite-url]: https://vitejs.dev/
-[eslint-badge]: https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white
-[eslint-url]: https://eslint.org/
+[tailwind-badge]: https://img.shields.io/badge/Tailwind_CSS-0F172A?style=for-the-badge&logo=tailwindcss&logoColor=38BDF8
+[tailwind-url]: https://tailwindcss.com/
