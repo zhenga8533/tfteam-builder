@@ -3,3 +3,5 @@ public/data
 src/routeTree.gen.ts
 package-lock.json
 README.md
+/stats
+/.stats-local
