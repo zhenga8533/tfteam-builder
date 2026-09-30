@@ -16,7 +16,9 @@ export const NAV: (NavLink | NavGroup)[] = [
     label: "Tier List",
     links: [
       { label: "Comps", to: "/tierlist/comps", description: "The strongest team comps this patch" },
+      { label: "Champions", to: "/tierlist/champions", description: "Units ranked by average placement" },
       { label: "Items", to: "/tierlist/items", description: "Best items to slam and build" },
+      { label: "Traits", to: "/tierlist/traits", description: "Trait breakpoints ranked by placement" },
       { label: "Augments", to: "/tierlist/augments", description: "Augment rankings by tier" },
     ],
   },

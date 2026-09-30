@@ -9,7 +9,8 @@ import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ITEM_KINDS } from "@/lib/data/constants";
-import { useGameData } from "@/lib/data/hooks";
+import { StatSummary } from "@/features/stats/components/stat-summary";
+import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Item, ItemKind } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
 
@@ -93,6 +94,7 @@ function CraftingTable() {
 
 function ItemsPage() {
   const { items } = useGameData();
+  const stats = useStats();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const kind = search.kind ?? "completed";
@@ -137,6 +139,9 @@ function ItemsPage() {
             <Card key={item.apiName} className="py-4">
               <CardContent className="px-4">
                 <ItemCard item={item} />
+                {stats?.items[item.apiName] && (
+                  <StatSummary line={stats.items[item.apiName]!} className="mt-3 border-t pt-3" />
+                )}
               </CardContent>
             </Card>
           ))}

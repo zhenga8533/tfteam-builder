@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSettings } from "@/stores/settings";
-import { manifestQuery, setDataQuery } from "./queries";
+import { manifestQuery, setDataQuery, statsQuery } from "./queries";
 import type { Augment, Champion, Item, SetData, Trait } from "./schema";
 
 export function useManifest() {
@@ -45,4 +45,10 @@ export function useGameData(): GameData {
     indexed.set(data, gameData);
   }
   return gameData;
+}
+
+/** Stats for the active set, or null when none are published (or the patch is PBE). */
+export function useStats() {
+  const { patch, set } = useActiveSet();
+  return useSuspenseQuery(statsQuery(patch, set)).data;
 }
