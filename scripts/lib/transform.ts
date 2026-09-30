@@ -203,7 +203,12 @@ export function buildSet(
       .map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, planner))
       .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
     traits,
-    items: buildItems(set, itemsByApi, patch),
+    items: buildItems(set, itemsByApi, patch).flatMap((item) => {
+      if (item.kind !== "emblem") return [item];
+      // Emblems carry no trait reference in CDragon, and some belong to traits that aren't in this set.
+      const trait = traitApiByName.get(item.name.replace(/ Emblem$/, ""));
+      return trait ? [{ ...item, trait }] : [];
+    }),
     augments: buildAugments(set, itemsByApi, patch),
   };
 }

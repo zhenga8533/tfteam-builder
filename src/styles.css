@@ -109,3 +109,32 @@
     background-attachment: fixed;
   }
 }
+
+/* Honeycomb board: 4 rows × 7 pointy-top hexes, odd rows offset by half a hex. */
+@layer components {
+  .hex-board {
+    container-type: inline-size;
+    --hex-gap: 1.4cqw;
+    --hex-w: calc((100cqw - 6.5 * var(--hex-gap)) / 7.5);
+    --hex-h: calc(var(--hex-w) * 1.1547);
+  }
+  .hex-row {
+    display: flex;
+    gap: var(--hex-gap);
+  }
+  .hex-row + .hex-row {
+    margin-top: calc(var(--hex-h) * -0.25 + var(--hex-gap) * 0.866);
+  }
+  .hex-row:nth-child(even) {
+    margin-left: calc((var(--hex-w) + var(--hex-gap)) / 2);
+  }
+  .hex-cell {
+    position: relative;
+    width: var(--hex-w);
+    height: var(--hex-h);
+    flex-shrink: 0;
+  }
+  .hex-clip {
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  }
+}

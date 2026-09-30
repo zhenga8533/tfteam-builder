@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingSoon } from "@/components/layout/coming-soon";
+import { PageHeader } from "@/components/layout/page-header";
+import { Builder } from "@/features/builder/components/builder";
 
 export const Route = createFileRoute("/builder")({
   head: () => ({ meta: [{ title: "Team Builder · TFTeam Builder" }] }),
@@ -7,5 +8,13 @@ export const Route = createFileRoute("/builder")({
 });
 
 function BuilderPage() {
-  return <ComingSoon title="Team Builder" />;
+  return (
+    <>
+      <PageHeader
+        title="Team Builder"
+        description="Drag champions onto the board, equip items, and watch your traits update."
+      />
+      <Builder />
+    </>
+  );
 }

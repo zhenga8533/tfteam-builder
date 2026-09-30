@@ -1,5 +1,4 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { useSettings } from "@/stores/settings";
 import { manifestQuery, setDataQuery } from "./queries";
 import type { Augment, Champion, Item, SetData, Trait } from "./schema";
@@ -28,17 +27,22 @@ export interface GameData extends SetData {
 const indexBy = <T extends { apiName: string }>(entries: T[]) =>
   new Map(entries.map((entry) => [entry.apiName, entry]));
 
+// Shared across all callers so each set's lookup maps are built once, not per component.
+const indexed = new WeakMap<SetData, GameData>();
+
 export function useGameData(): GameData {
   const { patch, set } = useActiveSet();
   const { data } = useSuspenseQuery(setDataQuery(patch, set));
-  return useMemo(
-    () => ({
+  let gameData = indexed.get(data);
+  if (!gameData) {
+    gameData = {
       ...data,
       championsByApi: indexBy(data.champions),
       traitsByApi: indexBy(data.traits),
       itemsByApi: indexBy(data.items),
       augmentsByApi: indexBy(data.augments),
-    }),
-    [data],
-  );
+    };
+    indexed.set(data, gameData);
+  }
+  return gameData;
 }

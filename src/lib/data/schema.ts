@@ -64,6 +64,8 @@ export const itemSchema = z.object({
   composition: z.array(z.string()),
   effects: numberRecord,
   unique: z.boolean(),
+  /** Trait apiName granted by an emblem. */
+  trait: z.string().optional(),
 });
 export type Item = z.infer<typeof itemSchema>;
 
