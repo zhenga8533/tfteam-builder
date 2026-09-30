@@ -58,3 +58,11 @@ describe("formatNumber", () => {
     expect(formatNumber(5)).toBe("5");
   });
 });
+
+describe("parseDescription edge cases", () => {
+  it("drops lines that only contain unresolvable values", () => {
+    expect(parseDescription("Flavor<br><br>@TFTUnitProperty.:Key@")).toEqual([
+      [{ type: "text", text: "Flavor", style: undefined }],
+    ]);
+  });
+});

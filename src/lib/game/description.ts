@@ -99,7 +99,9 @@ function trimLines(lines: DescriptionLine[]): DescriptionLine[] {
     if (first?.type === "text") first.text = first.text.trimStart();
     const last = line.at(-1);
     if (last?.type === "text") last.text = last.text.trimEnd();
-    return line.filter((token) => token.type !== "text" || token.text);
+    const tokens = line.filter((token) => token.type !== "text" || token.text);
+    // A line holding nothing but unresolvable values (e.g. a runtime unit property) carries no information.
+    return tokens.every((token) => token.type === "value" && token.values === null) ? [] : tokens;
   });
   // Collapse runs of blank lines into a single paragraph gap and drop blank edges.
   const collapsed = cleaned.filter((line, index) => line.length > 0 || (index > 0 && cleaned[index - 1]!.length > 0));

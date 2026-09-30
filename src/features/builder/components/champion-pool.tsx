@@ -1,15 +1,15 @@
 import { useDraggable } from "@dnd-kit/core";
-import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ChampionIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/layout/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
+import { matches } from "@/lib/search";
 import { cn } from "@/lib/utils";
 import type { DragPayload } from "../dnd";
 import { useBoardSummary, useBuilder } from "../use-builder";
@@ -53,10 +53,9 @@ export function ChampionPool() {
 
   const onBoard = useMemo(() => new Set(units.map((unit) => unit.apiName)), [units]);
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
     return champions.filter(
       (champion) =>
-        (!needle || champion.name.toLowerCase().includes(needle)) &&
+        matches(champion.name, query) &&
         (costs.length === 0 || costs.includes(String(champion.cost))) &&
         (trait === ALL_TRAITS || champion.traits.includes(trait)),
     );
@@ -65,16 +64,7 @@ export function ChampionPool() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-40 flex-1">
-          <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search champions"
-            className="pl-8"
-            aria-label="Search champions"
-          />
-        </div>
+        <SearchInput value={query} onChange={setQuery} placeholder="Search champions" />
         <ToggleGroup
           type="multiple"
           variant="outline"

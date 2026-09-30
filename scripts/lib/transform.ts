@@ -111,7 +111,8 @@ function selectChampions(set: RawSet, planner: RawPlannerChampion[] | undefined)
 
 /**
  * Classifies a set's item pool. The same completed item can appear under several apiNames
- * (e.g. `TFT_Item_InfinityEdge` and a set-specific `DA_InfinityEdge`); the set-specific one wins.
+ * (e.g. `TFT_Item_InfinityEdge` and a set-specific `DA_InfinityEdge`). Set-specific entries are sometimes
+ * empty stubs, so the one with a description wins, then the set-specific one.
  */
 export function buildItems(set: RawSet, itemsByApi: Map<string, RawItem>, patch: string): Item[] {
   const pool = set.items.flatMap((apiName) => {
@@ -120,10 +121,11 @@ export function buildItems(set: RawSet, itemsByApi: Map<string, RawItem>, patch:
   });
 
   const chosen = new Map<string, { raw: RawItem & { name: string }; kind: ItemKind }>();
+  const richness = (item: RawItem) => (item.desc ? 2 : 0) + (item.apiName.startsWith("TFT_Item_") ? 0 : 1);
   const add = (raw: RawItem & { name: string }, kind: ItemKind) => {
     const key = `${kind}:${normalizeName(raw.name)}`;
     const existing = chosen.get(key);
-    if (!existing || (existing.raw.apiName.startsWith("TFT_Item_") && !raw.apiName.startsWith("TFT_Item_"))) {
+    if (!existing || richness(raw) > richness(existing.raw)) {
       chosen.set(key, { raw, kind });
     }
   };
@@ -164,25 +166,35 @@ export function buildItems(set: RawSet, itemsByApi: Map<string, RawItem>, patch:
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * Augments are often listed twice under the same name and tier: a set-specific stub without effect
+ * values and the real entry. Keep the one with the most resolved effects.
+ */
 export function buildAugments(set: RawSet, itemsByApi: Map<string, RawItem>, patch: string): Augment[] {
-  return set.augments
-    .flatMap((apiName) => {
-      const raw = itemsByApi.get(apiName);
-      const tier = parseAugmentTier(raw?.icon ?? null);
-      if (!raw || !isDisplayable(raw.name) || tier === null) return [];
-      return [
-        {
-          apiName: raw.apiName,
-          name: raw.name,
-          desc: raw.desc ?? "",
-          icon: gameAssetUrl(patch, raw.icon),
-          tier,
-          effects: cleanNumbers(raw.effects),
-          associatedTraits: raw.associatedTraits,
-        },
-      ];
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const chosen = new Map<string, Augment>();
+  for (const augment of set.augments.flatMap((apiName) => {
+    const raw = itemsByApi.get(apiName);
+    const tier = parseAugmentTier(raw?.icon ?? null);
+    if (!raw || !isDisplayable(raw.name) || tier === null) return [];
+    return [
+      {
+        apiName: raw.apiName,
+        name: raw.name,
+        desc: raw.desc ?? "",
+        icon: gameAssetUrl(patch, raw.icon),
+        tier,
+        effects: cleanNumbers(raw.effects),
+        associatedTraits: raw.associatedTraits,
+      },
+    ];
+  })) {
+    const key = `${augment.tier}:${normalizeName(augment.name)}`;
+    const existing = chosen.get(key);
+    if (!existing || Object.keys(augment.effects).length > Object.keys(existing.effects).length) {
+      chosen.set(key, augment);
+    }
+  }
+  return [...chosen.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function buildSet(
@@ -206,8 +218,12 @@ export function buildSet(
     items: buildItems(set, itemsByApi, patch).flatMap((item) => {
       if (item.kind !== "emblem") return [item];
       // Emblems carry no trait reference in CDragon, and some belong to traits that aren't in this set.
-      const trait = traitApiByName.get(item.name.replace(/ Emblem$/, ""));
-      return trait ? [{ ...item, trait }] : [];
+      const traitName = item.name.replace(/ Emblem$/, "");
+      const trait = traitApiByName.get(traitName);
+      if (!trait) return [];
+      // Some sets only ship emblem stubs without text; every emblem does the same thing in-game.
+      const desc = item.desc || `The holder gains the <TFTKeyword>${traitName}</TFTKeyword> trait.`;
+      return [{ ...item, trait, desc }];
     }),
     augments: buildAugments(set, itemsByApi, patch),
   };
