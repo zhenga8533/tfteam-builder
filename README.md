@@ -43,6 +43,7 @@
       <a href="#architecture">Architecture</a>
       <ul>
         <li><a href="#game-data">Game Data</a></li>
+        <li><a href="#match-stats">Match Stats</a></li>
         <li><a href="#comps-and-tier-lists">Comps and Tier Lists</a></li>
         <li><a href="#deployment">Deployment</a></li>
       </ul>
@@ -124,6 +125,7 @@ npm run dev
 | `npm run dev`                         | Start the Vite dev server                                 |
 | `npm run build`                       | Type-check and build to `dist/`                           |
 | `npm run data` / `npm run data:force` | Regenerate game data when the patch changes / always      |
+| `npm run crawl` / `npm run stats`     | Crawl ranked matches (needs `RIOT_API_KEY`) / build stats |
 | `npm test`                            | Run unit tests and validate comp and tier list content    |
 | `npm run lint` / `npm run format`     | Lint with ESLint / format with Prettier                   |
 
@@ -150,6 +152,36 @@ The full CommunityDragon TFT export is ~24 MB per patch. `scripts/build-data.ts`
 trims it to the three most recent sets. It filters out placeholder and duplicate entries, classifies items (components,
 completed, emblems, radiants, artifacts), reads augment tiers, and adds team planner codes. The result is small per-set JSON
 files validated with Zod. The app loads only the set being viewed.
+
+### Match Stats
+
+Champion, item and trait tier lists, the stat lines on database pages, and the builder's best items all come from
+ranked games collected through the [Riot Games API](https://developer.riotgames.com/). Riot no longer includes augments in
+match data, so the augment tier list and comp guides stay hand-written.
+
+- **Crawl** (`.github/workflows/crawl.yml`, every 3 hours): `scripts/stats/crawl.ts` builds a player pool on every server
+  from the top of the ranked ladder down, then fetches their new ranked matches. It adds each match to running totals
+  per set, patch and rank bucket, and saves them to the `stats` branch as a single commit.
+- **Build** (on deploy): `scripts/build-stats.ts` turns those totals into `public/data/stats/set{N}.json`. It shows
+  Diamond+ games when there are enough. Otherwise it falls back to the previous patch of the same set, or to lower ranks
+  early in a set, when the top of the ladder is still nearly empty. The page states which ranks and patch the stats
+  come from.
+- **Tiers:** entries are ranked by average placement, pulled toward 4.5 when there are few games. The top 10% are S,
+  the next 25% A, the next 35% B and the rest C. Entries in `src/content/tierlists` override individual tiers.
+
+To enable crawling:
+
+1. Register the project on the [Riot Developer Portal](https://developer.riotgames.com/) and create a personal API key.
+   Apply for a production key before relying on the stats publicly.
+2. Add the key as the `RIOT_API_KEY` repository secret. Then add a repository variable `CRAWL_ENABLED` set to `true`.
+3. Start the **Crawl** workflow manually, or wait for the next scheduled run.
+
+To crawl locally: `RIOT_API_KEY=… npm run crawl -- --state .stats-local --platforms na1 --max-matches 200`, then
+`npm run stats -- --stats .stats-local`. The stats build lists any unit, item or trait names it couldn't match to
+the game data.
+
+> GitHub disables scheduled workflows in public repositories after 60 days without activity. If stats stop updating,
+> re-enable the Crawl workflow from the Actions tab.
 
 ### Comps and Tier Lists
 

@@ -22,6 +22,8 @@ concurrency:
 
 jobs:
   crawl:
+    # Opt-in: set the CRAWL_ENABLED repository variable to "true" once the RIOT_API_KEY secret exists.
+    if: vars.CRAWL_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

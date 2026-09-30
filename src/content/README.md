@@ -4,8 +4,23 @@ Comp guides and tier lists are typed TypeScript modules. They're picked up autom
 
 ```
 comps/set{N}/{slug}.ts   one comp per file (default export, `satisfies Comp`)
-tierlists/set{N}.ts      item and augment tier list for a set (`satisfies TierList`)
+tierlists/set{N}.ts      tier overrides and the augment tier list for a set (`satisfies TierList`)
 ```
+
+## Tier lists
+
+Champion, item and trait tiers are generated from match stats (see the README's Match Stats section). The rows in
+`tierlists/set{N}.ts` override individual tiers. A listed entry moves to that tier, and everything else keeps its
+generated tier:
+
+```ts
+champions: { S: ["DA_18_Ahri"] },
+items: { A: ["TFT_Item_BlueBuff"], X: ["TFT_Item_ThiefsGloves"] },
+traits: { S: ["DA_18_Blossom:5"] }, // trait apiName and breakpoint (minimum units)
+```
+
+When no stats are published (for example before crawling is enabled), the item rows are the whole item tier list.
+Augments aren't in Riot's match data, so `augments` is always the complete, hand-written augment tier list.
 
 ## Adding a comp
 
