@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(0.16 0.02 265);
+  --foreground: oklch(0.95 0.01 265);
+  --card: oklch(0.2 0.025 265);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.21 0.025 265);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.8 0.12 85);
+  --primary-foreground: oklch(0.2 0.03 265);
+  --secondary: oklch(0.26 0.03 265);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.24 0.025 265);
+  --muted-foreground: oklch(0.7 0.02 265);
+  --accent: oklch(0.28 0.035 265);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.64 0.21 25);
+  --border: oklch(0.3 0.03 265);
+  --input: oklch(0.32 0.03 265);
+  --ring: oklch(0.8 0.12 85 / 60%);
+
+  /* Unit shop cost tiers */
+  --cost-1: oklch(0.7 0.01 265);
+  --cost-2: oklch(0.72 0.17 150);
+  --cost-3: oklch(0.68 0.16 250);
+  --cost-4: oklch(0.65 0.22 310);
+  --cost-5: oklch(0.82 0.15 80);
+
+  /* Trait activation styles, matching the in-game badge colors */
+  --trait-bronze: oklch(0.62 0.1 55);
+  --trait-silver: oklch(0.8 0.02 250);
+  --trait-gold: oklch(0.83 0.14 85);
+  --trait-prismatic: oklch(0.85 0.1 200);
+  --trait-unique: oklch(0.72 0.18 30);
+
+  /* Tier list ranks */
+  --tier-s: oklch(0.66 0.21 20);
+  --tier-a: oklch(0.74 0.17 55);
+  --tier-b: oklch(0.84 0.15 90);
+  --tier-c: oklch(0.8 0.17 130);
+  --tier-x: oklch(0.6 0.02 265);
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", var(--font-sans);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-cost-1: var(--cost-1);
+  --color-cost-2: var(--cost-2);
+  --color-cost-3: var(--cost-3);
+  --color-cost-4: var(--cost-4);
+  --color-cost-5: var(--cost-5);
+
+  --color-trait-bronze: var(--trait-bronze);
+  --color-trait-silver: var(--trait-silver);
+  --color-trait-gold: var(--trait-gold);
+  --color-trait-prismatic: var(--trait-prismatic);
+  --color-trait-unique: var(--trait-unique);
+
+  --color-tier-s: var(--tier-s);
+  --color-tier-a: var(--tier-a);
+  --color-tier-b: var(--tier-b);
+  --color-tier-c: var(--tier-c);
+  --color-tier-x: var(--tier-x);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.8 0.12 85 / 8%), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, oklch(0.6 0.15 280 / 10%), transparent);
+    background-attachment: fixed;
+  }
+}
