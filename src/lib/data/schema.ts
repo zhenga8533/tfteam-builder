@@ -89,6 +89,8 @@ export const setDataSchema = z.object({
   champions: z.array(championSchema),
   traits: z.array(traitSchema),
   items: z.array(itemSchema),
+  /** Duplicate item apiNames (as they may appear in match data) → the apiName kept in `items`. */
+  itemAliases: z.record(z.string(), z.string()),
   augments: z.array(augmentSchema),
 });
 export type SetData = z.infer<typeof setDataSchema>;
