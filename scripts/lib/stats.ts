@@ -1,6 +1,8 @@
 import { RANK_FLOORS, STAT_TIERS } from "../../src/lib/data/constants.ts";
 import type { RankFloor, SetData, SetStats, StatLine, TraitStat } from "../../src/lib/data/schema.ts";
+import { statLine } from "../../src/lib/game/stat-line.ts";
 import { emptyCounters, mergeCounters } from "../stats/aggregate.ts";
+
 import { comparePatches } from "../stats/state.ts";
 import { type Counter, type Counters, type PatchCounters, RANK_BUCKETS, type RankBucket } from "../stats/types.ts";
 
@@ -8,9 +10,6 @@ import { type Counter, type Counters, type PatchCounters, RANK_BUCKETS, type Ran
 export const MIN_MATCHES = 2000;
 /** Minimum games for an entry to receive a tier; below this it is shown but not ranked. */
 export const MIN_GAMES = { unit: 200, item: 200, trait: 150, unitItem: 50, form: 50 } as const;
-/** Weight, in games, of the 4.5 prior that small samples are pulled toward. */
-export const PRIOR_GAMES = 30;
-const AVERAGE_PLACEMENT = 4.5;
 /** Cumulative share of ranked entries per tier: top 10% S, next 25% A, next 35% B, rest C. */
 const TIER_CUTOFFS = [0.1, 0.35, 0.7, 1] as const;
 const BEST_ITEMS_PER_UNIT = 6;
@@ -53,22 +52,6 @@ export function chooseSample(patches: PatchCounters[], minMatches = MIN_MATCHES)
     }
   }
   return null;
-}
-
-export const adjustedAverage = ([games, placementSum]: Counter) =>
-  (placementSum + PRIOR_GAMES * AVERAGE_PLACEMENT) / (games + PRIOR_GAMES);
-
-export const round = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits;
-
-export function statLine(counter: Counter, total: number): StatLine {
-  const [games, , top4, wins] = counter;
-  return {
-    games,
-    avg: round(adjustedAverage(counter), 2),
-    top4: round(top4 / games, 4),
-    win: round(wins / games, 4),
-    play: round(games / Math.max(total, 1), 4),
-  };
 }
 
 /** Ranks entries with enough games by adjusted average placement and assigns S–C by share. */

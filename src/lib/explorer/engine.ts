@@ -1,0 +1,169 @@
+import type { DeltaStat, StatLine } from "@/lib/data/schema";
+import { bump, type Counter, round, statLine } from "@/lib/game/stat-line";
+import { type ExplorerData, ITEM_SLOTS } from "./format";
+
+export type ExplorerFilter =
+  /** A unit on the board, optionally at a minimum star level and holding the given items (duplicates allowed). */
+  | { type: "unit"; unit: string; minStar?: number; items?: string[] }
+  /** A trait active at or above a breakpoint. */
+  | { type: "trait"; trait: string; minUnits: number }
+  /** The player's level at or above a value. */
+  | { type: "level"; min: number };
+
+export interface ExplorerRow {
+  key: string;
+  line: DeltaStat;
+}
+
+export interface ExplorerResult {
+  /** Boards matching every filter; `play` is their share of the sample. Null when nothing matches. */
+  summary: StatLine | null;
+  /** Units on matching boards, other than filtered ones. */
+  units: ExplorerRow[];
+  /** Active trait breakpoints (`apiName:minUnits`) on matching boards. */
+  traits: ExplorerRow[];
+  /** For each unit filter, the items that unit holds on matching boards. */
+  items: Record<string, ExplorerRow[]>;
+}
+
+/** Below this many games a breakdown row is hidden; the sample is too small to say anything. */
+export const MIN_ROW_GAMES = 30;
+
+interface Compiled {
+  units: { filter: string; unit: number; minStar: number; items: number[] }[];
+  traits: { trait: number; minUnits: number }[];
+  minLevel: number;
+}
+
+/** Resolves names to dictionary indices; returns null if a filter names something absent from the sample. */
+function compile(data: ExplorerData, filters: ExplorerFilter[]): Compiled | null {
+  const index = (names: string[]) => new Map(names.map((name, i) => [name, i]));
+  const units = index(data.units);
+  const items = index(data.items);
+  const traits = index(data.traits);
+  const compiled: Compiled = { units: [], traits: [], minLevel: 0 };
+
+  for (const filter of filters) {
+    if (filter.type === "unit") {
+      const unit = units.get(filter.unit);
+      const itemSlots = (filter.items ?? []).map((item) => items.get(item));
+      if (unit === undefined || itemSlots.some((slot) => slot === undefined)) return null;
+      compiled.units.push({
+        filter: filter.unit,
+        unit,
+        minStar: filter.minStar ?? 0,
+        items: itemSlots.map((slot) => slot! + 1),
+      });
+    } else if (filter.type === "trait") {
+      const trait = traits.get(filter.trait);
+      if (trait === undefined) return null;
+      compiled.traits.push({ trait, minUnits: filter.minUnits });
+    } else {
+      compiled.minLevel = Math.max(compiled.minLevel, filter.min);
+    }
+  }
+  return compiled;
+}
+
+/** Whether a unit row holds every wanted item (as a multiset of slot values). */
+function holds(data: ExplorerData, row: number, wanted: number[]) {
+  if (wanted.length === 0) return true;
+  const slots = Array.from(data.unitItems.subarray(row * ITEM_SLOTS, (row + 1) * ITEM_SLOTS));
+  return wanted.every((item) => {
+    const at = slots.indexOf(item);
+    if (at === -1) return false;
+    slots[at] = 0;
+    return true;
+  });
+}
+
+const counterFor = (map: Map<string, Counter>, key: string) => {
+  let counter = map.get(key);
+  if (!counter) map.set(key, (counter = [0, 0, 0, 0]));
+  return counter;
+};
+
+function rows(counters: Map<string, Counter>, baseline: number, total: number, minGames: number): ExplorerRow[] {
+  return [...counters]
+    .filter(([, counter]) => counter[0] >= minGames)
+    .map(([key, counter]) => {
+      const line = statLine(counter, total);
+      return { key, line: { ...line, delta: round(line.avg - baseline, 2) } };
+    })
+    .sort((a, b) => a.line.delta - b.line.delta);
+}
+
+export function runQuery(data: ExplorerData, filters: ExplorerFilter[], minGames = MIN_ROW_GAMES): ExplorerResult {
+  const empty: ExplorerResult = { summary: null, units: [], traits: [], items: {} };
+  const compiled = compile(data, filters);
+  if (!compiled) return empty;
+
+  const summary: Counter = [0, 0, 0, 0];
+  const unitCounters = new Map<string, Counter>();
+  const traitCounters = new Map<string, Counter>();
+  const itemCounters = new Map(compiled.units.map((filter) => [filter.filter, new Map<string, Counter>()]));
+  const filtered = new Set(compiled.units.map((filter) => filter.unit));
+  const matchedRows: number[] = [];
+
+  for (let board = 0; board < data.boards; board++) {
+    if (data.level[board]! < compiled.minLevel) continue;
+    const unitStart = data.unitStart[board]!;
+    const unitEnd = data.unitStart[board + 1]!;
+    const traitStart = data.traitStart[board]!;
+    const traitEnd = data.traitStart[board + 1]!;
+
+    matchedRows.length = 0;
+    const unitsMatch = compiled.units.every((filter) => {
+      for (let row = unitStart; row < unitEnd; row++) {
+        if (
+          data.unitIndex[row] === filter.unit &&
+          data.unitStar[row]! >= filter.minStar &&
+          holds(data, row, filter.items)
+        ) {
+          matchedRows.push(row);
+          return true;
+        }
+      }
+      return false;
+    });
+    if (!unitsMatch) continue;
+    const traitsMatch = compiled.traits.every((filter) => {
+      for (let row = traitStart; row < traitEnd; row++) {
+        if (data.traitIndex[row] === filter.trait && data.traitMinUnits[row]! >= filter.minUnits) return true;
+      }
+      return false;
+    });
+    if (!traitsMatch) continue;
+
+    const placement = data.placement[board]!;
+    bump(summary, placement);
+    const seen = new Set<number>();
+    for (let row = unitStart; row < unitEnd; row++) {
+      const unit = data.unitIndex[row]!;
+      if (filtered.has(unit) || seen.has(unit)) continue;
+      seen.add(unit);
+      bump(counterFor(unitCounters, data.units[unit]!), placement);
+    }
+    for (let row = traitStart; row < traitEnd; row++) {
+      bump(counterFor(traitCounters, `${data.traits[data.traitIndex[row]!]}:${data.traitMinUnits[row]}`), placement);
+    }
+    compiled.units.forEach((filter, i) => {
+      const row = matchedRows[i]!;
+      for (let slot = 0; slot < ITEM_SLOTS; slot++) {
+        const item = data.unitItems[row * ITEM_SLOTS + slot]!;
+        if (item) bump(counterFor(itemCounters.get(filter.filter)!, data.items[item - 1]!), placement);
+      }
+    });
+  }
+
+  if (summary[0] === 0) return empty;
+  const line = statLine(summary, data.boards);
+  return {
+    summary: line,
+    units: rows(unitCounters, line.avg, summary[0], minGames),
+    traits: rows(traitCounters, line.avg, summary[0], minGames),
+    items: Object.fromEntries(
+      [...itemCounters].map(([unit, counters]) => [unit, rows(counters, line.avg, summary[0], minGames)]),
+    ),
+  };
+}

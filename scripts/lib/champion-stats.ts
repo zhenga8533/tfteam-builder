@@ -1,7 +1,7 @@
 import type { ChampionStats, StatLine } from "../../src/lib/data/schema.ts";
 import type { Counter } from "../stats/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
-import { round, statLine } from "./stats.ts";
+import { round, statLine } from "../../src/lib/game/stat-line.ts";
 
 /** Minimum games before a build, partner or trait is listed; larger item sets split the sample further. */
 export const MIN_CHAMPION_GAMES = { build1: 50, build2: 30, build3: 20, partner: 50, trait: 50 } as const;

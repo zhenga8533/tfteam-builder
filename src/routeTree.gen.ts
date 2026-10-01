@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AugmentsRouteImport } from './routes/augments'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as ChampionsRouteImport } from './routes/champions'
+import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as TraitsRouteImport } from './routes/traits'
 import { Route as ChampionsApiNameRouteImport } from './routes/champions_.$apiName'
@@ -42,6 +43,11 @@ const BuilderRoute = BuilderRouteImport.update({
 const ChampionsRoute = ChampionsRouteImport.update({
   id: '/champions',
   path: '/champions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExplorerRoute = ExplorerRouteImport.update({
+  id: '/explorer',
+  path: '/explorer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ItemsRoute = ItemsRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/augments': typeof AugmentsRoute
   '/builder': typeof BuilderRoute
   '/champions': typeof ChampionsRoute
+  '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
   '/champions/$apiName': typeof ChampionsApiNameRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/augments': typeof AugmentsRoute
   '/builder': typeof BuilderRoute
   '/champions': typeof ChampionsRoute
+  '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
   '/champions/$apiName': typeof ChampionsApiNameRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/augments': typeof AugmentsRoute
   '/builder': typeof BuilderRoute
   '/champions': typeof ChampionsRoute
+  '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
   '/champions_/$apiName': typeof ChampionsApiNameRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/augments'
     | '/builder'
     | '/champions'
+    | '/explorer'
     | '/items'
     | '/traits'
     | '/champions/$apiName'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/augments'
     | '/builder'
     | '/champions'
+    | '/explorer'
     | '/items'
     | '/traits'
     | '/champions/$apiName'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/augments'
     | '/builder'
     | '/champions'
+    | '/explorer'
     | '/items'
     | '/traits'
     | '/champions_/$apiName'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   AugmentsRoute: typeof AugmentsRoute
   BuilderRoute: typeof BuilderRoute
   ChampionsRoute: typeof ChampionsRoute
+  ExplorerRoute: typeof ExplorerRoute
   ItemsRoute: typeof ItemsRoute
   TraitsRoute: typeof TraitsRoute
   ChampionsApiNameRoute: typeof ChampionsApiNameRoute
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/champions'
       fullPath: '/champions'
       preLoaderRoute: typeof ChampionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explorer': {
+      id: '/explorer'
+      path: '/explorer'
+      fullPath: '/explorer'
+      preLoaderRoute: typeof ExplorerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/items': {
@@ -320,6 +340,7 @@ const rootRouteChildren: RootRouteChildren = {
   AugmentsRoute: AugmentsRoute,
   BuilderRoute: BuilderRoute,
   ChampionsRoute: ChampionsRoute,
+  ExplorerRoute: ExplorerRoute,
   ItemsRoute: ItemsRoute,
   TraitsRoute: TraitsRoute,
   ChampionsApiNameRoute: ChampionsApiNameRoute,

@@ -13,8 +13,8 @@ export interface StatRow {
 
 type SortKey = "delta" | "avg" | "top4" | "games";
 
-const COLUMNS: { key: SortKey; label: string; title: string }[] = [
-  { key: "delta", label: "Δ", title: "Difference from the champion's own average placement (lower is better)" },
+const COLUMNS: { key: SortKey; label: string; title?: string }[] = [
+  { key: "delta", label: "Δ" },
   { key: "avg", label: "Avg", title: "Average placement, adjusted for sample size" },
   { key: "top4", label: "Top 4", title: "Top 4 rate" },
   { key: "games", label: "Games", title: "Number of games" },
@@ -38,12 +38,20 @@ interface StatTableProps {
   rows: StatRow[];
   /** Hide the Δ column when rows have no baseline to compare against. */
   showDelta?: boolean;
+  /** What Δ is measured against, shown as the column tooltip. */
+  deltaBaseline?: string;
   empty?: ReactNode;
   limit?: number;
 }
 
 /** Sortable table of stat lines; best first by delta (or average placement without deltas). */
-export function StatTable({ rows, showDelta = true, empty = "Not enough games yet.", limit = 15 }: StatTableProps) {
+export function StatTable({
+  rows,
+  showDelta = true,
+  deltaBaseline = "the champion's own average placement",
+  empty = "Not enough games yet.",
+  limit = 15,
+}: StatTableProps) {
   const [sort, setSort] = useState<SortKey>(showDelta ? "delta" : "avg");
   const [expanded, setExpanded] = useState(false);
   const columns = COLUMNS.filter((column) => showDelta || column.key !== "delta");
@@ -61,7 +69,11 @@ export function StatTable({ rows, showDelta = true, empty = "Not enough games ye
           <tr className="text-xs text-muted-foreground">
             <th className="py-1.5 text-left font-medium" />
             {columns.map((column) => (
-              <th key={column.key} className="w-16 py-1.5 text-right font-medium" title={column.title}>
+              <th
+                key={column.key}
+                className="w-16 py-1.5 text-right font-medium"
+                title={column.key === "delta" ? `Difference from ${deltaBaseline} (lower is better)` : column.title}
+              >
                 <button
                   type="button"
                   onClick={() => setSort(column.key)}

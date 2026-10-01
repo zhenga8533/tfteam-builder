@@ -30,6 +30,7 @@ export const NAV: (NavLink | NavGroup)[] = [
       { label: "Traits", to: "/traits", description: "Breakpoints and bonuses" },
       { label: "Items", to: "/items", description: "Recipes and effects" },
       { label: "Augments", to: "/augments", description: "Silver, gold and prismatic" },
+      { label: "Explorer", to: "/explorer", description: "Filter ranked boards and see what wins" },
     ],
   },
 ];

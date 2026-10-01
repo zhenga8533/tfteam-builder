@@ -1,0 +1,66 @@
+import { describe, expect, it } from "vitest";
+import { runQuery } from "./engine";
+import { decodeExplorer, encodeExplorer, type ExplorerBoard } from "./format";
+
+const board = (placement: number, units: [string, number, string[]][], traits: [string, number][], level = 8) => ({
+  placement,
+  level,
+  units: units.map(([apiName, star, items]) => ({ apiName, star, items })),
+  traits: traits.map(([apiName, minUnits]) => ({ apiName, minUnits })),
+});
+
+// Ahri with JG wins; Ahri without JG loses; Sett always present; Zyra only on Ahri+JG boards.
+const boards: ExplorerBoard[] = [
+  ...Array.from({ length: 10 }, () =>
+    board(
+      1,
+      [
+        ["Ahri", 2, ["JG", "BB"]],
+        ["Sett", 1, []],
+        ["Zyra", 1, []],
+      ],
+      [["Blossom", 5]],
+      9,
+    ),
+  ),
+  ...Array.from({ length: 10 }, () =>
+    board(
+      8,
+      [
+        ["Ahri", 1, ["BB"]],
+        ["Sett", 1, []],
+      ],
+      [["Blossom", 3]],
+    ),
+  ),
+  ...Array.from({ length: 5 }, () => board(4, [["Sett", 3, ["JG"]]], [])),
+];
+const data = decodeExplorer(encodeExplorer(boards).slice().buffer);
+
+describe("explorer engine", () => {
+  it("summarizes boards matching unit, star, item, trait and level filters", () => {
+    expect(runQuery(data, [{ type: "unit", unit: "Ahri" }], 1).summary?.games).toBe(20);
+    expect(runQuery(data, [{ type: "unit", unit: "Ahri", minStar: 2 }], 1).summary?.games).toBe(10);
+    expect(runQuery(data, [{ type: "unit", unit: "Ahri", items: ["JG"] }], 1).summary?.games).toBe(10);
+    expect(runQuery(data, [{ type: "unit", unit: "Ahri", items: ["BB", "BB"] }], 1).summary).toBeNull();
+    expect(runQuery(data, [{ type: "trait", trait: "Blossom", minUnits: 5 }], 1).summary?.games).toBe(10);
+    expect(runQuery(data, [{ type: "level", min: 9 }], 1).summary?.games).toBe(10);
+    expect(runQuery(data, [], 1).summary?.games).toBe(25);
+  });
+
+  it("ranks units, traits and the filtered unit's items against the filtered average", () => {
+    const result = runQuery(data, [{ type: "unit", unit: "Ahri" }], 1);
+    expect(result.units.map((row) => row.key)).toEqual(["Zyra", "Sett"]);
+    expect(result.units[0]!.line.delta).toBeLessThan(0);
+    expect(result.traits[0]!.key).toBe("Blossom:5");
+    expect(result.items["Ahri"]!.map((row) => [row.key, row.line.games])).toEqual([
+      ["JG", 10],
+      ["BB", 20],
+    ]);
+  });
+
+  it("hides rows below the minimum games and handles unknown names", () => {
+    expect(runQuery(data, [{ type: "unit", unit: "Ahri" }], 15).units.map((row) => row.key)).toEqual(["Sett"]);
+    expect(runQuery(data, [{ type: "unit", unit: "Nobody" }]).summary).toBeNull();
+  });
+});
