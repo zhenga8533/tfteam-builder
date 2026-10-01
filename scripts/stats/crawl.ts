@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
-import { addToPatch, isRankedStandard, patchFromGameVersion } from "./aggregate.ts";
+import { fetchVersion, patchLabel } from "../lib/cdragon.ts";
+import { addToPatch, isRankedStandard, patchForMatch, recordPatch } from "./aggregate.ts";
 import { type Platform, REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./regions.ts";
 import { BudgetExceededError, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
@@ -50,6 +51,15 @@ async function main() {
   );
   const seen = new Map(await Promise.all(platforms.map(async (p) => [p.id, await store.seen(p.id)] as const)));
   const patches = new Map<string, PatchCounters>();
+
+  // Match data doesn't report the patch, so remember when each live patch was first seen.
+  let timeline = await store.patchTimeline();
+  try {
+    timeline = recordPatch(timeline, patchLabel(await fetchVersion("latest")), startedAt);
+  } catch (error) {
+    if (timeline.length === 0) throw error;
+    console.warn("Couldn't read the live patch from CommunityDragon; using the last known patch.", error);
+  }
 
   const patchCounters = async (set: number, patch: string) => {
     const key = `${set}/${patch}`;
@@ -105,7 +115,7 @@ async function main() {
           const match = await client.match(region, id);
           summary.fetched += 1;
           platformSeen.set(id, match ? Math.floor(match.info.game_datetime / 1000) : nowSeconds);
-          const patch = match && patchFromGameVersion(match.info.game_version);
+          const patch = match && patchForMatch(match, timeline);
           if (!match || !patch || !isRankedStandard(match)) continue;
           addToPatch(await patchCounters(match.info.tft_set_number, patch), player.bucket, match);
           summary.kept += 1;
@@ -131,6 +141,7 @@ async function main() {
     }
     for (const counters of patches.values()) await store.savePatchCounters({ ...counters, updatedAt });
     await store.prunePatches(2);
+    await store.savePatchTimeline(timeline);
   }
 
   results.forEach((result, index) => {

@@ -1,4 +1,4 @@
-import type { Counter, Counters, Match, PatchCounters, RankBucket } from "./types.ts";
+import type { Counter, Counters, Match, PatchCounters, PatchTimeline, RankBucket } from "./types.ts";
 
 export const RANKED_QUEUE_ID = 1100;
 
@@ -6,6 +6,22 @@ export const RANKED_QUEUE_ID = 1100;
 export function patchFromGameVersion(gameVersion: string): string | null {
   const match = gameVersion.match(/(\d+)\.(\d+)/);
   return match ? `${match[1]}.${match[2]}` : null;
+}
+
+/** Appends `patch` when it differs from the latest recorded patch. */
+export function recordPatch(timeline: PatchTimeline, patch: string, now: number): PatchTimeline {
+  return timeline.at(-1)?.patch === patch ? timeline : [...timeline, { patch, since: now }];
+}
+
+/**
+ * Match data currently reports `"TFT Unreal Version ?.?.?.?"`, so the patch is usually inferred from
+ * when the game was played. Games older than the timeline count toward its first patch.
+ */
+export function patchForMatch(match: Match, timeline: PatchTimeline): string | null {
+  const fromVersion = patchFromGameVersion(match.info.game_version);
+  if (fromVersion) return fromVersion;
+  const played = match.info.game_datetime;
+  return (timeline.findLast((entry) => entry.since <= played) ?? timeline[0])?.patch ?? null;
 }
 
 /** Only standard ranked games say anything about the ranked meta. */

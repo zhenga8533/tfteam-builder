@@ -1,12 +1,13 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { PatchCounters, PlatformState } from "./types.ts";
+import type { PatchCounters, PatchTimeline, PlatformState } from "./types.ts";
 
 /**
  * On-disk layout of the `stats` branch:
  *   state/{platform}.json            player pool and last-crawl times
  *   seen/{platform}.txt              processed match IDs with their game time (epoch s)
  *   counters/set{N}/{patch}.json     additive counters per rank bucket
+ *   patches.json                     when each live patch was first seen
  */
 export class StatsStore {
   readonly root: string;
@@ -60,6 +61,14 @@ export class StatsStore {
   saveSeen(platform: string, seen: Map<string, number>, keepAfter: number) {
     const lines = [...seen].filter(([, time]) => time >= keepAfter).map(([id, time]) => `${id}\t${time}`);
     return this.write(`seen/${platform}.txt`, lines.join("\n") + "\n");
+  }
+
+  async patchTimeline(): Promise<PatchTimeline> {
+    return (await this.readJson<PatchTimeline>("patches.json")) ?? [];
+  }
+
+  savePatchTimeline(timeline: PatchTimeline) {
+    return this.write("patches.json", JSON.stringify(timeline, null, 2));
   }
 
   patchCounters(set: number, patch: string) {

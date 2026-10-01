@@ -159,11 +159,17 @@ export function buildItems(
     } else if (item.name.endsWith("Emblem") && !/augment/i.test(item.apiName)) add(item, "emblem");
   }
 
-  const aliases = Object.fromEntries(
+  const aliases: Record<string, string> = Object.fromEntries(
     [...chosen.entries()].flatMap(([key, { raw }]) =>
       (candidates.get(key) ?? []).filter((apiName) => apiName !== raw.apiName).map((apiName) => [apiName, raw.apiName]),
     ),
   );
+  // Variants that weren't classified at all (e.g. augment-granted emblems) still count as the item of the same name.
+  const keptByName = new Map([...chosen.values()].map(({ raw }) => [normalizeName(raw.name), raw.apiName]));
+  for (const item of pool) {
+    const target = keptByName.get(normalizeName(item.name));
+    if (target && target !== item.apiName && !aliases[item.apiName]) aliases[item.apiName] = target;
+  }
 
   const items = [...chosen.values()]
     .map(({ raw, kind }) => ({

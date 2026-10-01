@@ -120,9 +120,17 @@ export class RiotClient {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       await app.acquire(this.deadline);
       await endpoint.acquire(this.deadline);
-      const response = await this.fetch(`https://${host}.api.riotgames.com${path}`, {
-        headers: { "X-Riot-Token": this.apiKey },
-      });
+      let response: Response;
+      try {
+        response = await this.fetch(`https://${host}.api.riotgames.com${path}`, {
+          headers: { "X-Riot-Token": this.apiKey },
+        });
+      } catch (error) {
+        // Connection resets and timeouts are transient; treat them like a 5xx.
+        if (attempt === MAX_ATTEMPTS - 1) throw error;
+        await this.clock.sleep(2 ** attempt * 1000);
+        continue;
+      }
 
       const appLimits = parseRateLimitHeader(response.headers.get("X-App-Rate-Limit"));
       if (appLimits.length) app.setLimits(appLimits);

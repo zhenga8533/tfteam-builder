@@ -2,7 +2,15 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { addMatch, emptyCounters, isRankedStandard, mergeCounters, patchFromGameVersion } from "./aggregate.ts";
+import {
+  addMatch,
+  emptyCounters,
+  isRankedStandard,
+  mergeCounters,
+  patchForMatch,
+  patchFromGameVersion,
+  recordPatch,
+} from "./aggregate.ts";
 import type { Platform } from "./regions.ts";
 import { BudgetExceededError, type Clock, parseRateLimitHeader, RateLimiter, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
@@ -100,6 +108,24 @@ describe("RiotClient", () => {
   });
 });
 
+describe("RiotClient network errors", () => {
+  it("retries connection failures with backoff", async () => {
+    const clock = fakeClock();
+    let calls = 0;
+    const client = new RiotClient({
+      apiKey: "key",
+      clock,
+      fetch: async () => {
+        calls += 1;
+        if (calls === 1) throw new TypeError("fetch failed");
+        return new Response(JSON.stringify([]), { status: 200 });
+      },
+    });
+    expect(await client.matchIds("americas", "puuid", 0)).toEqual([]);
+    expect(calls).toBe(2);
+  });
+});
+
 describe("seedPlayers", () => {
   const platform: Platform = { id: "na1", region: "americas", poolSize: 3 };
   const entries = (prefix: string, count: number): LeagueEntry[] =>
@@ -140,6 +166,22 @@ describe("aggregation", () => {
     expect(isRankedStandard(match())).toBe(true);
     expect(isRankedStandard(match({ queue_id: 1090 }))).toBe(false);
     expect(isRankedStandard(match({ tft_game_type: "pairs" }))).toBe(false);
+  });
+
+  it("infers the patch from when the game was played when the version string has no numbers", () => {
+    let timeline = recordPatch([], "16.18", 1000);
+    timeline = recordPatch(timeline, "16.18", 2000);
+    timeline = recordPatch(timeline, "16.19", 5000);
+    expect(timeline).toEqual([
+      { patch: "16.18", since: 1000 },
+      { patch: "16.19", since: 5000 },
+    ]);
+    const played = (time: number) => match({ game_version: "TFT Unreal Version ?.?.?.?", game_datetime: time });
+    expect(patchForMatch(played(4000), timeline)).toBe("16.18");
+    expect(patchForMatch(played(6000), timeline)).toBe("16.19");
+    expect(patchForMatch(played(10), timeline)).toBe("16.18");
+    expect(patchForMatch(match(), [])).toBe("16.19");
+    expect(patchForMatch(played(10), [])).toBeNull();
   });
 
   it("counts units and traits per board and items per equipped instance", () => {

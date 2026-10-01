@@ -73,6 +73,9 @@ async function fetchJson<T>(url: string): Promise<T> {
 export const fetchVersion = (patch: string) =>
   fetchJson<{ version: string }>(`${CDRAGON_BASE}/${patch}/content-metadata.json`).then(({ version }) => version);
 
+/** `16.19.8230722+branch...` → `16.19` */
+export const patchLabel = (version: string) => version.split(".").slice(0, 2).join(".");
+
 export const fetchTftData = (patch: string) => fetchJson<RawTftData>(`${CDRAGON_BASE}/${patch}/cdragon/tft/en_us.json`);
 
 export const fetchTeamPlanner = (patch: string) =>

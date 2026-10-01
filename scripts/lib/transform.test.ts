@@ -66,6 +66,7 @@ describe("buildItems", () => {
       name: "Fae Emblem",
       composition: ["DA_Component_Spatula", "DA_Component_BFSword"],
     }),
+    rawItem({ apiName: "DA_EmblemFaeAugment", name: "Fae Emblem" }),
     rawItem({ apiName: "DA_InfinityEdgeRadiant", name: "Radiant Infinity Edge" }),
     rawItem({ apiName: "DA_PotionRadiant", name: "Radiant Potion" }),
     rawItem({ apiName: "DA_Artifact_Anvil", name: "Artifact Anvil" }),
@@ -102,7 +103,11 @@ describe("buildItems", () => {
   });
 
   it("maps discarded duplicates, including their components, to the kept apiName", () => {
-    expect(aliases).toEqual({ TFT_Item_InfinityEdge: "DA_InfinityEdge", TFT_Item_BFSword: "DA_Component_BFSword" });
+    expect(aliases).toEqual({
+      TFT_Item_InfinityEdge: "DA_InfinityEdge",
+      TFT_Item_BFSword: "DA_Component_BFSword",
+      DA_EmblemFaeAugment: "DA_EmblemFae",
+    });
   });
 
   it("classifies emblems, radiants and artifacts and drops placeholders", () => {
