@@ -128,8 +128,10 @@ export type Manifest = z.infer<typeof manifestSchema>;
 
 export const statLineSchema = z.object({
   games: z.number().int(),
-  /** Average placement pulled toward 4.5 for small samples; this is what tiers are ranked by. */
+  /** Average placement, as played. */
   avg: z.number(),
+  /** Average placement pulled toward 4.5 for small samples; what tiers and "best" orderings rank by. */
+  score: z.number(),
   top4: z.number(),
   win: z.number(),
   /** Share of boards (units, traits) or of equipped items (items) this entry accounts for. */

@@ -90,7 +90,7 @@ function rows(counters: Map<string, Counter>, baseline: number, total: number, m
       const line = statLine(counter, total);
       return { key, line: { ...line, delta: round(line.avg - baseline, 2) } };
     })
-    .sort((a, b) => a.line.delta - b.line.delta);
+    .sort((a, b) => a.line.score - b.line.score);
 }
 
 export function runQuery(data: ExplorerData, filters: ExplorerFilter[], minGames = MIN_ROW_GAMES): ExplorerResult {

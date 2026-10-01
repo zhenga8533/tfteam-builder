@@ -10,6 +10,11 @@ const AVERAGE_PLACEMENT = 4.5;
 export const adjustedAverage = ([games, placementSum]: Counter) =>
   (placementSum + PRIOR_GAMES * AVERAGE_PLACEMENT) / (games + PRIOR_GAMES);
 
+/** Below this many games an average can swing a lot, so the UI marks the entry as a low sample. */
+export const LOW_SAMPLE_GAMES = 30;
+
+export const isLowSample = (line: { games: number }) => line.games < LOW_SAMPLE_GAMES;
+
 export const round = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits;
 
 export function bump(counter: Counter, placement: number) {
@@ -21,10 +26,11 @@ export function bump(counter: Counter, placement: number) {
 
 /** `play` is the counter's games as a share of `total`. */
 export function statLine(counter: Counter, total: number): StatLine {
-  const [games, , top4, wins] = counter;
+  const [games, placementSum, top4, wins] = counter;
   return {
     games,
-    avg: round(adjustedAverage(counter), 2),
+    avg: round(placementSum / Math.max(games, 1), 2),
+    score: round(adjustedAverage(counter), 2),
     top4: round(top4 / games, 4),
     win: round(wins / games, 4),
     play: round(games / Math.max(total, 1), 4),

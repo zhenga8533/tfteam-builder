@@ -24,5 +24,5 @@ export function nextItems(builds: Build[], chosen: string[]): { item: string; bu
       const rest = remainder(build.items, chosen);
       return rest?.length === 1 ? [{ item: rest[0]!, build }] : [];
     })
-    .sort((a, b) => a.build.delta - b.build.delta);
+    .sort((a, b) => a.build.score - b.build.score);
 }

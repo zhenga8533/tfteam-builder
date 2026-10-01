@@ -12,7 +12,7 @@ export function ChampionForms({ champion, className }: { champion: Champion; cla
   if (champion.forms.length === 0) return null;
 
   const forms = [...champion.forms].sort(
-    (a, b) => (stats?.forms[a.apiName]?.avg ?? Infinity) - (stats?.forms[b.apiName]?.avg ?? Infinity),
+    (a, b) => (stats?.forms[a.apiName]?.score ?? Infinity) - (stats?.forms[b.apiName]?.score ?? Infinity),
   );
 
   return (

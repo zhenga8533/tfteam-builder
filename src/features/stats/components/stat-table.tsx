@@ -1,9 +1,10 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import type { StatLine } from "@/lib/data/schema";
+import { isLowSample } from "@/lib/game/stat-line";
 import { cn } from "@/lib/utils";
 import { count, percent } from "../format";
-import { AvgPlacement } from "./stat-summary";
+import { AvgPlacement, LOW_SAMPLE_HINT } from "./stat-summary";
 
 export interface StatRow {
   key: string;
@@ -15,7 +16,7 @@ type SortKey = "delta" | "avg" | "top4" | "games";
 
 const COLUMNS: { key: SortKey; label: string; title?: string }[] = [
   { key: "delta", label: "Δ" },
-  { key: "avg", label: "Avg", title: "Average placement, adjusted for sample size" },
+  { key: "avg", label: "Avg", title: "Average placement" },
   { key: "top4", label: "Top 4", title: "Top 4 rate" },
   { key: "games", label: "Games", title: "Number of games" },
 ];
@@ -58,7 +59,8 @@ export function StatTable({
 
   if (rows.length === 0) return <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>;
 
-  const value = (row: StatRow) => (sort === "delta" ? (row.line.delta ?? 0) : row.line[sort]);
+  // Delta and average order by the sample-adjusted score, so a few lucky games don't top the table.
+  const value = (row: StatRow) => (sort === "delta" || sort === "avg" ? row.line.score : row.line[sort]);
   const sorted = [...rows].sort((a, b) => (ASCENDING_BEST[sort] ? value(a) - value(b) : value(b) - value(a)));
   const visible = expanded ? sorted : sorted.slice(0, limit);
 
@@ -92,7 +94,11 @@ export function StatTable({
         </thead>
         <tbody>
           {visible.map((row) => (
-            <tr key={row.key} className="border-t">
+            <tr
+              key={row.key}
+              className={cn("border-t", isLowSample(row.line) && "opacity-60")}
+              title={isLowSample(row.line) ? LOW_SAMPLE_HINT : undefined}
+            >
               <td className="py-1.5 pr-2">{row.label}</td>
               {showDelta && (
                 <td className="py-1.5 text-right">
