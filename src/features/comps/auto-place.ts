@@ -11,6 +11,16 @@ const FRONT_ROWS = [0, 1];
 const BACK_ROWS = [3, 2];
 const MELEE_RANGE = 1;
 
+const slotsIn = (rows: number[], columns = CENTER_OUT) =>
+  rows.flatMap((row) => columns.map((col) => row * BOARD_COLS + col));
+const EVERYWHERE = slotsIn([...BACK_ROWS, ...FRONT_ROWS]);
+
+const isMeleeChampion = (champion: Champion | undefined) => (champion?.stats.range ?? 4) <= MELEE_RANGE;
+
+/** Hexes in the order a unit would be placed: melee units front and centre, ranged units at the back. */
+export const placementOrder = (champion: Champion | undefined) =>
+  isMeleeChampion(champion) ? [...slotsIn(FRONT_ROWS), ...EVERYWHERE] : [...slotsIn(BACK_ROWS), ...EVERYWHERE];
+
 /**
  * Match data has no positions, so lay out a board the way most players would: melee units in the
  * front two rows (tanks centered), ranged units in the back, and carries in the back corners.
@@ -25,18 +35,15 @@ export function autoPlace(units: Omit<CompUnit, "hex">[], championsByApi: Map<st
     placed.push({ ...unit, hex });
     return true;
   };
-  const slotsIn = (rows: number[], columns = CENTER_OUT) =>
-    rows.flatMap((row) => columns.map((col) => row * BOARD_COLS + col));
-  const everywhere = slotsIn([...BACK_ROWS, ...FRONT_ROWS]);
-
-  const isMelee = (unit: Omit<CompUnit, "hex">) => (championsByApi.get(unit.apiName)?.stats.range ?? 4) <= MELEE_RANGE;
+  const isMelee = (unit: Omit<CompUnit, "hex">) => isMeleeChampion(championsByApi.get(unit.apiName));
   const ranged = units.filter((unit) => !isMelee(unit));
   const melee = units.filter(isMelee).sort((a, b) => Number(Boolean(a.carry)) - Number(Boolean(b.carry)));
 
   for (const unit of ranged.filter((unit) => unit.carry))
-    place(unit, [...slotsIn([BACK_ROWS[0]!], CORNERS), ...everywhere]);
-  for (const unit of ranged.filter((unit) => !unit.carry)) place(unit, [...slotsIn(BACK_ROWS), ...everywhere]);
-  for (const unit of melee) place(unit, [...slotsIn(FRONT_ROWS), ...everywhere]);
+    place(unit, [...slotsIn([BACK_ROWS[0]!], CORNERS), ...EVERYWHERE]);
+  for (const unit of ranged.filter((unit) => !unit.carry))
+    place(unit, placementOrder(championsByApi.get(unit.apiName)));
+  for (const unit of melee) place(unit, placementOrder(championsByApi.get(unit.apiName)));
   return placed;
 }
 

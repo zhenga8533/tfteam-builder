@@ -1,4 +1,15 @@
-import { ChevronDown, ClipboardCopy, ClipboardPaste, Eraser, FileCode, FolderOpen, Save, Share2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  ChevronDown,
+  ClipboardCopy,
+  ClipboardPaste,
+  Eraser,
+  FileCode,
+  FolderOpen,
+  Save,
+  Share2,
+  WandSparkles,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatIcon } from "@/components/game/stat-icon";
@@ -12,7 +23,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useGameData } from "@/lib/data/hooks";
+import { useActiveSet, useGameData } from "@/lib/data/hooks";
+import { statsQuery } from "@/lib/data/queries";
+import type { Champion } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
@@ -33,7 +46,10 @@ type Panel = "import" | "save" | "saved" | "export" | null;
 
 export function TeamToolbar() {
   const { champions } = useGameData();
-  const { set, board, level, clear, setBoard } = useBuilder();
+  const { set, board, level, clear, setBoard, autofill } = useBuilder();
+  const { patch } = useActiveSet();
+  // Not suspending: autofill works without stats, it just breaks ties by cost instead of placement.
+  const stats = useQuery(statsQuery(patch, set)).data;
   const { units, cost } = useBoardSummary();
   const [panel, setPanel] = useState<Panel>(null);
   const codesSupported = supportsTeamCodes(champions);
@@ -60,6 +76,21 @@ export function TeamToolbar() {
     toast("Board cleared.", { action: { label: "Undo", onClick: () => setBoard(previous) } });
   };
 
+  const fill = () => {
+    const previous = board;
+    const strength = stats
+      ? (champion: Champion) => {
+          const line = stats.units[champion.apiName];
+          return line ? 4.5 - line.score : 0;
+        }
+      : undefined;
+    const added = autofill(strength);
+    if (added.length === 0) return;
+    toast(`Added ${added.map((champion) => champion.name).join(", ")}.`, {
+      action: { label: "Undo", onClick: () => setBoard(previous) },
+    });
+  };
+
   const panelProps = (name: Exclude<Panel, null>) => ({
     open: panel === name,
     onOpenChange: (open: boolean) => setPanel(open ? name : null),
@@ -81,6 +112,14 @@ export function TeamToolbar() {
         </span>
       </div>
 
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" onClick={fill} disabled={coreUnits >= level}>
+            <WandSparkles /> Autofill
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Fill the board to level {level} with the units that activate the most traits</TooltipContent>
+      </Tooltip>
       <Button variant="outline" size="sm" onClick={() => setPanel("save")} disabled={units.length === 0}>
         <Save /> Save
       </Button>
