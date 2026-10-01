@@ -21,12 +21,12 @@ function TraitRow({ entry }: { entry: TraitEntry }) {
     <GameHoverCard content={<TraitCard trait={trait} count={count} />} side="right">
       <div
         tabIndex={0}
-        className="flex items-center gap-2 rounded-md bg-linear-to-r from-black/45 to-black/15 py-1 pr-2 pl-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex items-center gap-2 rounded-md bg-linear-to-r from-trait-row-from to-trait-row-to py-1 pr-2 pl-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <TraitIcon trait={trait} style={style} className="size-9" />
         <span
           className={cn(
-            "min-w-6 rounded-sm bg-black/50 px-1 py-0.5 text-center text-sm font-bold tabular-nums",
+            "min-w-6 rounded-sm bg-trait-count px-1 py-0.5 text-center text-sm font-bold tabular-nums",
             style === "inactive" ? "text-muted-foreground" : "text-foreground",
           )}
         >

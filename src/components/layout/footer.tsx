@@ -12,8 +12,10 @@ function DataStatus() {
   const manifest = useManifest();
   return (
     <p>
-      Live patch {manifest.patches.latest.label} · PBE {manifest.patches.pbe.label} · data updated{" "}
-      {timeAgo(manifest.generatedAt)}
+      Live patch {manifest.patches.latest.label} · PBE patch {manifest.patches.pbe.label} · Game data refreshed{" "}
+      <time dateTime={manifest.generatedAt} title={new Date(manifest.generatedAt).toLocaleString()}>
+        {timeAgo(manifest.generatedAt)}
+      </time>
     </p>
   );
 }

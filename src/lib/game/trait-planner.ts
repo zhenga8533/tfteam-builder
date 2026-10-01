@@ -24,8 +24,7 @@ const STYLE_VALUE: Record<TraitStyle, number> = {
 };
 
 /** How strong a board's traits are: each active trait scores by its tier (bronze 1 … prismatic 4). */
-export const traitScore = (states: TraitState[]) =>
-  states.reduce((total, state) => total + STYLE_VALUE[state.style], 0);
+const traitScore = (states: TraitState[]) => states.reduce((total, state) => total + STYLE_VALUE[state.style], 0);
 
 /** A champion and its forms are one shop unit, so only one of them can be fielded. */
 const unitGroup = (champion: Champion) => champion.formOf ?? champion.apiName;

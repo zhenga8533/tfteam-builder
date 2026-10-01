@@ -74,7 +74,7 @@ function BuildFinder({ stats }: { stats: ChampionStats }) {
                 className="group flex w-full items-center gap-2 text-left"
                 aria-label={`Add ${itemsByApi.get(item)?.name ?? item}`}
               >
-                <Plus className="size-3.5 text-muted-foreground group-hover:text-foreground" />
+                <Plus className="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
                 <ItemLabel items={[item]} />
               </button>
             ),

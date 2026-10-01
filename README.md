@@ -61,11 +61,12 @@
 
 TFTeam Builder was created to simplify planning team compositions in Teamfight Tactics. Whether you're strategizing before a match or exploring trait combinations, it makes it easy to visualize a board and see how each unit contributes to your synergies.
 
-- **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Save teams locally and import/export in-game Team Planner codes.
-- **Comp Tier List** – ranked comps with final and early boards, carries, items, augments and tips. Open any comp in the Team Builder with one click.
-- **Item & Augment Tier Lists** – curated rankings for the current set.
+- **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Plan a board per level, mark flex units and alternatives, follow the trait ladder or autofill to your level. Save teams locally and import/export in-game Team Planner codes.
+- **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters. Open any comp in the Team Builder with one click.
+- **Stats pages** – every champion, item and trait has a page: item builds and a best-next-item finder, best holders and partners, breakpoints and the comps that use it.
+- **Explorer** – filter a sample of recent ranked boards by champions, items, traits and level, and see what else does well with them.
 - **Database** – searchable champions, traits, items (with a crafting table) and augments, with filters kept in the URL so views can be shared.
-- **Live and PBE data** – switch between the live patch and PBE, and between the current and previous sets.
+- **Live and PBE data** – switch between the live patch and PBE, and between every set CommunityDragon has. Light, dark or system theme.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -136,21 +137,21 @@ npm run dev
 ## Architecture
 
 ```
-scripts/            CommunityDragon data pipeline
+scripts/            CommunityDragon data pipeline; stats/ crawler and stats build
 src/
   routes/           file-based routes (TanStack Router)
-  features/         builder/ and comps/ feature modules
-  components/       ui/ (shadcn), game/ (icons, cards, hex grid), layout/
+  features/         builder/, comps/, stats/ and explorer/ feature modules
+  components/       ui/ (shadcn), game/ (icons, cards, links, hex grid), layout/
   content/          authored comps and tier lists
-  lib/              data loading, game logic (board, traits, tooltip parser)
+  lib/              data loading, game logic (board, traits, trait planner, stat lines), explorer engine
   stores/           persisted user settings
 ```
 
 ### Game Data
 
 The full CommunityDragon TFT export is ~24 MB per patch. `scripts/build-data.ts` downloads it for the live and PBE patches and
-trims it to the three most recent sets. It filters out placeholder and duplicate entries, classifies items (components,
-completed, emblems, radiants, artifacts), reads augment tiers, and adds team planner codes. The result is small per-set JSON
+splits it into one file per mainline set. It filters out placeholder and duplicate entries, classifies items (components,
+completed, emblems, radiants, artifacts), reads augment tiers and champion roles, and adds team planner codes. The result is small per-set JSON
 files validated with Zod. The app loads only the set being viewed.
 
 ### Match Stats
@@ -168,14 +169,19 @@ match data, so the augment tier list and comp guides stay hand-written.
   Diamond+ games when there are enough. Otherwise it falls back to the previous patch of the same set, or to lower ranks
   early in a set, when the top of the ladder is still nearly empty. The page states which ranks and patch the stats
   come from.
-- **Tiers:** entries are ranked by average placement, pulled toward 4.5 when there are few games. The top 10% are S,
-  the next 25% A, the next 35% B and the rest C. Entries in `src/content/tierlists` override individual tiers.
-- **Forms and traits:** champion forms that never appear in the shop (e.g. Lux's elemental forms) are detected from
-  CDragon by name. They count toward their base champion and get their own stats once they have enough games. Every trait
-  in a set is tracked, including ones granted by augments or set mechanics, which the Traits page lists separately.
+- **Tiers:** pages show each entry's real average placement; tiers and "best" orderings rank by that average pulled
+  toward 4.5 when there are few games, so a handful of lucky games can't top a list. The top 10% are S, the next 25% A,
+  the next 35% B and the rest C. Entries with too few games for a tier are listed as low sample, and entries under
+  30 games are marked as such everywhere. Entries in `src/content/tierlists` override individual tiers.
+- **Forms and traits:** champion forms that never appear in the shop (e.g. Lux (Coven)) are detected from CDragon by
+  name and listed as champions of their own. Match data reports Lux by her base name, so the stats build works out each
+  board's form from the trait counts the rest of the board can't explain. Every trait in a set is tracked, including
+  ones granted by augments or set mechanics, which the Traits page lists separately.
 - **Champion pages** (`/champions/{apiName}`): item builds (1–3 item subsets) with a best-next-item finder, best partner
   units and traits, each compared with the champion's own average placement (the Δ column). Boards with more items
   place better simply because the player is ahead, so Δ is the fairer comparison.
+- **Item and trait pages** (`/items/{apiName}`, `/traits/{apiName}`): an item's best holders, the items built with it
+  and its comps; a trait's breakpoints, the units that do best while it's active, and its comps.
 - **Detected comps:** boards are grouped by their carries and two core traits. A comp needs at least 150 games, 0.2% of
   boards and a first place. Match data has no positions, so comp boards are laid out by unit range.
 - **Patches:** stats are split by TFT patch, b patches included (18.3, 18.3b), using the release dates in
@@ -206,13 +212,14 @@ game data.
 
 ### Comps and Tier Lists
 
-Comps and tier lists are typed modules in [`src/content`](src/content/README.md). The Team Builder's **Export** button
-generates a comp file from the current board. Tests check every champion, item and augment reference against the latest
+Comps and tier lists are typed modules in [`src/content`](src/content/README.md). The Team Builder's **Share → Export as
+comp file** generates a comp file from the current board. Tests check every champion, item and augment reference against the latest
 data, so a patch that removes or renames something fails CI instead of breaking a guide.
 
 ### Deployment
 
-GitHub Actions deploys to GitHub Pages on every push to `main` and daily, which picks up new patches without a code change.
+GitHub Actions deploys to GitHub Pages on every push to `main`, after every successful crawl and daily, which picks up
+new patches and stats without a code change.
 Pull requests and other branches run lint, formatting, tests and a build.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

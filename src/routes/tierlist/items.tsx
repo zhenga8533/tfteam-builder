@@ -1,13 +1,29 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ItemCard } from "@/components/game/cards";
+import { ItemKindFilter } from "@/components/game/filters";
 import { ItemIcon } from "@/components/game/icons";
+import { SearchInput } from "@/components/layout/search-input";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
 import { TierEntry } from "@/features/stats/components/tier-entry";
+import { ITEM_KINDS } from "@/lib/data/constants";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
+import type { ItemKind } from "@/lib/data/schema";
+import { matches, stringParam } from "@/lib/search";
+
+interface ItemTierSearch {
+  q?: string;
+  kind?: ItemKind;
+}
+
+const RANKED_KINDS: ItemKind[] = ITEM_KINDS.filter((kind) => kind !== "component");
 
 export const Route = createFileRoute("/tierlist/items")({
   head: () => ({ meta: [{ title: "Item Tier List · TFTeam Builder" }] }),
+  validateSearch: (search: Record<string, unknown>): ItemTierSearch => ({
+    q: stringParam(search.q),
+    kind: RANKED_KINDS.includes(search.kind as ItemKind) ? (search.kind as ItemKind) : undefined,
+  }),
   component: ItemTierListPage,
 });
 
@@ -19,6 +35,15 @@ function ItemTierListPage() {
   const lines = Object.entries(stats?.items ?? {}).filter(
     ([apiName]) => itemsByApi.has(apiName) && itemsByApi.get(apiName)?.kind !== "component",
   );
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const update = (patch: Partial<ItemTierSearch>) =>
+    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const kinds = RANKED_KINDS.filter((kind) => lines.some(([apiName]) => itemsByApi.get(apiName)?.kind === kind));
+  const visible = (apiName: string) => {
+    const item = itemsByApi.get(apiName);
+    return !!item && matches(item.name, search.q) && (!search.kind || item.kind === search.kind);
+  };
 
   return (
     <StatTierList
@@ -26,6 +51,17 @@ function ItemTierListPage() {
       description={`Set ${set} items ranked by the average placement of the units holding them.`}
       lines={lines}
       overrides={tierListForSet(set)?.items}
+      visible={visible}
+      toolbar={
+        <>
+          <SearchInput
+            value={search.q ?? ""}
+            onChange={(q) => update({ q: q || undefined })}
+            placeholder="Search items"
+          />
+          <ItemKindFilter kinds={kinds} value={search.kind} onChange={(kind) => update({ kind })} allowNone />
+        </>
+      }
       renderEntry={(apiName, line) => {
         const item = itemsByApi.get(apiName);
         if (!item) return null;

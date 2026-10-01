@@ -41,7 +41,7 @@ function CompCardView({ title, link, units: board, badge, meta }: CompCardViewPr
         {badge}
         <span className="ml-auto flex gap-3 text-xs text-muted-foreground">{meta}</span>
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="space-y-2.5">
         <ul className="flex flex-wrap gap-1.5" aria-label="Champions">
           {units.map(({ unit, champion }) => (
             <li key={unit.hex} className="relative z-10 flex w-11 flex-col items-center gap-0.5">

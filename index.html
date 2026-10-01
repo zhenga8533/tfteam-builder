@@ -2,6 +2,16 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Applies the saved theme before first paint so the page doesn't flash the wrong one.
+      try {
+        const theme = JSON.parse(localStorage.getItem("tfteam-settings") ?? "{}").state?.theme ?? "system";
+        const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {
+        // Unreadable settings keep the default dark theme.
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="/tft-logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta

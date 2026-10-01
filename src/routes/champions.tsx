@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
+import { CostFilter, TraitFilter } from "@/components/game/filters";
 import { ChampionIcon, TraitIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
@@ -9,7 +10,6 @@ import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
@@ -35,8 +35,6 @@ export const Route = createFileRoute("/champions")({
   }),
   component: ChampionsPage,
 });
-
-const ALL = "all";
 
 function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: () => void }) {
   const { traitsByApi } = useGameData();
@@ -80,7 +78,7 @@ function SplashBanner({ champion }: { champion: Champion }) {
 }
 
 function ChampionsPage() {
-  const { champions, traits } = useGameData();
+  const { champions } = useGameData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const [selected, setSelected] = useState<Champion | null>(null);
@@ -118,37 +116,8 @@ function ChampionsPage() {
           onChange={(q) => update({ q: q || undefined })}
           placeholder="Search champions"
         />
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={search.cost ? String(search.cost) : ""}
-          onValueChange={(value) => update({ cost: value ? Number(value) : undefined })}
-          aria-label="Filter by cost"
-        >
-          {COSTS.map((cost) => (
-            <ToggleGroupItem key={cost} value={String(cost)} className={cn("w-9 font-semibold", COST_TEXT[cost])}>
-              {cost}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-        <Select
-          value={search.trait ?? ALL}
-          onValueChange={(value) => update({ trait: value === ALL ? undefined : value })}
-        >
-          <SelectTrigger className="w-44" aria-label="Filter by trait">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All traits</SelectItem>
-            {traits
-              .filter((trait) => trait.source === "champion")
-              .map((trait) => (
-                <SelectItem key={trait.apiName} value={trait.apiName}>
-                  {trait.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
+        <CostFilter value={search.cost} onChange={(cost) => update({ cost })} />
+        <TraitFilter value={search.trait} onChange={(trait) => update({ trait })} />
         {stats?.status === "ready" && (
           <ToggleGroup
             type="single"

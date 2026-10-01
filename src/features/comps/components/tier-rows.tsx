@@ -20,7 +20,11 @@ export function TierRows<T>({ rows, renderRow }: TierRowsProps<T>) {
           <section
             key={tier}
             aria-label={`${tier} tier`}
-            className={cn("flex gap-3 rounded-xl border bg-card/60 p-3 sm:gap-4", TIER_BORDER[tier])}
+            // Off-screen rows skip rendering work until scrolled near; long tier lists stay responsive.
+            className={cn(
+              "flex gap-3 rounded-xl border bg-card/60 p-3 [contain-intrinsic-size:auto_12rem] [content-visibility:auto] sm:gap-4",
+              TIER_BORDER[tier],
+            )}
           >
             <TierBadge tier={tier} className="sm:size-12 sm:text-2xl" />
             <div className="min-w-0 flex-1">{renderRow(entries, tier)}</div>

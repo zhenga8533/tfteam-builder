@@ -1,13 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ItemCard } from "@/components/game/cards";
+import { ItemKindFilter } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
-import { ITEM_KIND_LABELS } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ITEM_KINDS } from "@/lib/data/constants";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
@@ -187,20 +186,7 @@ function ItemsPage() {
           onChange={(q) => update({ q: q || undefined })}
           placeholder="Search items"
         />
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={kind}
-          onValueChange={(value) => value && update({ kind: value as ItemKind })}
-          className="flex-wrap"
-          aria-label="Item category"
-        >
-          {kinds.map((option) => (
-            <ToggleGroupItem key={option} value={option} className="px-3">
-              {ITEM_KIND_LABELS[option]}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <ItemKindFilter kinds={kinds} value={kind} onChange={(next) => next && update({ kind: next })} />
       </div>
 
       {kind === "completed" && !search.q && <CraftingTable />}

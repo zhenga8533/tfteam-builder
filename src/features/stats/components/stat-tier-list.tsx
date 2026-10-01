@@ -15,39 +15,84 @@ interface StatTierListProps {
   lines: [key: string, line: StatLine][];
   overrides?: TierRows;
   renderEntry: (key: string, line: StatLine | undefined) => ReactNode;
+  /** Filter controls shown above the tiers. */
+  toolbar?: ReactNode;
+  /** Whether an entry passes the toolbar's filters; everything shows by default. */
+  visible?: (key: string) => boolean;
 }
 
-/** A tier list ranked by match stats, with hand-written overrides from `src/content`. */
-export function StatTierList({ title, description, lines, overrides, renderEntry }: StatTierListProps) {
+interface EntryListProps extends Pick<StatTierListProps, "renderEntry"> {
+  keys: string[];
+  lines: Map<string, StatLine>;
+}
+
+function EntryList({ keys, renderEntry, lines }: EntryListProps) {
+  return (
+    <ul className="flex flex-wrap gap-3">
+      {keys.map((key) => (
+        <li key={key}>{renderEntry(key, lines.get(key))}</li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * A tier list ranked by match stats, with hand-written overrides from `src/content`. Entries with too
+ * few games for a tier (rare breakpoints such as prismatic traits) are listed after the tiers.
+ */
+export function StatTierList({
+  title,
+  description,
+  lines,
+  overrides = {},
+  renderEntry,
+  toolbar,
+  visible = () => true,
+}: StatTierListProps) {
   const { patch, set } = useActiveSet();
   const stats = useStats();
-  const byKey = new Map(lines);
-  const generated = [...lines]
+  const shown = lines.filter(([key]) => visible(key));
+  const byKey = new Map(shown);
+  const overridden = new Set(Object.values(overrides).flat());
+  const generated = [...shown]
     .sort(([, a], [, b]) => a.score - b.score)
     .map(([key, line]) => ({ key, tier: line.tier }));
-  const rows = mergeTiers(generated, overrides);
+  const visibleOverrides = Object.fromEntries(
+    Object.entries(overrides).map(([tier, keys]) => [tier, keys.filter(visible)]),
+  ) as TierRows;
+  const rows = mergeTiers(generated, visibleOverrides);
+  const lowSample = generated.filter((entry) => !entry.tier && !overridden.has(entry.key)).map((entry) => entry.key);
+  const hasStats = lines.length > 0 || Object.keys(overrides).length > 0;
 
   return (
     <>
       <PageHeader title={title} description={description} />
       {stats && <StatsMeta stats={stats} />}
-      {Object.keys(rows).length === 0 ? (
+      {toolbar && <div className="mb-6 flex flex-wrap items-center gap-2">{toolbar}</div>}
+      {!hasStats ? (
         <EmptyState>
           {patch === "pbe"
             ? "Match stats come from live ranked games, so they aren't available on PBE."
             : `No match stats for Set ${set} yet.`}
         </EmptyState>
+      ) : Object.keys(rows).length === 0 && lowSample.length === 0 ? (
+        <EmptyState>Nothing matches these filters.</EmptyState>
       ) : (
-        <TierRowsView
-          rows={rows}
-          renderRow={(keys) => (
-            <ul className="flex flex-wrap gap-3">
-              {keys.map((key) => (
-                <li key={key}>{renderEntry(key, byKey.get(key))}</li>
-              ))}
-            </ul>
+        <div className="space-y-3">
+          <TierRowsView
+            rows={rows}
+            renderRow={(keys) => <EntryList keys={keys} lines={byKey} renderEntry={renderEntry} />}
+          />
+          {lowSample.length > 0 && (
+            <section aria-label="Low sample" className="rounded-xl border border-dashed p-3 opacity-80">
+              <h2 className="mb-1 text-sm font-semibold">Low sample</h2>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Too few games to rank yet; their averages can still change a lot.
+              </p>
+              <EntryList keys={lowSample} lines={byKey} renderEntry={renderEntry} />
+            </section>
           )}
-        />
+        </div>
       )}
     </>
   );

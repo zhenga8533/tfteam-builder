@@ -22,7 +22,7 @@ export const FLOOR_BUCKETS: Record<RankFloor, RankBucket[]> = {
   gold: [...RANK_BUCKETS],
 };
 
-export function countersAtFloor(patch: PatchCounters, floor: RankFloor): Counters {
+function countersAtFloor(patch: PatchCounters, floor: RankFloor): Counters {
   const combined = emptyCounters();
   for (const bucket of FLOOR_BUCKETS[floor]) {
     const counters = patch.buckets[bucket];
@@ -64,7 +64,7 @@ export function assignTiers(lines: StatLine[], minGames: number) {
 }
 
 /** Maps game names in match data to the site's apiNames, collecting names it can't place. */
-export class NameResolver {
+class NameResolver {
   readonly unknown = new Map<string, number>();
   private readonly exact: Map<string, string>;
   private readonly lower: Map<string, string>;

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ChampionCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { EmptyHex, HexGrid, HexUnit } from "@/components/game/hex-grid";
@@ -20,7 +21,12 @@ export function CompBoard({ units, className }: { units: CompUnit[]; className?:
             <EmptyHex />
             {unit && champion && (
               <GameHoverCard content={<ChampionCard champion={champion} star={unit.star} />}>
-                <span tabIndex={0} className="absolute inset-0 outline-none" aria-label={champion.name}>
+                <Link
+                  to="/champions/$apiName"
+                  params={{ apiName: champion.apiName }}
+                  className="absolute inset-0 outline-none focus-visible:brightness-125"
+                  aria-label={champion.name}
+                >
                   <HexUnit
                     champion={champion}
                     star={unit.star ?? 1}
@@ -28,7 +34,7 @@ export function CompBoard({ units, className }: { units: CompUnit[]; className?:
                     flex={unit.flex}
                     alternatives={unit.alternatives?.flatMap((apiName) => championsByApi.get(apiName) ?? [])}
                   />
-                </span>
+                </Link>
               </GameHoverCard>
             )}
           </div>
