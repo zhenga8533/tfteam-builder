@@ -1,4 +1,4 @@
-import type { Counter, Counters, Match, PatchCounters, PatchTimeline, RankBucket } from "./types.ts";
+import type { BoardRow, Counter, Counters, Match, PatchCounters, PatchTimeline, RankBucket } from "./types.ts";
 
 export const RANKED_QUEUE_ID = 1100;
 
@@ -46,29 +46,42 @@ function bump(record: Record<string, Counter>, key: string, placement: number) {
   if (placement === 1) counter[3] += 1;
 }
 
-export function addMatch(counters: Counters, match: Match) {
-  counters.matches += 1;
-  for (const participant of match.info.participants) {
-    const { placement } = participant;
-    counters.boards += 1;
+/** Splits a ranked match into one stored row per player, keeping only active traits. */
+export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
+  const gameTime = Math.floor(match.info.game_datetime / 1000);
+  return match.info.participants.map((participant) => [
+    match.metadata.match_id,
+    gameTime,
+    bucket,
+    participant.placement,
+    participant.level,
+    participant.units.map((unit) => [unit.character_id, unit.tier, unit.itemNames ?? []]),
+    participant.traits
+      .filter((trait) => trait.tier_current > 0)
+      .map((trait) => [trait.name, trait.tier_current, trait.num_units]),
+  ]);
+}
 
-    // A board can field duplicate units; unit and trait rates are per board, items per instance.
-    for (const characterId of new Set(participant.units.map((unit) => unit.character_id))) {
-      bump(counters.units, characterId, placement);
-    }
-    for (const key of new Set(participant.units.map((unit) => `${unit.character_id}|${unit.tier}`))) {
-      bump(counters.unitStars, key, placement);
-    }
-    for (const unit of participant.units) {
-      for (const item of unit.itemNames ?? []) {
-        bump(counters.items, item, placement);
-        bump(counters.unitItems, `${unit.character_id}|${item}`, placement);
-      }
-    }
-    for (const trait of participant.traits) {
-      if (trait.tier_current > 0) bump(counters.traits, `${trait.name}|${trait.tier_current}`, placement);
+/** Adds one stored board; unit and trait rates are per board (boards can field duplicates), items per instance. */
+export function addBoard(counters: Counters, row: BoardRow) {
+  const [, , , placement, , units, traits] = row;
+  // Every standard match has exactly one winner, so counting first places counts matches.
+  if (placement === 1) counters.matches += 1;
+  counters.boards += 1;
+  for (const unit of new Set(units.map(([unit]) => unit))) bump(counters.units, unit, placement);
+  for (const key of new Set(units.map(([unit, star]) => `${unit}|${star}`))) bump(counters.unitStars, key, placement);
+  for (const [unit, , items] of units) {
+    for (const item of items) {
+      bump(counters.items, item, placement);
+      bump(counters.unitItems, `${unit}|${item}`, placement);
     }
   }
+  for (const [trait, tier] of traits) bump(counters.traits, `${trait}|${tier}`, placement);
+}
+
+/** Adds a board to its patch's counters under the board's rank bucket. */
+export function addBoardToPatch(patchCounters: PatchCounters, row: BoardRow) {
+  addBoard((patchCounters.buckets[row[2]] ??= emptyCounters()), row);
 }
 
 function mergeRecord(target: Record<string, Counter>, source: Record<string, Counter>) {
@@ -88,8 +101,4 @@ export function mergeCounters(target: Counters, source: Counters): Counters {
   mergeRecord(target.unitItems, source.unitItems);
   mergeRecord(target.traits, source.traits);
   return target;
-}
-
-export function addToPatch(patchCounters: PatchCounters, bucket: RankBucket, match: Match) {
-  addMatch((patchCounters.buckets[bucket] ??= emptyCounters()), match);
 }

@@ -1,11 +1,11 @@
 import { parseArgs } from "node:util";
 import { fetchVersion, patchLabel } from "../lib/cdragon.ts";
-import { addToPatch, isRankedStandard, patchForMatch, recordPatch } from "./aggregate.ts";
+import { isRankedStandard, matchToRows, patchForMatch, recordPatch } from "./aggregate.ts";
 import { type Platform, REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./regions.ts";
 import { BudgetExceededError, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
-import { StatsStore } from "./state.ts";
-import { type PatchCounters, RANK_BUCKETS, type RankBucket, type TrackedPlayer } from "./types.ts";
+import { createStatsStore, runStamp } from "./state.ts";
+import { type BoardRow, RANK_BUCKETS, type RankBucket, type TrackedPlayer } from "./types.ts";
 
 const HOUR = 3600;
 const DAY = 24 * HOUR;
@@ -35,14 +35,14 @@ interface RegionSummary {
 async function main() {
   const apiKey = process.env.RIOT_API_KEY;
   if (!apiKey) throw new Error("RIOT_API_KEY is not set");
-  if (!args.state) throw new Error("--state <dir> is required");
   const minBucket = args["min-tier"];
   if (!isBucket(minBucket)) throw new Error(`--min-tier must be one of ${RANK_BUCKETS.join(", ")}`);
 
   const startedAt = Date.now();
   const nowSeconds = Math.floor(startedAt / 1000);
   const client = new RiotClient({ apiKey, deadline: startedAt + Number(args["budget-minutes"]) * 60_000 });
-  const store = new StatsStore(args.state);
+  const store = createStatsStore(args.state);
+  if (!store) throw new Error("Set the R2_* environment variables or pass --state <dir>");
   const platforms = selectPlatforms(args.platforms?.split(","));
   const maxMatches = args["max-matches"] ? Number(args["max-matches"]) : Infinity;
 
@@ -50,7 +50,8 @@ async function main() {
     await Promise.all(platforms.map(async (p) => [p.id, await store.platformState(p.id)] as const)),
   );
   const seen = new Map(await Promise.all(platforms.map(async (p) => [p.id, await store.seen(p.id)] as const)));
-  const patches = new Map<string, PatchCounters>();
+  /** New boards by `set/patch`, per region, written as one chunk each at the end of the run. */
+  const boards = new Map<RegionalHost, Map<string, BoardRow[]>>();
 
   // Match data doesn't report the patch, so remember when each live patch was first seen.
   let timeline = await store.patchTimeline();
@@ -60,16 +61,6 @@ async function main() {
     if (timeline.length === 0) throw error;
     console.warn("Couldn't read the live patch from CommunityDragon; using the last known patch.", error);
   }
-
-  const patchCounters = async (set: number, patch: string) => {
-    const key = `${set}/${patch}`;
-    let counters = patches.get(key);
-    if (!counters) {
-      counters = (await store.patchCounters(set, patch)) ?? { set, patch, updatedAt: "", buckets: {} };
-      patches.set(key, counters);
-    }
-    return counters;
-  };
 
   // Seeding hits platform hosts, which have their own rate limits, so all platforms seed in parallel.
   await Promise.all(
@@ -101,6 +92,8 @@ async function main() {
   const crawlRegion = async (region: RegionalHost): Promise<RegionSummary> => {
     const summary: RegionSummary = { players: 0, fetched: 0, kept: 0, byBucket: {} };
     const regionPlatforms = platforms.filter((platform) => platform.region === region);
+    const regionBoards = new Map<string, BoardRow[]>();
+    boards.set(region, regionBoards);
     try {
       for (const player of crawlOrder(regionPlatforms)) {
         if (summary.fetched >= maxMatches) break;
@@ -117,7 +110,10 @@ async function main() {
           platformSeen.set(id, match ? Math.floor(match.info.game_datetime / 1000) : nowSeconds);
           const patch = match && patchForMatch(match, timeline);
           if (!match || !patch || !isRankedStandard(match)) continue;
-          addToPatch(await patchCounters(match.info.tft_set_number, patch), player.bucket, match);
+          const key = `${match.info.tft_set_number}/${patch}`;
+          const rows = regionBoards.get(key) ?? [];
+          rows.push(...matchToRows(match, player.bucket));
+          regionBoards.set(key, rows);
           summary.kept += 1;
           summary.byBucket[player.bucket] = (summary.byBucket[player.bucket] ?? 0) + 1;
         }
@@ -133,15 +129,21 @@ async function main() {
   const regions = REGIONAL_HOSTS.filter((region) => platforms.some((platform) => platform.region === region));
   const results = await Promise.allSettled(regions.map(crawlRegion));
 
+  // Boards collected before a region failed are still written, alongside the state that skips them next time.
   if (!args["dry-run"]) {
-    const updatedAt = new Date().toISOString();
+    const stamp = runStamp(new Date(startedAt));
+    for (const [region, regionBoards] of boards) {
+      for (const [key, rows] of regionBoards) {
+        const [set, patch] = key.split("/");
+        await store.appendBoards(Number(set), patch!, `${stamp}-${region}`, rows);
+      }
+    }
     for (const platform of platforms) {
       await store.savePlatformState(platform.id, states.get(platform.id)!);
       await store.saveSeen(platform.id, seen.get(platform.id)!, nowSeconds - 10 * DAY);
     }
-    for (const counters of patches.values()) await store.savePatchCounters({ ...counters, updatedAt });
-    await store.prunePatches(2);
     await store.savePatchTimeline(timeline);
+    await store.pruneBoards(2);
   }
 
   results.forEach((result, index) => {
@@ -159,9 +161,13 @@ async function main() {
     const counts = Object.fromEntries(Object.entries(buckets).map(([bucket, players]) => [bucket, players!.length]));
     console.log(`[${platform.id}] pool ${pool.length}`, counts);
   }
-  for (const counters of patches.values()) {
-    const games = Object.values(counters.buckets).reduce((total, bucket) => total + bucket.matches, 0);
-    console.log(`set ${counters.set} patch ${counters.patch}: ${games} matches total`);
+  const newBoards = Map.groupBy(
+    [...boards.values()].flatMap((regionBoards) => [...regionBoards]),
+    ([key]) => key,
+  );
+  for (const [key, entries] of newBoards) {
+    const count = entries.reduce((total, [, rows]) => total + rows.length, 0);
+    console.log(`set ${key.replace("/", " patch ")}: ${count} new boards`);
   }
 
   // One region's outage shouldn't discard the others' progress or block the deploy; only fail
