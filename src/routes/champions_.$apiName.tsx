@@ -11,6 +11,7 @@ import { TierBadge } from "@/features/comps/components/tier-badge";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { otherForms } from "@/lib/game/forms";
 import { ItemBuilds } from "@/features/stats/components/item-builds";
+import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
@@ -100,7 +101,12 @@ function ChampionHeader({ champion }: { champion: Champion }) {
             ) : null;
           })}
         </p>
-        {line && <StatSummary line={line} />}
+        {line && (
+          <span className="flex items-center gap-2">
+            <StatSummary line={line} />
+            <StatTrend kind="units" entry={champion.apiName} />
+          </span>
+        )}
       </div>
       {line?.tier && <TierBadge tier={line.tier} className="size-14 text-3xl" />}
     </header>
@@ -172,6 +178,11 @@ function ChampionPage() {
             </Section>
           )}
           <FormsSection champion={champion} />
+          {stats && (
+            <Section title="Patch history">
+              <PatchHistoryChart kind="units" entry={champion.apiName} />
+            </Section>
+          )}
         </aside>
       </div>
     </div>

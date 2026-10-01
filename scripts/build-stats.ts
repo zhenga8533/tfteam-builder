@@ -6,6 +6,7 @@ import {
   autoCompsSchema,
   championStatsSchema,
   itemStatsSchema,
+  patchHistorySchema,
   type Manifest,
   type SetData,
   type SetStats,
@@ -17,6 +18,7 @@ import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
+import { patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
@@ -151,6 +153,9 @@ async function main() {
     const read: ReadBoards = async (chunk) => (await store.readBoards(chunk)).map((row) => forms.row(row));
     const patches = await Promise.all(newest.map((patch) => loadPatch(read, set, patch, byPatch.get(patch)!)));
     const { stats, unknown } = buildSetStats(data, patches);
+    const summaries = (await store.summaries(set)).filter((summary) => summary.patch !== stats.patch);
+    const trend = patchTrend(stats, summaries);
+    if (trend) stats.trend = trend;
     const json = JSON.stringify(setStatsSchema.parse(stats));
     await writeFile(join(OUT_DIR, `set${set}.json`), json);
     if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
@@ -160,6 +165,10 @@ async function main() {
       stats,
       chunks.filter((chunk) => chunk.set === set),
     );
+    if (stats.status === "ready") {
+      const history = patchHistory([...summaries, stats]);
+      await writeFile(join(OUT_DIR, `set${set}`, "history.json"), JSON.stringify(patchHistorySchema.parse(history)));
+    }
 
     console.log(
       `set ${set}: ${stats.status}, patch ${stats.patch}, ${stats.rankFloor}+, ${stats.matches} matches` +

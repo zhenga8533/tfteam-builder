@@ -5,6 +5,7 @@ import { ItemIcon } from "@/components/game/icons";
 import { SearchInput } from "@/components/layout/search-input";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
+import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { ITEM_KINDS } from "@/lib/data/constants";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
@@ -71,6 +72,7 @@ function ItemTierListPage() {
             label={item.name}
             line={line}
             link={{ to: "/items/$apiName", params: { apiName: item.apiName } }}
+            trend={<StatTrend kind="items" entry={apiName} />}
             card={<ItemCard item={item} />}
           />
         );

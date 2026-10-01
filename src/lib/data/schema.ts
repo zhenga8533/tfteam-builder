@@ -138,6 +138,26 @@ export type StatLine = z.infer<typeof statLineSchema>;
 export const traitStatSchema = statLineSchema.extend({ trait: z.string(), minUnits: z.number().int() });
 export type TraitStat = z.infer<typeof traitStatSchema>;
 
+/** Change in average placement since `patch` (negative = placing better), keyed like the stats. */
+export const patchTrendSchema = z.object({
+  patch: z.string(),
+  units: numberRecord,
+  items: numberRecord,
+  /** Keyed `apiName:minUnits`. */
+  traits: numberRecord,
+});
+export type PatchTrend = z.infer<typeof patchTrendSchema>;
+
+/** Average placement per patch, oldest first; null where a patch had too few games. */
+export const patchHistorySchema = z.object({
+  patches: z.array(z.string()),
+  units: z.record(z.string(), z.array(z.number().nullable())),
+  items: z.record(z.string(), z.array(z.number().nullable())),
+  /** Keyed `apiName:minUnits`. */
+  traits: z.record(z.string(), z.array(z.number().nullable())),
+});
+export type PatchHistory = z.infer<typeof patchHistorySchema>;
+
 export const setStatsSchema = z.object({
   set: z.number().int(),
   patch: z.string(),
@@ -152,6 +172,8 @@ export const setStatsSchema = z.object({
   items: z.record(z.string(), statLineSchema),
   traits: z.array(traitStatSchema),
   bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),
+  /** Movement since the previous patch with saved stats; absent until there is one. */
+  trend: patchTrendSchema.optional(),
 });
 export type SetStats = z.infer<typeof setStatsSchema>;
 export type RankFloor = SetStats["rankFloor"];

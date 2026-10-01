@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
+import { PatchHistoryChart } from "@/features/stats/components/patch-trend";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useGameData, useStats, useTraitStats } from "@/lib/data/hooks";
@@ -143,6 +144,14 @@ function TraitPage() {
             <TraitCard trait={trait} />
           </Section>
           <Members trait={trait} />
+          {setStats && top && (
+            <Section title="Patch history">
+              <p className="mb-2 text-xs text-muted-foreground">
+                {trait.name} at {trait.breakpoints[0]?.minUnits}, its first breakpoint
+              </p>
+              <PatchHistoryChart kind="traits" entry={`${trait.apiName}:${trait.breakpoints[0]?.minUnits}`} />
+            </Section>
+          )}
         </aside>
       </div>
     </div>

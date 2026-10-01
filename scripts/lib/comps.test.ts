@@ -133,7 +133,10 @@ describe("CompDetector", () => {
     const brawlerVariant = (placement: number) =>
       board(
         placement,
-        [["Ahri", ["JG", "BB", "Rab"]], ["Sett", []]],
+        [
+          ["Ahri", ["JG", "BB", "Rab"]],
+          ["Sett", []],
+        ],
         [
           ["Blossom", 5, 5],
           ["Brawler", 2, 2],

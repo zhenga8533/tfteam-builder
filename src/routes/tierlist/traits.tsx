@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/layout/search-input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
+import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
 import { type TraitStyle, traitStyle } from "@/lib/game/traits";
@@ -96,6 +97,7 @@ function TraitTierListPage() {
             label={`${breakpoint.minUnits} ${trait.name}`}
             line={line}
             link={{ to: "/traits/$apiName", params: { apiName: trait.apiName } }}
+            trend={<StatTrend kind="traits" entry={key} />}
             card={<TraitCard trait={trait} count={breakpoint.minUnits} />}
           />
         );
