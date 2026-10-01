@@ -1,8 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { GameHoverCard } from "@/components/game/game-hover-card";
-import { ChampionIcon } from "@/components/game/icons";
-import { ChampionCard, TraitCard } from "@/components/game/cards";
+import { TraitCard } from "@/components/game/cards";
+import { ChampionLink } from "@/components/game/links";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
@@ -92,23 +91,27 @@ function TraitsPage() {
               {section.description && <p className="mb-3 text-sm text-muted-foreground">{section.description}</p>}
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {section.entries.map(({ trait, champions: members }) => (
-                  <Card key={trait.apiName} className="py-4">
+                  <Card key={trait.apiName} className="relative py-4 transition-colors hover:border-primary/50">
                     <CardContent className="space-y-3 px-4">
-                      <TraitCard trait={trait} />
+                      <Link
+                        to="/traits/$apiName"
+                        params={{ apiName: trait.apiName }}
+                        className="block rounded-md outline-none after:absolute after:inset-0 after:content-[''] focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <TraitCard trait={trait} />
+                      </Link>
                       <TraitBreakpointStats
                         lines={stats?.traits.filter((line) => line.trait === trait.apiName) ?? []}
                       />
                       {members.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 border-t pt-3">
+                        <div className="relative z-10 flex flex-wrap gap-1.5 border-t pt-3">
                           {members.map((champion) => (
-                            <GameHoverCard key={champion.apiName} content={<ChampionCard champion={champion} />}>
-                              <span
-                                tabIndex={0}
-                                className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                <ChampionIcon champion={champion} className="size-9" />
-                              </span>
-                            </GameHoverCard>
+                            <ChampionLink
+                              key={champion.apiName}
+                              champion={champion}
+                              label={null}
+                              iconClassName="size-9"
+                            />
                           ))}
                         </div>
                       )}

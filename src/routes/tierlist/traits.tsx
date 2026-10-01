@@ -39,6 +39,7 @@ function TraitTierListPage() {
             icon={<TraitIcon trait={trait} style={traitStyle(breakpoint.style)} className="size-12" />}
             label={`${breakpoint.minUnits} ${trait.name}`}
             line={line}
+            link={{ to: "/traits/$apiName", params: { apiName: trait.apiName } }}
             card={<TraitCard trait={trait} count={breakpoint.minUnits} />}
           />
         );

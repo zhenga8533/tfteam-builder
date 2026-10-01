@@ -5,15 +5,18 @@ import { gzipSync } from "node:zlib";
 import {
   autoCompsSchema,
   championStatsSchema,
+  itemStatsSchema,
   type Manifest,
   type SetData,
   type SetStats,
   setStatsSchema,
+  traitStatsSchema,
 } from "../src/lib/data/schema.ts";
 import { encodeExplorer, type ExplorerBoard } from "../src/lib/explorer/format.ts";
 import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
+import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { FormInference } from "./lib/forms.ts";
 import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
@@ -75,9 +78,11 @@ async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, ch
   };
 
   const champions = new ChampionAccumulator();
+  const database = new DatabaseAccumulator();
   const comps = new CompDetector(data);
   await eachBoard((board) => {
     champions.add(board);
+    database.add(board);
     comps.count(board);
   });
   await eachBoard((board) => comps.add(board));
@@ -89,13 +94,16 @@ async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, ch
     for (const unit of comp.units) byChampion.get(unit.apiName)?.comps.push(comp.id);
   }
 
-  await mkdir(join(dir, "champions"), { recursive: true });
-  for (const champion of championStats) {
-    await writeFile(
-      join(dir, "champions", `${champion.apiName}.json`),
-      JSON.stringify(championStatsSchema.parse(champion)),
-    );
-  }
+  const writeAll = async <T extends { apiName: string }>(folder: string, entries: T[], parse: (entry: T) => T) => {
+    await mkdir(join(dir, folder), { recursive: true });
+    for (const entry of entries) {
+      await writeFile(join(dir, folder, `${entry.apiName}.json`), JSON.stringify(parse(entry)));
+    }
+  };
+  const { items, traits } = database.results(championStats, detected);
+  await writeAll("champions", championStats, (entry) => championStatsSchema.parse(entry));
+  await writeAll("items", items, (entry) => itemStatsSchema.parse(entry));
+  await writeAll("traits", traits, (entry) => traitStatsSchema.parse(entry));
   await writeFile(join(dir, "comps.json"), JSON.stringify(autoCompsSchema.parse({ comps: detected })));
 
   const explorer: ExplorerBoard[] = [];
@@ -109,7 +117,9 @@ async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, ch
   const encoded = gzipSync(encodeExplorer(explorer), { level: 9 });
   await writeFile(join(dir, "explorer.bin.gz"), encoded);
   console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
-  console.log(`  ${championStats.length} champion files, ${detected.length} comps`);
+  console.log(
+    `  ${championStats.length} champion, ${items.length} item and ${traits.length} trait files, ${detected.length} comps`,
+  );
 }
 
 async function main() {

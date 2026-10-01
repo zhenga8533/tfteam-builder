@@ -1,6 +1,14 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSettings } from "@/stores/settings";
-import { autoCompsQuery, championStatsQuery, manifestQuery, setDataQuery, statsQuery } from "./queries";
+import {
+  autoCompsQuery,
+  championStatsQuery,
+  itemStatsQuery,
+  manifestQuery,
+  setDataQuery,
+  statsQuery,
+  traitStatsQuery,
+} from "./queries";
 import type { Augment, Champion, Item, SetData, Trait } from "./schema";
 
 export function useManifest() {
@@ -57,6 +65,18 @@ export function useStats() {
 export function useChampionStats(apiName: string) {
   const { patch, set } = useActiveSet();
   return useSuspenseQuery(championStatsQuery(patch, set, apiName)).data;
+}
+
+/** An item's best holders, pairings and comps; null when not published (or on PBE). */
+export function useItemStats(apiName: string) {
+  const { patch, set } = useActiveSet();
+  return useSuspenseQuery(itemStatsQuery(patch, set, apiName)).data;
+}
+
+/** A trait's best units and comps; null when not published (or on PBE). */
+export function useTraitStats(apiName: string) {
+  const { patch, set } = useActiveSet();
+  return useSuspenseQuery(traitStatsQuery(patch, set, apiName)).data;
 }
 
 /** Comps detected from match data, best first; null when not published (or on PBE). */

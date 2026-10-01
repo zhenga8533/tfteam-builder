@@ -177,6 +177,26 @@ export const championStatsSchema = z.object({
 });
 export type ChampionStats = z.infer<typeof championStatsSchema>;
 
+export const itemStatsSchema = z.object({
+  apiName: z.string(),
+  /** Champions holding the item; delta is against each champion's own average placement. */
+  holders: z.array(deltaStatSchema.extend({ unit: z.string() })),
+  /** Items built on the same unit; delta is against this item's average placement. */
+  pairs: z.array(deltaStatSchema.extend({ item: z.string() })),
+  /** IDs of detected comps whose core board builds this item. */
+  comps: z.array(z.string()),
+});
+export type ItemStats = z.infer<typeof itemStatsSchema>;
+
+export const traitStatsSchema = z.object({
+  apiName: z.string(),
+  /** Units on boards with the trait active; delta is against those boards' average placement. */
+  units: z.array(deltaStatSchema.extend({ unit: z.string() })),
+  /** IDs of detected comps that run the trait. */
+  comps: z.array(z.string()),
+});
+export type TraitStats = z.infer<typeof traitStatsSchema>;
+
 /** A comp detected from match data: boards sharing the same carries and core traits. */
 export const autoCompSchema = statLineSchema.extend({
   id: z.string(),

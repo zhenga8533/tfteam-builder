@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ItemCard } from "@/components/game/cards";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
@@ -109,8 +109,9 @@ function CraftingTable() {
   const dimmed = (item: Item) => hoveredComponent !== null && !item.composition.includes(hoveredComponent);
 
   const cell = (item: Item) => (
-    <button
-      type="button"
+    <Link
+      to="/items/$apiName"
+      params={{ apiName: item.apiName }}
       onMouseEnter={() => setActive(item.apiName)}
       onFocus={() => setActive(item.apiName)}
       aria-label={item.name}
@@ -121,7 +122,7 @@ function CraftingTable() {
       )}
     >
       <ItemIcon item={item} className="size-8 sm:size-10" />
-    </button>
+    </Link>
   );
 
   return (
@@ -209,14 +210,21 @@ function ItemsPage() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item) => (
-            <Card key={item.apiName} className="py-4">
-              <CardContent className="px-4">
-                <ItemCard item={item} />
-                {stats?.items[item.apiName] && (
-                  <StatSummary line={stats.items[item.apiName]!} className="mt-3 border-t pt-3" />
-                )}
-              </CardContent>
-            </Card>
+            <Link
+              key={item.apiName}
+              to="/items/$apiName"
+              params={{ apiName: item.apiName }}
+              className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Card className="h-full py-4 transition-colors hover:border-primary/50">
+                <CardContent className="px-4">
+                  <ItemCard item={item} />
+                  {stats?.items[item.apiName] && (
+                    <StatSummary line={stats.items[item.apiName]!} className="mt-3 border-t pt-3" />
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

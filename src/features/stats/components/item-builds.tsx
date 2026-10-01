@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ItemCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
+import { ItemLink } from "@/components/game/links";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGameData } from "@/lib/data/hooks";
 import type { ChampionStats } from "@/lib/data/schema";
@@ -11,12 +12,14 @@ import { StatTable } from "./stat-table";
 
 const MAX_ITEMS = 3;
 
-function ItemLabel({ items }: { items: string[] }) {
+/** A build's item icons (and the name for a single item); `linked` makes each icon open its item page. */
+function ItemLabel({ items, linked = false }: { items: string[]; linked?: boolean }) {
   const { itemsByApi } = useGameData();
   return (
     <span className="flex items-center gap-1.5">
       {items.map((apiName, index) => {
         const item = itemsByApi.get(apiName);
+        if (item && linked) return <ItemLink key={index} item={item} label={null} />;
         return item ? (
           <GameHoverCard key={index} content={<ItemCard item={item} />}>
             <span tabIndex={0} className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -88,7 +91,7 @@ export function ItemBuilds({ stats }: { stats: ChampionStats }) {
   const ofSize = (size: number) =>
     stats.builds
       .filter((build) => build.items.length === size)
-      .map((build) => ({ key: build.items.join(","), label: <ItemLabel items={build.items} />, line: build }));
+      .map((build) => ({ key: build.items.join(","), label: <ItemLabel items={build.items} linked />, line: build }));
 
   return (
     <Tabs defaultValue="finder">
