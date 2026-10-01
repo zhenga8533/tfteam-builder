@@ -38,6 +38,28 @@ const cleanNumbers = (record: Record<string, number | null>) =>
 
 /** CDragon writes the string "None" for missing asset paths in older sets. */
 const presentPath = (path: string | null | undefined) => (path && path !== "None" ? path : undefined);
+/** 32-bit FNV-1a of the lowercased name: how Riot's game data hashes field names, rendered as `{xxxxxxxx}`. */
+export function binHash(name: string): string {
+  let hash = 0x811c9dc5;
+  for (const char of name.toLowerCase()) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `{${(hash >>> 0).toString(16).padStart(8, "0")}}`;
+}
+
+/**
+ * Some sets export variables under hashed keys (e.g. `{0f90e7a4}`) while descriptions still use names
+ * (`@StonebarkTreeBonusHealth@`). Renames every hashed key whose name appears in `desc`.
+ */
+export function unhashVariables(record: Record<string, number | null>, desc: string | null): Record<string, number> {
+  const names = new Map(
+    [...(desc ?? "").matchAll(/@([A-Za-z0-9_]+)(?:\*[\d.]+)?@/g)].map(([, name]) => [binHash(name!), name!]),
+  );
+  return Object.fromEntries(
+    Object.entries(cleanNumbers(record)).map(([key, value]) => [names.get(key.toLowerCase()) ?? key, value]),
+  );
+}
 
 const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -88,7 +110,7 @@ function buildTraits(set: RawSet, patch: string, championApiNames: Set<string>):
         minUnits: effect.minUnits ?? 1,
         maxUnits: effect.maxUnits ?? UNBOUNDED_UNITS,
         style: effect.style,
-        variables: cleanNumbers(effect.variables),
+        variables: unhashVariables(effect.variables, trait.desc),
       })),
       source: championApiNames.has(trait.apiName) ? ("champion" as const) : ("other" as const),
     }))
@@ -247,7 +269,7 @@ export function buildItems(
       icon: gameAssetUrl(patch, raw.icon),
       kind,
       composition: raw.composition,
-      effects: cleanNumbers(raw.effects),
+      effects: unhashVariables(raw.effects, raw.desc),
       unique: raw.unique,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -271,7 +293,7 @@ export function buildAugments(set: RawSet, itemsByApi: Map<string, RawItem>, pat
         desc: raw.desc ?? "",
         icon: gameAssetUrl(patch, raw.icon),
         tier,
-        effects: cleanNumbers(raw.effects),
+        effects: unhashVariables(raw.effects, raw.desc),
         associatedTraits: raw.associatedTraits,
       },
     ];
