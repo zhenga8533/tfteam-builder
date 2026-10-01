@@ -6,6 +6,7 @@ import { AugmentIcon } from "@/components/game/icons";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { findComp } from "@/content";
+import { DEFAULT_LEVEL, EARLY_LEVEL } from "@/features/builder/store";
 import { CompBoard } from "@/features/comps/components/comp-board";
 import { Carries, CompTraits, Section } from "@/features/comps/components/comp-sections";
 import { SetGuard } from "@/features/comps/components/set-guard";
@@ -98,7 +99,18 @@ function CompGuidePage() {
             <span>Updated {comp.updatedAt}</span>
           </p>
         </div>
-        <Button onClick={() => openInBuilder(comp.set, comp.board, comp.name)}>
+        <Button
+          onClick={() =>
+            openInBuilder(
+              comp.set,
+              [
+                ...(comp.early ? [{ level: EARLY_LEVEL, units: comp.early }] : []),
+                { level: DEFAULT_LEVEL, units: comp.board },
+              ],
+              comp.name,
+            )
+          }
+        >
           <Hammer /> Open in Team Builder
         </Button>
       </header>

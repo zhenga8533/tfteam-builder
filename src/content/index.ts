@@ -20,6 +20,14 @@ export const tierListForSet = (set: number) => ALL_TIER_LISTS.find((list) => lis
 
 export function compBoard(units: CompUnit[]): Board {
   const board = createBoard();
-  for (const unit of units) board[unit.hex] = { apiName: unit.apiName, star: unit.star ?? 1, items: unit.items ?? [] };
+  for (const unit of units) {
+    board[unit.hex] = {
+      apiName: unit.apiName,
+      star: unit.star ?? 1,
+      items: unit.items ?? [],
+      ...(unit.flex && { flex: true }),
+      ...(unit.alternatives?.length && { alternatives: unit.alternatives }),
+    };
+  }
   return board;
 }

@@ -25,6 +25,8 @@ export function CompBoard({ units, className }: { units: CompUnit[]; className?:
                     champion={champion}
                     star={unit.star ?? 1}
                     items={(unit.items ?? []).flatMap((apiName) => itemsByApi.get(apiName) ?? [])}
+                    flex={unit.flex}
+                    alternatives={unit.alternatives?.flatMap((apiName) => championsByApi.get(apiName) ?? [])}
                   />
                 </span>
               </GameHoverCard>

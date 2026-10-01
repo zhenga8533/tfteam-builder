@@ -2,15 +2,20 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { compBoard } from "@/content";
 import type { CompUnit } from "@/content/types";
-import { useBuilderStore } from "@/features/builder/store";
+import { teamOf, useBuilderStore } from "@/features/builder/store";
 
-/** Loads a comp's board into the Team Builder for its set and opens the builder. */
+export interface CompLevel {
+  level: number;
+  units: CompUnit[];
+}
+
+/** Loads a comp's boards into the Team Builder for its set and opens the builder. */
 export function useOpenInBuilder() {
   const navigate = useNavigate();
-  const setBoard = useBuilderStore((state) => state.setBoard);
+  const setTeam = useBuilderStore((state) => state.setTeam);
 
-  return (set: number, units: CompUnit[], name: string) => {
-    setBoard(set, compBoard(units));
+  return (set: number, levels: CompLevel[], name: string) => {
+    setTeam(set, teamOf(levels.map(({ level, units }) => ({ level, board: compBoard(units) }))));
     toast.success(`Loaded ${name} into the Team Builder.`);
     void navigate({ to: "/builder" });
   };

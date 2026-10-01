@@ -24,14 +24,14 @@ interface ControlledProps {
 }
 
 export function SaveTeamDialog({ open, onOpenChange }: ControlledProps) {
-  const { set, board } = useBuilder();
+  const { set, boards } = useBuilder();
   const saveTeam = useBuilderStore((state) => state.saveTeam);
   const savedCount = useBuilderStore((state) => state.saved.length);
   const [name, setName] = useState("");
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    const team = saveTeam(name.trim() || `Team ${savedCount + 1}`, set, board);
+    const team = saveTeam(name.trim() || `Team ${savedCount + 1}`, set, boards);
     toast.success(`Saved "${team.name}".`);
     setName("");
     onOpenChange(false);
@@ -85,12 +85,17 @@ export function SavedTeamsSheet({ open, onOpenChange }: ControlledProps) {
           {teams.map((team) => (
             <div key={team.id} className="space-y-2 rounded-lg border bg-card p-3">
               <div className="flex items-center gap-2">
-                <p className="flex-1 truncate font-medium">{team.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{team.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Level {team.boards.map((entry) => entry.level).join(" · ")}
+                  </p>
+                </div>
                 <Button
                   size="sm"
                   variant="secondary"
                   onClick={() => {
-                    load(team.board);
+                    load(team.boards);
                     onOpenChange(false);
                     toast.success(`Loaded "${team.name}".`);
                   }}
@@ -108,7 +113,7 @@ export function SavedTeamsSheet({ open, onOpenChange }: ControlledProps) {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-1">
-                {boardUnits(team.board).map((unit, index) => {
+                {boardUnits(team.boards.at(-1)?.board ?? []).map((unit, index) => {
                   const champion = championsByApi.get(unit.apiName);
                   return champion ? <ChampionIcon key={index} champion={champion} className="size-8" /> : null;
                 })}

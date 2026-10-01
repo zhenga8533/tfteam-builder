@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { Champion, Item, Trait } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
-import { addChampion, createBoard, equipBlocker, moveUnit, placeChampion, setStar, teamCost } from "@/lib/game/board";
+import {
+  addAlternative,
+  addChampion,
+  createBoard,
+  equipBlocker,
+  moveUnit,
+  placeChampion,
+  removeAlternative,
+  setStar,
+  swapAlternative,
+  teamCost,
+  toggleFlex,
+} from "@/lib/game/board";
+import { DEFAULT_LEVEL, migrateV1 } from "./store";
 import { decodeTeamCode, encodeTeamCode } from "./team-code";
 
 const champion = (apiName: string, cost: number, traits: string[], plannerCode?: number): Champion => ({
@@ -123,5 +136,38 @@ describe("team codes", () => {
   it("rejects garbage and unknown champions", () => {
     expect(decodeTeamCode("hello", champions).ok).toBe(false);
     expect(decodeTeamCode(`02fff${"000".repeat(9)}TFTSet18`, champions).ok).toBe(false);
+  });
+});
+
+describe("flex and alternatives", () => {
+  const board = placeChampion(createBoard(), 0, "Ahri");
+
+  it("toggles flex and keeps it when the unit moves", () => {
+    const flexed = toggleFlex(board, 0);
+    expect(flexed[0]?.flex).toBe(true);
+    expect(moveUnit(flexed, 0, 5)[5]?.flex).toBe(true);
+    expect(toggleFlex(flexed, 0)[0]?.flex).toBe(false);
+  });
+
+  it("adds, swaps and removes alternatives without duplicates", () => {
+    let next = addAlternative(board, 0, "Ashe");
+    next = addAlternative(next, 0, "Ashe");
+    next = addAlternative(next, 0, "Ahri");
+    expect(next[0]?.alternatives).toEqual(["Ashe"]);
+    next = swapAlternative(next, 0, "Ashe");
+    expect([next[0]?.apiName, next[0]?.alternatives]).toEqual(["Ashe", ["Ahri"]]);
+    expect(removeAlternative(next, 0, "Ahri")[0]?.alternatives).toBeUndefined();
+  });
+});
+
+describe("builder store migration", () => {
+  it("turns v1 single boards into level 8 teams", () => {
+    const board = placeChampion(createBoard(), 2, "Ahri");
+    const saved = { id: "a", name: "Team", set: 18, board, savedAt: "2026-10-01T00:00:00.000Z" };
+    const migrated = migrateV1({ boards: { 18: board }, saved: [saved] });
+    expect(migrated.teams[18]).toEqual({ boards: [{ level: DEFAULT_LEVEL, board }], active: 0 });
+    expect(migrated.saved).toEqual([
+      { id: "a", name: "Team", set: 18, boards: [{ level: DEFAULT_LEVEL, board }], savedAt: saved.savedAt },
+    ]);
   });
 });

@@ -36,13 +36,26 @@ interface HexUnitProps {
   star: number;
   items: Item[];
   highlighted?: boolean;
+  /** An optional slot: drawn faded with a "Flex" tag. */
+  flex?: boolean;
+  /** Champions that can stand in for this one, shown as small portraits. */
+  alternatives?: Champion[];
 }
 
-/** The visual for a unit on a hex: cost-colored frame, portrait, star pips and items. */
-export function HexUnit({ champion, star, items, highlighted }: HexUnitProps) {
+const SHOWN_ALTERNATIVES = 2;
+
+/** The visual for a unit on a hex: cost-colored frame, portrait, star pips, items, flex tag and alternatives. */
+export function HexUnit({ champion, star, items, highlighted, flex, alternatives = [] }: HexUnitProps) {
+  const hidden = alternatives.length - SHOWN_ALTERNATIVES;
   return (
     <>
-      <span className={cn("hex-clip absolute inset-0 p-[5%]", highlighted ? "bg-primary" : COST_BG[champion.cost])}>
+      <span
+        className={cn(
+          "hex-clip absolute inset-0 p-[5%]",
+          highlighted ? "bg-primary" : COST_BG[champion.cost],
+          flex && "opacity-50 saturate-50",
+        )}
+      >
         <img
           src={champion.icon}
           alt=""
@@ -50,6 +63,30 @@ export function HexUnit({ champion, star, items, highlighted }: HexUnitProps) {
           className="hex-clip size-full bg-muted object-cover select-none"
         />
       </span>
+      {flex && (
+        <span className="absolute top-[22%] left-1/2 z-10 -translate-x-1/2 rounded-sm bg-background/90 px-1 text-[9px] leading-tight font-bold tracking-wide text-muted-foreground uppercase ring-1 ring-border">
+          Flex
+        </span>
+      )}
+      {alternatives.length > 0 && (
+        <span
+          className="absolute top-[18%] -right-[6%] z-10 flex flex-col items-center gap-px"
+          aria-label={`Or ${alternatives.map((alternative) => alternative.name).join(", ")}`}
+        >
+          {alternatives.slice(0, SHOWN_ALTERNATIVES).map((alternative) => (
+            <img
+              key={alternative.apiName}
+              src={alternative.icon}
+              alt=""
+              draggable={false}
+              className={cn("size-[1.1rem] rounded-full object-cover ring-1 ring-black/70", COST_BG[alternative.cost])}
+            />
+          ))}
+          {hidden > 0 && (
+            <span className="rounded-full bg-background/90 px-1 text-[9px] leading-tight font-semibold">+{hidden}</span>
+          )}
+        </span>
+      )}
       {star > 1 && (
         <span className="absolute -top-1 left-1/2 z-10 flex -translate-x-1/2" aria-label={`${star} star`}>
           {Array.from({ length: star }, (_, i) => (

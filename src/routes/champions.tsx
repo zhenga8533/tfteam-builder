@@ -80,8 +80,10 @@ function ChampionsPage() {
         (!search.trait || champion.traits.includes(search.trait)),
     );
     if (search.sort === "avg" && stats?.status === "ready") {
-      const avg = (champion: Champion) => stats.units[champion.apiName]?.avg ?? Infinity;
-      return [{ title: "By average placement", cost: undefined, champions: filtered.sort((a, b) => avg(a) - avg(b)) }];
+      const score = (champion: Champion) => stats.units[champion.apiName]?.score ?? Infinity;
+      return [
+        { title: "By average placement", cost: undefined, champions: filtered.sort((a, b) => score(a) - score(b)) },
+      ];
     }
     return COSTS.map((cost) => ({
       title: `${cost} Cost`,

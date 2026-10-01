@@ -100,6 +100,8 @@
   }
   html {
     color-scheme: dark;
+    /* Reserve the scrollbar's space so pages don't shift sideways when it appears or disappears. */
+    scrollbar-gutter: stable;
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;

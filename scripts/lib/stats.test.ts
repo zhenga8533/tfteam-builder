@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SetData, StatLine } from "../../src/lib/data/schema.ts";
 import { emptyCounters } from "../stats/aggregate.ts";
 import type { Counters, PatchCounters, RankBucket } from "../stats/types.ts";
-import { adjustedAverage } from "../../src/lib/game/stat-line.ts";
+import { adjustedAverage, statLine } from "../../src/lib/game/stat-line.ts";
 import { assignTiers, buildSetStats, chooseSample, MIN_GAMES } from "./stats.ts";
 
 const withMatches = (matches: number, extra: Partial<Counters> = {}): Counters => ({
@@ -51,15 +51,22 @@ describe("tiers", () => {
     expect(adjustedAverage([10_000, 30_000, 0, 0])).toBeCloseTo(3.0, 2);
   });
 
+  it("shows the raw average and ranks by the adjusted score", () => {
+    const line = statLine([2, 2, 2, 2], 100);
+    expect(line.avg).toBe(1);
+    expect(line.score).toBeCloseTo((2 + 30 * 4.5) / 32, 2);
+  });
+
   it("assigns S–C by share and skips entries below the minimum", () => {
     const lines: StatLine[] = Array.from({ length: 10 }, (_, i) => ({
       games: 500,
       avg: 3 + i * 0.2,
+      score: 3 + i * 0.2,
       top4: 0,
       win: 0,
       play: 0,
     }));
-    lines.push({ games: 10, avg: 1, top4: 0, win: 0, play: 0 });
+    lines.push({ games: 10, avg: 1, score: 4.2, top4: 0, win: 0, play: 0 });
     assignTiers(lines, 100);
     expect(lines.map((line) => line.tier)).toEqual(["S", "A", "A", "B", "B", "B", "B", "C", "C", "C", undefined]);
   });

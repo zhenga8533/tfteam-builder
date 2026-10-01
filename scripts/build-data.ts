@@ -7,7 +7,6 @@ import { fetchTftPatches, switcherLabels } from "./lib/tft-patches.ts";
 import { buildSet, mainlineSets } from "./lib/transform.ts";
 
 const OUT_DIR = join(import.meta.dirname, "..", "public", "data");
-const SETS_PER_PATCH = 3;
 const force = process.argv.includes("--force");
 
 async function readManifest(): Promise<Manifest | null> {
@@ -25,7 +24,7 @@ async function buildPatch(patch: Patch, version: string) {
   const dir = join(OUT_DIR, patch);
   await mkdir(dir, { recursive: true });
 
-  const sets = mainlineSets(data.setData, SETS_PER_PATCH);
+  const sets = mainlineSets(data.setData);
   for (const raw of sets) {
     const set = setDataSchema.parse(buildSet(raw, itemsByApi, teamPlanner, patch));
     await writeFile(join(dir, `set${set.number}.json`), JSON.stringify(set));

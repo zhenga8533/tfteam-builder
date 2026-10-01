@@ -17,6 +17,7 @@ import { useBuilder } from "../use-builder";
 import { ChampionPool } from "./champion-pool";
 import { HexBoard } from "./hex-board";
 import { ItemPool } from "./item-pool";
+import { LevelTabs } from "./level-tabs";
 import { TeamToolbar } from "./team-toolbar";
 import { TraitPanel } from "./trait-panel";
 import { UnitInspector } from "./unit-inspector";
@@ -69,7 +70,8 @@ export function Builder() {
       onDragCancel={() => setDragging(null)}
     >
       <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_18rem]">
-        <div className="space-y-4 lg:col-start-2">
+        <div className="space-y-3 lg:col-start-2">
+          <LevelTabs />
           <TeamToolbar />
           <HexBoard />
         </div>

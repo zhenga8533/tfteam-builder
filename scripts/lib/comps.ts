@@ -243,6 +243,6 @@ export class CompDetector {
     }
 
     assignTiers(comps, COMP_THRESHOLDS.minGames);
-    return comps.sort((a, b) => a.avg - b.avg);
+    return comps.sort((a, b) => a.score - b.score);
   }
 }

@@ -25,7 +25,7 @@ export function ImportTeamCodeDialog({ open, onOpenChange }: TeamCodeDialogProps
   const { champions } = useGameData();
   const { set, sets } = useActiveSet();
   const setActiveSet = useSettings((state) => state.setSet);
-  const { load } = useBuilder();
+  const { setBoard } = useBuilder();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +41,7 @@ export function ImportTeamCodeDialog({ open, onOpenChange }: TeamCodeDialogProps
       return;
     }
     const board = result.apiNames.reduce<Board>((next, apiName) => addChampion(next, apiName) ?? next, createBoard());
-    load(board);
+    setBoard(board);
     toast.success(`Imported ${result.apiNames.length} champions.`);
     setCode("");
     setError(null);

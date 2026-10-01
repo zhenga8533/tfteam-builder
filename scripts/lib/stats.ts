@@ -56,7 +56,7 @@ export function chooseSample(patches: PatchCounters[], minMatches = MIN_MATCHES)
 
 /** Ranks entries with enough games by adjusted average placement and assigns S–C by share. */
 export function assignTiers(lines: StatLine[], minGames: number) {
-  const ranked = lines.filter((line) => line.games >= minGames).sort((a, b) => a.avg - b.avg);
+  const ranked = lines.filter((line) => line.games >= minGames).sort((a, b) => a.score - b.score);
   ranked.forEach((line, index) => {
     const share = (index + 1) / ranked.length;
     line.tier = STAT_TIERS[TIER_CUTOFFS.findIndex((cutoff) => share <= cutoff)];
@@ -193,7 +193,7 @@ export function buildSetStats(data: SetData, patches: PatchCounters[], now = new
     const unitGames = unitCounters.get(unit)?.[0] ?? counter[0];
     (bestItems[unit] ??= []).push({ item, ...statLine(counter, unitGames) });
   }
-  for (const list of Object.values(bestItems)) list.sort((a, b) => a.avg - b.avg).splice(BEST_ITEMS_PER_UNIT);
+  for (const list of Object.values(bestItems)) list.sort((a, b) => a.score - b.score).splice(BEST_ITEMS_PER_UNIT);
 
   return {
     stats: {
@@ -207,7 +207,7 @@ export function buildSetStats(data: SetData, patches: PatchCounters[], now = new
       units: unitLines,
       forms: formLines,
       items: itemLines,
-      traits: traitLines.sort((a, b) => a.avg - b.avg),
+      traits: traitLines.sort((a, b) => a.score - b.score),
       bestItems,
     },
     unknown,

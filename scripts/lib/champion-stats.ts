@@ -105,11 +105,11 @@ export class ChampionAccumulator {
       });
     }
 
-    const byDelta = (a: { delta: number }, b: { delta: number }) => a.delta - b.delta;
+    const byScore = (a: StatLine, b: StatLine) => a.score - b.score;
     for (const stats of byUnit.values()) {
-      stats.builds.sort(byDelta);
-      stats.partners.sort(byDelta);
-      stats.traits.sort(byDelta);
+      stats.builds.sort(byScore);
+      stats.partners.sort(byScore);
+      stats.traits.sort(byScore);
     }
     return [...byUnit.values()];
   }

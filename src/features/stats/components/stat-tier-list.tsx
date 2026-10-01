@@ -22,7 +22,9 @@ export function StatTierList({ title, description, lines, overrides, renderEntry
   const { patch, set } = useActiveSet();
   const stats = useStats();
   const byKey = new Map(lines);
-  const generated = [...lines].sort(([, a], [, b]) => a.avg - b.avg).map(([key, line]) => ({ key, tier: line.tier }));
+  const generated = [...lines]
+    .sort(([, a], [, b]) => a.score - b.score)
+    .map(([key, line]) => ({ key, tier: line.tier }));
   const rows = mergeTiers(generated, overrides);
 
   return (

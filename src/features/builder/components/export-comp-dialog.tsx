@@ -20,9 +20,15 @@ interface ExportCompDialogProps {
 }
 
 export function ExportCompDialog({ open, onOpenChange }: ExportCompDialogProps) {
-  const { set, board } = useBuilder();
+  const { set, boards } = useBuilder();
   const [name, setName] = useState("");
-  const source = compSource({ name, set, board });
+  // Comp guides hold a final board and an optional early board: the highest and lowest levels.
+  const source = compSource({
+    name,
+    set,
+    board: boards.at(-1)?.board ?? [],
+    early: boards.length > 1 ? boards[0]?.board : undefined,
+  });
   const fileName = compFileName(name);
 
   const copy = async () => {

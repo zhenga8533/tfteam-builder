@@ -22,4 +22,13 @@ describe("comp serialization", () => {
     expect(source).toContain('updatedAt: "2026-10-01"');
     expect(compFileName("Blossom Ahri!")).toBe("blossom-ahri.ts");
   });
+
+  it("writes flex units, alternatives and an early board", () => {
+    const final = createBoard();
+    final[5] = { apiName: "DA_18_Sett", star: 1, items: [], flex: true, alternatives: ["DA_18_Rammus"] };
+    const source = compSource({ name: "Test", set: 18, board: final, early: board, today: "2026-10-01" });
+    expect(source).toContain('{ apiName: "DA_18_Sett", hex: 5, flex: true, alternatives: ["DA_18_Rammus"] },');
+    expect(source).toContain('early: [\n    { apiName: "DA_18_Sett", hex: 3,');
+    expect(compSource({ name: "Test", set: 18, board })).not.toContain("early");
+  });
 });
