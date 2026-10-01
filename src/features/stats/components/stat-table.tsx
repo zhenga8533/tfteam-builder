@@ -45,7 +45,7 @@ interface StatTableProps {
   limit?: number;
 }
 
-/** Sortable table of stat lines; best first by delta (or average placement without deltas). */
+/** Sortable table of stat lines; best first by delta (or average placement without deltas), low samples last. */
 export function StatTable({
   rows,
   showDelta = true,
@@ -59,9 +59,13 @@ export function StatTable({
 
   if (rows.length === 0) return <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>;
 
-  // Delta and average order by the sample-adjusted score, so a few lucky games don't top the table.
-  const value = (row: StatRow) => (sort === "delta" || sort === "avg" ? row.line.score : row.line[sort]);
-  const sorted = [...rows].sort((a, b) => (ASCENDING_BEST[sort] ? value(a) - value(b) : value(b) - value(a)));
+  const value = (row: StatRow) => (sort === "delta" ? (row.line.delta ?? 0) : row.line[sort]);
+  // Rows sort by the value shown, but low samples always go last so a few lucky games can't top the table.
+  const sorted = [...rows].sort(
+    (a, b) =>
+      Number(isLowSample(a.line)) - Number(isLowSample(b.line)) ||
+      (ASCENDING_BEST[sort] ? value(a) - value(b) : value(b) - value(a)),
+  );
   const visible = expanded ? sorted : sorted.slice(0, limit);
 
   return (
