@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
-import { fetchVersion, patchLabel } from "../lib/cdragon.ts";
-import { isRankedStandard, matchToRows, patchForMatch, recordPatch } from "./aggregate.ts";
+import { fetchTftPatches, mergeTimelines, patchAt } from "../lib/tft-patches.ts";
+import { isRankedStandard, matchToRows } from "./aggregate.ts";
 import { type Platform, REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./regions.ts";
 import { BudgetExceededError, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
@@ -53,13 +53,14 @@ async function main() {
   /** New boards by `set/patch`, per region, written as one chunk each at the end of the run. */
   const boards = new Map<RegionalHost, Map<string, BoardRow[]>>();
 
-  // Match data doesn't report the patch, so remember when each live patch was first seen.
+  // Match data doesn't report the patch, so matches are assigned to the TFT patch live when they were
+  // played, from Riot's patch notes. If those can't be read, the last known timeline is used.
   let timeline = await store.patchTimeline();
   try {
-    timeline = recordPatch(timeline, patchLabel(await fetchVersion("latest")), startedAt);
+    timeline = mergeTimelines(timeline, await fetchTftPatches());
   } catch (error) {
     if (timeline.length === 0) throw error;
-    console.warn("Couldn't read the live patch from CommunityDragon; using the last known patch.", error);
+    console.warn("Couldn't read Riot's patch notes; using the last known patch timeline.", error);
   }
 
   // Seeding hits platform hosts, which have their own rate limits, so all platforms seed in parallel.
@@ -108,7 +109,7 @@ async function main() {
           const match = await client.match(region, id);
           summary.fetched += 1;
           platformSeen.set(id, match ? Math.floor(match.info.game_datetime / 1000) : nowSeconds);
-          const patch = match && patchForMatch(match, timeline);
+          const patch = match && patchAt(timeline, match.info.tft_set_number, match.info.game_datetime);
           if (!match || !patch || !isRankedStandard(match)) continue;
           const key = `${match.info.tft_set_number}/${patch}`;
           const rows = regionBoards.get(key) ?? [];

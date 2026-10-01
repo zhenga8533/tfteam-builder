@@ -1,7 +1,8 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import { type BlobStore, FileBlobStore } from "./blob.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
-import type { BoardRow, PatchTimeline, PlatformState } from "./types.ts";
+import type { TftPatch } from "../lib/tft-patches.ts";
+import type { BoardRow, PlatformState } from "./types.ts";
 
 export interface BoardChunk {
   key: string;
@@ -17,7 +18,7 @@ const BOARD_KEY = /^boards\/set(\d+)\/([^/]+)\/([^/]+)\.jsonl\.gz$/;
  * Crawler state and stored boards:
  *   state/{platform}.json                          player pool and last-crawl times
  *   seen/{platform}.txt                            processed match IDs with their game time (epoch s)
- *   patches.json                                   when each live patch was first seen
+ *   patches.json                                   TFT patches (18.3, 18.3b) and when each went live
  *   boards/set{N}/{patch}/{runStart}-{region}.jsonl.gz   one gzipped JSON row per board
  *   summaries/set{N}/{patch}.json                  built stats per patch, kept permanently
  */
@@ -62,11 +63,13 @@ export class StatsStore {
     return this.blobs.put(`seen/${platform}.txt`, lines.join("\n") + "\n");
   }
 
-  async patchTimeline(): Promise<PatchTimeline> {
-    return (await this.readJson<PatchTimeline>("patches.json")) ?? [];
+  /** The last known TFT patch timeline; entries in an older format (game versions) are dropped. */
+  async patchTimeline(): Promise<TftPatch[]> {
+    const stored = (await this.readJson<TftPatch[]>("patches.json")) ?? [];
+    return stored.filter((patch) => typeof patch.label === "string" && typeof patch.set === "number");
   }
 
-  savePatchTimeline(timeline: PatchTimeline) {
+  savePatchTimeline(timeline: TftPatch[]) {
     return this.blobs.put("patches.json", JSON.stringify(timeline, null, 2));
   }
 
@@ -114,11 +117,13 @@ export function createStatsStore(dir: string | undefined): StatsStore | null {
   return dir ? new StatsStore(new FileBlobStore(dir)) : null;
 }
 
-/** Numeric patch comparison, so `16.10` sorts after `16.9`. */
+const PATCH_LABEL = /^(\d+)\.(\d+)([a-z]?)$/;
+
+/** Orders TFT patch labels: `18.3` < `18.3b` < `18.4` < `18.10`. */
 export function comparePatches(a: string, b: string) {
-  const [aMajor = 0, aMinor = 0] = a.split(".").map(Number);
-  const [bMajor = 0, bMinor = 0] = b.split(".").map(Number);
-  return aMajor - bMajor || aMinor - bMinor;
+  const [, aSet = "0", aMinor = "0", aLetter = ""] = a.match(PATCH_LABEL) ?? [];
+  const [, bSet = "0", bMinor = "0", bLetter = ""] = b.match(PATCH_LABEL) ?? [];
+  return Number(aSet) - Number(bSet) || Number(aMinor) - Number(bMinor) || aLetter.localeCompare(bLetter);
 }
 
 /** `2026-10-01T12:00:00.123Z` → `20261001T120000Z`, safe in object keys and chronologically sortable. */

@@ -103,6 +103,3 @@ export interface PlatformState {
   seededAt?: string;
   players: TrackedPlayer[];
 }
-
-/** When each live patch was first seen by the crawler, oldest first (epoch ms). */
-export type PatchTimeline = { patch: string; since: number }[];

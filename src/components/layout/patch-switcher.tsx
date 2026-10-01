@@ -21,7 +21,7 @@ export function PatchSwitcher() {
           {PATCHES.map((value) => (
             <SelectItem key={value} value={value}>
               {PATCH_LABELS[value]}{" "}
-              <span className="text-muted-foreground max-sm:hidden">{manifest.patches[value].version}</span>
+              <span className="text-muted-foreground max-sm:hidden">{manifest.patches[value].label}</span>
             </SelectItem>
           ))}
         </SelectContent>
