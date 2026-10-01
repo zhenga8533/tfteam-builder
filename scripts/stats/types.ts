@@ -26,6 +26,7 @@ export interface MatchTrait {
 
 export interface MatchParticipant {
   placement: number;
+  level: number;
   traits: MatchTrait[];
   units: MatchUnit[];
 }
@@ -45,6 +46,26 @@ export interface Match {
 /** Rank buckets, highest first. A match inherits the bucket of the player it was discovered through. */
 export const RANK_BUCKETS = ["master_plus", "diamond", "emerald", "platinum", "gold"] as const;
 export type RankBucket = (typeof RANK_BUCKETS)[number];
+
+/** `[unit, star, items]` with Riot's own names. */
+export type BoardUnitRow = [unit: string, star: number, items: string[]];
+
+/** `[trait, tierCurrent, numUnits]` for active traits only. */
+export type BoardTraitRow = [trait: string, tierCurrent: number, numUnits: number];
+
+/**
+ * One player's final board, the unit of stored match data. Names are Riot's own; mapping to the
+ * site's data happens at build time, so stored boards stay valid when the game data changes.
+ */
+export type BoardRow = [
+  matchId: string,
+  gameTimeSec: number,
+  bucket: RankBucket,
+  placement: number,
+  level: number,
+  units: BoardUnitRow[],
+  traits: BoardTraitRow[],
+];
 
 /** `[games, placementSum, top4, wins]` — additive, so runs can be merged by summing. */
 export type Counter = [number, number, number, number];

@@ -35,13 +35,13 @@ jobs:
       - run: npm run lint
       - run: npm run data
       - run: npm test
-      # Missing until the first crawl publishes it; the site then simply hides stats.
-      - uses: actions/checkout@v5
-        continue-on-error: true
-        with:
-          ref: stats
-          path: stats
-      - run: npm run stats -- --stats stats
+      # Reads stored boards from R2; without credentials (or boards) it skips and the site hides stats.
+      - run: npm run stats
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
       - run: npm run build
       - uses: actions/upload-pages-artifact@v4
         with:

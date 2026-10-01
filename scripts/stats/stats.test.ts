@@ -3,8 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  addMatch,
+  addBoard,
   emptyCounters,
+  matchToRows,
   isRankedStandard,
   mergeCounters,
   patchForMatch,
@@ -14,7 +15,9 @@ import {
 import type { Platform } from "./regions.ts";
 import { BudgetExceededError, type Clock, parseRateLimitHeader, RateLimiter, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
-import { comparePatches, StatsStore } from "./state.ts";
+import { FileBlobStore } from "./blob.ts";
+import { R2BlobStore } from "./r2.ts";
+import { comparePatches, runStamp, StatsStore } from "./state.ts";
 import type { LeagueEntry, Match } from "./types.ts";
 
 function fakeClock(start = 0): Clock & { time: number } {
@@ -39,6 +42,7 @@ const match = (overrides: Partial<Match["info"]> = {}): Match => ({
     participants: [
       {
         placement: 1,
+        level: 9,
         traits: [
           { name: "TFT18_Blossom", num_units: 5, tier_current: 2 },
           { name: "TFT18_Fae", num_units: 1, tier_current: 0 },
@@ -48,7 +52,7 @@ const match = (overrides: Partial<Match["info"]> = {}): Match => ({
           { character_id: "TFT18_Ahri", tier: 1 },
         ],
       },
-      { placement: 6, traits: [], units: [{ character_id: "TFT18_Ahri", tier: 1 }] },
+      { placement: 6, level: 8, traits: [], units: [{ character_id: "TFT18_Ahri", tier: 1 }] },
     ],
     ...overrides,
   },
@@ -184,9 +188,27 @@ describe("aggregation", () => {
     expect(patchForMatch(played(10), [])).toBeNull();
   });
 
+  it("stores one row per player with only active traits", () => {
+    expect(matchToRows(match(), "diamond")).toEqual([
+      [
+        "NA1_1",
+        1_790_000_000,
+        "diamond",
+        1,
+        9,
+        [
+          ["TFT18_Ahri", 2, ["TFT_Item_BlueBuff", "TFT_Item_BlueBuff"]],
+          ["TFT18_Ahri", 1, []],
+        ],
+        [["TFT18_Blossom", 2, 5]],
+      ],
+      ["NA1_1", 1_790_000_000, "diamond", 6, 8, [["TFT18_Ahri", 1, []]], []],
+    ]);
+  });
+
   it("counts units and traits per board and items per equipped instance", () => {
     const counters = emptyCounters();
-    addMatch(counters, match());
+    for (const row of matchToRows(match(), "diamond")) addBoard(counters, row);
     expect(counters.matches).toBe(1);
     expect(counters.boards).toBe(2);
     expect(counters.units["TFT18_Ahri"]).toEqual([2, 7, 1, 1]);
@@ -199,8 +221,10 @@ describe("aggregation", () => {
   it("merges counters by summing", () => {
     const a = emptyCounters();
     const b = emptyCounters();
-    addMatch(a, match());
-    addMatch(b, match());
+    for (const row of matchToRows(match(), "diamond")) {
+      addBoard(a, row);
+      addBoard(b, row);
+    }
     const merged = mergeCounters(emptyCounters(), a);
     mergeCounters(merged, b);
     expect(merged.matches).toBe(2);
@@ -214,14 +238,15 @@ describe("StatsStore", () => {
     if (root) await rm(root, { recursive: true, force: true });
   });
 
-  it("round-trips state and prunes old patches and match IDs", async () => {
+  it("round-trips state and boards, and prunes old patches and match IDs", async () => {
     root = await mkdtemp(join(tmpdir(), "tft-stats-"));
-    const store = new StatsStore(root);
+    const store = new StatsStore(new FileBlobStore(root));
     await store.savePlatformState("na1", {
       seededAt: "2026-09-30T00:00:00Z",
       players: [{ puuid: "p", bucket: "diamond" }],
     });
     expect((await store.platformState("na1")).players).toHaveLength(1);
+    expect(await store.platformState("kr")).toEqual({ players: [] });
 
     await store.saveSeen(
       "na1",
@@ -233,13 +258,67 @@ describe("StatsStore", () => {
     );
     expect([...(await store.seen("na1")).keys()]).toEqual(["NA1_new"]);
 
+    const rows = matchToRows(match(), "diamond");
     for (const patch of ["16.9", "16.10", "16.11"]) {
-      await store.savePatchCounters({ set: 18, patch, updatedAt: "", buckets: {} });
+      await store.appendBoards(18, patch, "20261001T120000Z-americas", rows);
     }
-    await store.prunePatches(2);
-    expect((await store.listPatchCounters()).map((entry) => entry.patch).sort(comparePatches)).toEqual([
+    await store.putSummary(18, "16.9", "{}");
+    const chunks = await store.listBoardChunks();
+    expect(chunks.find((chunk) => chunk.patch === "16.11")).toMatchObject({
+      key: "boards/set18/16.11/20261001T120000Z-americas.jsonl.gz",
+      set: 18,
+      name: "20261001T120000Z-americas",
+    });
+    expect(await store.readBoards(chunks[0]!)).toEqual(rows);
+
+    await store.pruneBoards(2);
+    expect((await store.listBoardChunks()).map((chunk) => chunk.patch).sort(comparePatches)).toEqual([
       "16.10",
       "16.11",
     ]);
+    expect(await store.blobs.get("summaries/set18/16.9.json")).not.toBeNull();
+  });
+
+  it("stamps runs so chunk names sort chronologically", () => {
+    expect(runStamp(new Date("2026-10-01T09:05:03.123Z"))).toBe("20261001T090503Z");
+  });
+});
+
+describe("R2BlobStore", () => {
+  const config = { accountId: "acct", accessKeyId: "id", secretAccessKey: "secret", bucket: "tft" };
+
+  it("signs requests against the bucket and follows list pagination", async () => {
+    const requests: Request[] = [];
+    const pages = [
+      "<ListBucketResult><Key>boards/a&amp;b.gz</Key><IsTruncated>true</IsTruncated><NextContinuationToken>t2</NextContinuationToken></ListBucketResult>",
+      "<ListBucketResult><Key>boards/c.gz</Key><IsTruncated>false</IsTruncated></ListBucketResult>",
+    ];
+    const store = new R2BlobStore(config, async (input) => {
+      const request = input as Request;
+      requests.push(request);
+      if (request.method === "GET" && new URL(request.url).searchParams.has("list-type")) {
+        return new Response(pages.shift());
+      }
+      return new Response(null, { status: request.method === "GET" ? 404 : 200 });
+    });
+
+    expect(await store.list("boards/")).toEqual(["boards/a&b.gz", "boards/c.gz"]);
+    expect(new URL(requests[1]!.url).searchParams.get("continuation-token")).toBe("t2");
+    expect(await store.get("state/na1.json")).toBeNull();
+    await store.put("state/na1.json", "{}");
+
+    const put = requests.at(-1)!;
+    expect(put.url).toBe("https://acct.r2.cloudflarestorage.com/tft/state/na1.json");
+    expect(put.headers.get("authorization")).toMatch(/^AWS4-HMAC-SHA256 Credential=id\//);
+  });
+
+  it("fails on client errors instead of retrying", async () => {
+    let calls = 0;
+    const store = new R2BlobStore(config, async () => {
+      calls += 1;
+      return new Response("denied", { status: 403 });
+    });
+    await expect(store.put("x", "y")).rejects.toThrow(/403/);
+    expect(calls).toBe(1);
   });
 });

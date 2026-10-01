@@ -160,9 +160,11 @@ ranked games collected through the [Riot Games API](https://developer.riotgames.
 match data, so the augment tier list and comp guides stay hand-written.
 
 - **Crawl** (`.github/workflows/crawl.yml`, every 3 hours): `scripts/stats/crawl.ts` builds a player pool on every server
-  from the top of the ranked ladder down, then fetches their new ranked matches. It adds each match to running totals
-  per set, patch and rank bucket, and saves them to the `stats` branch as a single commit.
-- **Build** (on deploy): `scripts/build-stats.ts` turns those totals into `public/data/stats/set{N}.json`. It shows
+  from the top of the ranked ladder down, then fetches their new ranked matches. Every player's final board is stored in
+  [Cloudflare R2](https://developers.cloudflare.com/r2/), as one gzipped chunk per region per run, together with the
+  crawler's state. Boards are kept for the current and previous patch of each set.
+- **Build** (on deploy): `scripts/build-stats.ts` reads the stored boards and builds `public/data/stats/set{N}.json`.
+  It also saves a summary of each patch's stats to R2 permanently. It shows
   Diamond+ games when there are enough. Otherwise it falls back to the previous patch of the same set, or to lower ranks
   early in a set, when the top of the ladder is still nearly empty. The page states which ranks and patch the stats
   come from.
@@ -176,12 +178,17 @@ To enable crawling:
 
 1. Register the project on the [Riot Developer Portal](https://developer.riotgames.com/) and create a personal API key.
    Apply for a production key before relying on the stats publicly.
-2. Add the key as the `RIOT_API_KEY` repository secret. Then add a repository variable `CRAWL_ENABLED` set to `true`.
-3. Start the **Crawl** workflow manually, or wait for the next scheduled run.
+2. In Cloudflare, create an R2 bucket. Then create an R2 API token with **Object Read & Write** permission, scoped to that
+   bucket.
+3. Add repository secrets: `RIOT_API_KEY`; `R2_ACCOUNT_ID` (your Cloudflare account ID), `R2_ACCESS_KEY_ID` and
+   `R2_SECRET_ACCESS_KEY` (from the token), and `R2_BUCKET` (the bucket name). Then add a repository variable
+   `CRAWL_ENABLED` set to `true`.
+4. Start the **Crawl** workflow manually, or wait for the next scheduled run.
 
 To crawl locally: `RIOT_API_KEY=… npm run crawl -- --state .stats-local --platforms na1 --max-matches 200`, then
-`npm run stats -- --stats .stats-local`. The stats build lists any unit, item or trait names it couldn't match to
-the game data.
+`npm run stats -- --stats .stats-local`. With `--state`/`--stats` and no `R2_*` variables set, everything is stored
+in that local directory instead of R2. The stats build lists any unit, item or trait names it couldn't match to the
+game data.
 
 > GitHub disables scheduled workflows in public repositories after 60 days without activity. If stats stop updating,
 > re-enable the Crawl workflow from the Actions tab.

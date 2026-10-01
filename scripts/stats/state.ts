@@ -1,34 +1,36 @@
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import type { PatchCounters, PatchTimeline, PlatformState } from "./types.ts";
+import { gunzipSync, gzipSync } from "node:zlib";
+import { type BlobStore, FileBlobStore } from "./blob.ts";
+import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
+import type { BoardRow, PatchTimeline, PlatformState } from "./types.ts";
+
+export interface BoardChunk {
+  key: string;
+  set: number;
+  patch: string;
+  /** `{runStart}-{region}`; runStart (`YYYYMMDDTHHMMSSZ`) sorts chronologically. */
+  name: string;
+}
+
+const BOARD_KEY = /^boards\/set(\d+)\/([^/]+)\/([^/]+)\.jsonl\.gz$/;
 
 /**
- * On-disk layout of the `stats` branch:
- *   state/{platform}.json            player pool and last-crawl times
- *   seen/{platform}.txt              processed match IDs with their game time (epoch s)
- *   counters/set{N}/{patch}.json     additive counters per rank bucket
- *   patches.json                     when each live patch was first seen
+ * Crawler state and stored boards:
+ *   state/{platform}.json                          player pool and last-crawl times
+ *   seen/{platform}.txt                            processed match IDs with their game time (epoch s)
+ *   patches.json                                   when each live patch was first seen
+ *   boards/set{N}/{patch}/{runStart}-{region}.jsonl.gz   one gzipped JSON row per board
+ *   summaries/set{N}/{patch}.json                  built stats per patch, kept permanently
  */
 export class StatsStore {
-  readonly root: string;
+  readonly blobs: BlobStore;
 
-  constructor(root: string) {
-    this.root = root;
+  constructor(blobs: BlobStore) {
+    this.blobs = blobs;
   }
 
-  private async readJson<T>(path: string): Promise<T | null> {
-    try {
-      return JSON.parse(await readFile(join(this.root, path), "utf8")) as T;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-      throw error;
-    }
-  }
-
-  private async write(path: string, contents: string) {
-    const file = join(this.root, path);
-    await mkdir(dirname(file), { recursive: true });
-    await writeFile(file, contents);
+  private async readJson<T>(key: string): Promise<T | null> {
+    const data = await this.blobs.get(key);
+    return data ? (JSON.parse(new TextDecoder().decode(data)) as T) : null;
   }
 
   async platformState(platform: string): Promise<PlatformState> {
@@ -36,31 +38,28 @@ export class StatsStore {
   }
 
   savePlatformState(platform: string, state: PlatformState) {
-    return this.write(`state/${platform}.json`, JSON.stringify(state));
+    return this.blobs.put(`state/${platform}.json`, JSON.stringify(state));
   }
 
   async seen(platform: string): Promise<Map<string, number>> {
-    try {
-      const text = await readFile(join(this.root, `seen/${platform}.txt`), "utf8");
-      return new Map(
-        text
-          .split("\n")
-          .filter(Boolean)
-          .map((line) => {
-            const [id = "", time = "0"] = line.split("\t");
-            return [id, Number(time)];
-          }),
-      );
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return new Map();
-      throw error;
-    }
+    const data = await this.blobs.get(`seen/${platform}.txt`);
+    if (!data) return new Map();
+    return new Map(
+      new TextDecoder()
+        .decode(data)
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => {
+          const [id = "", time = "0"] = line.split("\t");
+          return [id, Number(time)];
+        }),
+    );
   }
 
   /** Match lists are only requested since each player's last crawl, so old IDs can be forgotten. */
   saveSeen(platform: string, seen: Map<string, number>, keepAfter: number) {
     const lines = [...seen].filter(([, time]) => time >= keepAfter).map(([id, time]) => `${id}\t${time}`);
-    return this.write(`seen/${platform}.txt`, lines.join("\n") + "\n");
+    return this.blobs.put(`seen/${platform}.txt`, lines.join("\n") + "\n");
   }
 
   async patchTimeline(): Promise<PatchTimeline> {
@@ -68,37 +67,51 @@ export class StatsStore {
   }
 
   savePatchTimeline(timeline: PatchTimeline) {
-    return this.write("patches.json", JSON.stringify(timeline, null, 2));
+    return this.blobs.put("patches.json", JSON.stringify(timeline, null, 2));
   }
 
-  patchCounters(set: number, patch: string) {
-    return this.readJson<PatchCounters>(`counters/set${set}/${patch}.json`);
+  appendBoards(set: number, patch: string, name: string, rows: BoardRow[]) {
+    const body = gzipSync(rows.map((row) => JSON.stringify(row)).join("\n"));
+    return this.blobs.put(`boards/set${set}/${patch}/${name}.jsonl.gz`, body);
   }
 
-  savePatchCounters(counters: PatchCounters) {
-    return this.write(`counters/set${counters.set}/${counters.patch}.json`, JSON.stringify(counters));
+  async listBoardChunks(): Promise<BoardChunk[]> {
+    return (await this.blobs.list("boards/")).flatMap((key) => {
+      const match = key.match(BOARD_KEY);
+      return match ? [{ key, set: Number(match[1]), patch: match[2]!, name: match[3]! }] : [];
+    });
   }
 
-  async listPatchCounters(): Promise<{ set: number; patch: string }[]> {
-    const setDirs = await readdir(join(this.root, "counters")).catch(() => []);
-    const entries = await Promise.all(
-      setDirs.map(async (dir) => {
-        const files = await readdir(join(this.root, "counters", dir));
-        return files.map((file) => ({ set: Number(dir.replace("set", "")), patch: file.replace(/\.json$/, "") }));
-      }),
-    );
-    return entries.flat();
+  async readBoards(chunk: BoardChunk): Promise<BoardRow[]> {
+    const data = await this.blobs.get(chunk.key);
+    if (!data) return [];
+    return new TextDecoder()
+      .decode(gunzipSync(data))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as BoardRow);
   }
 
-  /** Keeps the newest `keep` patches of each set; older patches are no longer shown on the site. */
-  async prunePatches(keep: number) {
-    const all = await this.listPatchCounters();
-    const bySet = Map.groupBy(all, (entry) => entry.set);
-    for (const [set, patches] of bySet) {
-      const stale = patches.sort((a, b) => comparePatches(b.patch, a.patch)).slice(keep);
-      for (const { patch } of stale) await rm(join(this.root, `counters/set${set}/${patch}.json`));
+  /** Keeps boards for the newest `keep` patches of each set; summaries are never pruned. */
+  async pruneBoards(keep: number) {
+    const bySet = Map.groupBy(await this.listBoardChunks(), (chunk) => chunk.set);
+    for (const chunks of bySet.values()) {
+      const patches = [...new Set(chunks.map((chunk) => chunk.patch))].sort((a, b) => comparePatches(b, a));
+      const stale = new Set(patches.slice(keep));
+      for (const chunk of chunks) if (stale.has(chunk.patch)) await this.blobs.delete(chunk.key);
     }
   }
+
+  putSummary(set: number, patch: string, json: string) {
+    return this.blobs.put(`summaries/set${set}/${patch}.json`, json);
+  }
+}
+
+/** R2 when the `R2_*` environment variables are set, otherwise the local directory `dir`. */
+export function createStatsStore(dir: string | undefined): StatsStore | null {
+  const r2 = r2ConfigFromEnv();
+  if (r2) return new StatsStore(new R2BlobStore(r2));
+  return dir ? new StatsStore(new FileBlobStore(dir)) : null;
 }
 
 /** Numeric patch comparison, so `16.10` sorts after `16.9`. */
@@ -107,3 +120,6 @@ export function comparePatches(a: string, b: string) {
   const [bMajor = 0, bMinor = 0] = b.split(".").map(Number);
   return aMajor - bMajor || aMinor - bMinor;
 }
+
+/** `2026-10-01T12:00:00.123Z` → `20261001T120000Z`, safe in object keys and chronologically sortable. */
+export const runStamp = (date: Date) => date.toISOString().replace(/[-:]|\.\d+/g, "");

@@ -3,13 +3,16 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { type Manifest, type SetData, setStatsSchema } from "../src/lib/data/schema.ts";
 import { buildSetStats } from "./lib/stats.ts";
-import { StatsStore } from "./stats/state.ts";
+import { addBoardToPatch } from "./stats/aggregate.ts";
+import { type BoardChunk, comparePatches, createStatsStore, type StatsStore } from "./stats/state.ts";
 import type { PatchCounters } from "./stats/types.ts";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
+/** The site shows the newest patch, falling back to the previous one right after a patch. */
+const PATCHES_PER_SET = 2;
 
-const { values: args } = parseArgs({ options: { stats: { type: "string", default: "stats" } } });
+const { values: args } = parseArgs({ options: { stats: { type: "string" } } });
 
 const readJson = async <T>(path: string) => JSON.parse(await readFile(path, "utf8")) as T;
 
@@ -20,11 +23,30 @@ const top = (names: Map<string, number>) =>
     .map(([name, games]) => `${name} (${games})`)
     .join(", ");
 
+/** `20261001T120000Z-americas` → `2026-10-01T12:00:00Z` */
+const chunkTime = (name: string) =>
+  name.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z.*$/, "$1-$2-$3T$4:$5:$6Z");
+
+/** Streams a patch's chunks one at a time, so memory holds counters rather than every board. */
+async function loadPatch(store: StatsStore, set: number, patch: string, chunks: BoardChunk[]): Promise<PatchCounters> {
+  const counters: PatchCounters = { set, patch, updatedAt: "", buckets: {} };
+  for (const chunk of chunks) {
+    for (const row of await store.readBoards(chunk)) addBoardToPatch(counters, row);
+    const time = chunkTime(chunk.name);
+    if (time > counters.updatedAt) counters.updatedAt = time;
+  }
+  return counters;
+}
+
 async function main() {
-  const store = new StatsStore(args.stats);
-  const available = await store.listPatchCounters();
-  if (available.length === 0) {
-    console.log(`No counters found in ${args.stats}; skipping stats.`);
+  const store = createStatsStore(args.stats);
+  if (!store) {
+    console.log("No R2 credentials or --stats directory; skipping stats.");
+    return;
+  }
+  const chunks = await store.listBoardChunks();
+  if (chunks.length === 0) {
+    console.log("No stored boards yet; skipping stats.");
     return;
   }
 
@@ -33,14 +55,19 @@ async function main() {
   await mkdir(OUT_DIR, { recursive: true });
 
   for (const set of manifest.patches.latest.sets) {
-    const entries = available.filter((entry) => entry.set === set);
-    if (entries.length === 0) continue;
-    const patches = (await Promise.all(entries.map(({ patch }) => store.patchCounters(set, patch)))).filter(
-      (counters): counters is PatchCounters => counters !== null,
+    const byPatch = Map.groupBy(
+      chunks.filter((chunk) => chunk.set === set),
+      (chunk) => chunk.patch,
     );
+    const newest = [...byPatch.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
+    if (newest.length === 0) continue;
+
+    const patches = await Promise.all(newest.map((patch) => loadPatch(store, set, patch, byPatch.get(patch)!)));
     const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
     const { stats, unknown } = buildSetStats(data, patches);
-    await writeFile(join(OUT_DIR, `set${set}.json`), JSON.stringify(setStatsSchema.parse(stats)));
+    const json = JSON.stringify(setStatsSchema.parse(stats));
+    await writeFile(join(OUT_DIR, `set${set}.json`), json);
+    if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
 
     console.log(
       `set ${set}: ${stats.status}, patch ${stats.patch}, ${stats.rankFloor}+, ${stats.matches} matches` +

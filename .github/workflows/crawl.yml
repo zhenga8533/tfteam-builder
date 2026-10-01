@@ -14,7 +14,7 @@ on:
         default: "45"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: crawl
@@ -22,37 +22,24 @@ concurrency:
 
 jobs:
   crawl:
-    # Opt-in: set the CRAWL_ENABLED repository variable to "true" once the RIOT_API_KEY secret exists.
+    # Opt-in: set the CRAWL_ENABLED repository variable to "true" once the RIOT_API_KEY and R2_* secrets exist.
     if: vars.CRAWL_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
-      # The stats branch doesn't exist until the first successful crawl.
-      - uses: actions/checkout@v5
-        continue-on-error: true
-        with:
-          ref: stats
-          path: stats
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run crawl -- --state stats --budget-minutes "$BUDGET" ${PLATFORMS:+--platforms "$PLATFORMS"}
+      # Crawler state and boards live in Cloudflare R2.
+      - run: npm run crawl -- --budget-minutes "$BUDGET" ${PLATFORMS:+--platforms "$PLATFORMS"}
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
           BUDGET: ${{ inputs.budget-minutes || '45' }}
           PLATFORMS: ${{ inputs.platforms }}
-      # Publish as a single orphan commit so the branch's history doesn't grow with every run.
-      - name: Publish stats branch
-        working-directory: stats
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          rm -rf .git
-          git init -q -b stats
-          git add -A
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -qm "Update match stats"
-          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" stats
