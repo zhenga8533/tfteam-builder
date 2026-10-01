@@ -75,7 +75,12 @@ export function ChampionCard({ champion, star }: { champion: Champion; star?: nu
       <CardHeading
         icon={<ChampionIcon champion={champion} className="size-12" />}
         title={champion.name}
-        subtitle={<span className={COST_TEXT[champion.cost]}>{champion.cost} cost</span>}
+        subtitle={
+          <span className={COST_TEXT[champion.cost]}>
+            {champion.cost} cost
+            {champion.role && <span className="text-muted-foreground"> · {champion.role}</span>}
+          </span>
+        }
       />
       <ChampionTraitList champion={champion} />
       {champion.ability.name && (

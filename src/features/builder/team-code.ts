@@ -16,9 +16,12 @@ export const supportsTeamCodes = (champions: Champion[]) => champions.some((cham
 export function encodeTeamCode(apiNames: string[], champions: Champion[], set: number): string {
   const byApi = new Map(champions.map((champion) => [champion.apiName, champion]));
   const digits = digitsFor(champions);
-  const codes = [...new Set(apiNames)]
-    .flatMap((apiName) => byApi.get(apiName)?.plannerCode ?? [])
-    .slice(0, TEAM_CODE_SLOTS);
+  // The Team Planner only knows shop champions, so a form ("Lux (Coven)") is planned as its base.
+  const plannerCode = (apiName: string) => {
+    const champion = byApi.get(apiName);
+    return champion?.plannerCode ?? (champion?.formOf ? byApi.get(champion.formOf)?.plannerCode : undefined);
+  };
+  const codes = [...new Set(apiNames.flatMap((apiName) => plannerCode(apiName) ?? []))].slice(0, TEAM_CODE_SLOTS);
   const slots = Array.from({ length: TEAM_CODE_SLOTS }, (_, i) => (codes[i] ?? 0).toString(16).padStart(digits, "0"));
   return `0${digits === 3 ? 2 : 1}${slots.join("")}TFTSet${set}`;
 }

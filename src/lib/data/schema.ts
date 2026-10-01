@@ -6,26 +6,19 @@ export type Patch = z.infer<typeof patchSchema>;
 
 const numberRecord = z.record(z.string(), z.number());
 
-/** An alternate version of a champion that appears in games but not in the shop, e.g. "Lux (Coven)". */
-export const championFormSchema = z.object({
-  apiName: z.string(),
-  name: z.string(),
-  /** The part that distinguishes the form ("Coven" in "Lux (Coven)"), when the name has one. */
-  label: z.string().nullable(),
-  traits: z.array(z.string()),
-  icon: z.string(),
-});
-export type ChampionForm = z.infer<typeof championFormSchema>;
-
 export const championSchema = z.object({
   apiName: z.string(),
   name: z.string(),
   cost: z.number().int().min(1).max(5),
   traits: z.array(z.string()),
   icon: z.string(),
+  /** Wide splash art; empty when the set has none. */
   splash: z.string(),
+  /** In-game combat role, e.g. "Magic Caster"; absent for sets whose data doesn't include roles. */
+  role: z.string().optional(),
   plannerCode: z.number().int().optional(),
-  forms: z.array(championFormSchema),
+  /** For an alternate form such as "Lux (Coven)": the apiName of the shop champion it's a form of. */
+  formOf: z.string().optional(),
   ability: z.object({
     name: z.string(),
     desc: z.string(),
@@ -105,7 +98,7 @@ export const setDataSchema = z.object({
   items: z.array(itemSchema),
   /** Duplicate item apiNames (as they may appear in match data) → the apiName kept in `items`. */
   itemAliases: z.record(z.string(), z.string()),
-  /** Champion form apiNames (as they appear in match data) → their base champion's apiName. */
+  /** Same-name clones of a champion (as they appear in match data) → the champion's apiName. */
   championAliases: z.record(z.string(), z.string()),
   augments: z.array(augmentSchema),
 });
@@ -154,8 +147,6 @@ export const setStatsSchema = z.object({
   /** True when the current patch is too new and the previous patch's stats are shown instead. */
   previousPatch: z.boolean(),
   units: z.record(z.string(), statLineSchema),
-  /** Per-form stats keyed by form apiName; also counted in the base champion's `units` entry. */
-  forms: z.record(z.string(), statLineSchema),
   items: z.record(z.string(), statLineSchema),
   traits: z.array(traitStatSchema),
   bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),

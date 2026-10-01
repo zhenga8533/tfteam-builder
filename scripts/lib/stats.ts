@@ -9,7 +9,7 @@ import { type Counter, type Counters, type PatchCounters, RANK_BUCKETS, type Ran
 /** Minimum ranked matches before a rank floor (and patch) is trusted. */
 export const MIN_MATCHES = 2000;
 /** Minimum games for an entry to receive a tier; below this it is shown but not ranked. */
-export const MIN_GAMES = { unit: 200, item: 200, trait: 150, unitItem: 50, form: 50 } as const;
+export const MIN_GAMES = { unit: 200, item: 200, trait: 150, unitItem: 50 } as const;
 /** Cumulative share of ranked entries per tier: top 10% S, next 25% A, next 35% B, rest C. */
 const TIER_CUTOFFS = [0.1, 0.35, 0.7, 1] as const;
 const BEST_ITEMS_PER_UNIT = 6;
@@ -97,7 +97,7 @@ function collect(record: Record<string, Counter>, resolve: (key: string, games: 
 export const rankableItems = (data: SetData) =>
   new Set(data.items.filter((item) => item.kind !== "component").map((item) => item.apiName));
 
-/** Resolvers mapping Riot's names in stored boards to the site's apiNames (forms and item variants included). */
+/** Resolvers mapping Riot's names in stored boards to the site's apiNames (clones and item variants included). */
 export function resolversFor(data: SetData) {
   return {
     units: new NameResolver(
@@ -118,7 +118,6 @@ export interface BuildResult {
 }
 
 export function buildSetStats(data: SetData, patches: PatchCounters[], now = new Date()): BuildResult {
-  // Forms resolve to their base champion, so e.g. every Lux form counts toward Lux.
   const { units, items, traits } = resolversFor(data);
   const unknown = { units: units.unknown, items: items.unknown, traits: traits.unknown };
   const sample = chooseSample(patches);
@@ -136,7 +135,6 @@ export function buildSetStats(data: SetData, patches: PatchCounters[], now = new
         matches,
         previousPatch: false,
         units: {},
-        forms: {},
         items: {},
         traits: [],
         bestItems: {},
@@ -153,12 +151,6 @@ export function buildSetStats(data: SetData, patches: PatchCounters[], now = new
     [...unitCounters].map(([name, counter]) => [name, statLine(counter, counters.boards)]),
   );
   assignTiers(Object.values(unitLines), MIN_GAMES.unit);
-  const formLines = Object.fromEntries(
-    Object.entries(counters.units)
-      // Match data usually reports the base champion, so forms are sparse; skip ones too rare to say anything.
-      .filter(([apiName, [games]]) => apiName in data.championAliases && games >= MIN_GAMES.form)
-      .map(([apiName, counter]) => [apiName, statLine(counter, counters.boards)]),
-  );
 
   const itemCounters = collect(counters.items, (key, games) => items.resolve(key, games));
   const equipped = [...itemCounters.values()].reduce((total, [games]) => total + games, 0);
@@ -205,7 +197,6 @@ export function buildSetStats(data: SetData, patches: PatchCounters[], now = new
       matches: counters.matches,
       previousPatch: sample.previousPatch,
       units: unitLines,
-      forms: formLines,
       items: itemLines,
       traits: traitLines.sort((a, b) => a.score - b.score),
       bestItems,

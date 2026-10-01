@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AutoCompCard } from "@/features/comps/components/comp-card";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
+import { otherForms } from "@/lib/game/forms";
 import { ItemBuilds } from "@/features/stats/components/item-builds";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
@@ -127,6 +128,7 @@ function ChampionHeader({ champion }: { champion: Champion }) {
         <h1 className="font-display text-3xl font-bold tracking-tight">{champion.name}</h1>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className={COST_TEXT[champion.cost]}>{champion.cost} cost</span>
+          {champion.role && <span className="text-muted-foreground">{champion.role}</span>}
           {champion.traits.map((apiName) => {
             const trait = traitsByApi.get(apiName);
             return trait ? (
@@ -141,6 +143,16 @@ function ChampionHeader({ champion }: { champion: Champion }) {
       </div>
       {line?.tier && <TierBadge tier={line.tier} className="size-14 text-3xl" />}
     </header>
+  );
+}
+
+function FormsSection({ champion }: { champion: Champion }) {
+  const { champions } = useGameData();
+  if (otherForms(champion, champions).length === 0) return null;
+  return (
+    <Section title="Other forms">
+      <ChampionForms champion={champion} />
+    </Section>
   );
 }
 
@@ -198,11 +210,7 @@ function ChampionPage() {
               <StarLevels stats={stats} />
             </Section>
           )}
-          {champion.forms.length > 0 && (
-            <Section title="Forms">
-              <ChampionForms champion={champion} />
-            </Section>
-          )}
+          <FormsSection champion={champion} />
         </aside>
       </div>
     </div>
