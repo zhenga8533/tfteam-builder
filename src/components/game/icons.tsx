@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import type { Augment, Champion, Item, Trait } from "@/lib/data/schema";
 import type { TraitStyle } from "@/lib/game/traits";
 import { cn } from "@/lib/utils";
-import { COST_RING, TRAIT_BG } from "./styles";
+import { COST_RING } from "./styles";
 
 type ImgProps = Omit<ComponentProps<"img">, "src" | "alt">;
 
@@ -46,8 +46,7 @@ export function AugmentIcon({ augment, className, ...props }: ImgProps & { augme
   );
 }
 
-const HEX_CLIP = "[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]";
-
+/** The in-game trait badge: a hexagonal metal frame and face (bronze, silver, gold…) with the trait's icon. */
 export function TraitIcon({
   trait,
   style = "inactive",
@@ -59,20 +58,20 @@ export function TraitIcon({
 }) {
   return (
     <span
-      className={cn(
-        "inline-flex aspect-[0.88] size-7 shrink-0 items-center justify-center",
-        HEX_CLIP,
-        TRAIT_BG[style],
-        className,
-      )}
+      className={cn("hex-clip relative inline-flex aspect-[0.88] size-7 shrink-0", `trait-frame-${style}`, className)}
     >
-      <img
-        src={trait.icon}
-        alt={trait.name}
-        loading="lazy"
-        draggable={false}
-        className={cn("size-[62%] select-none", style === "inactive" ? "opacity-60" : "brightness-0")}
-      />
+      <span className={cn("hex-clip absolute inset-[9%] flex items-center justify-center", `trait-face-${style}`)}>
+        <img
+          src={trait.icon}
+          alt={trait.name}
+          loading="lazy"
+          draggable={false}
+          className={cn(
+            "size-[64%] select-none",
+            style === "inactive" ? "opacity-70" : "brightness-0 drop-shadow-[0_1px_0_rgb(255_255_255/0.25)]",
+          )}
+        />
+      </span>
     </span>
   );
 }

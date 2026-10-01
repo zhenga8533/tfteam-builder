@@ -28,15 +28,6 @@ export const COST_BG: Record<number, string> = {
   5: "bg-cost-5",
 };
 
-export const TRAIT_BG: Record<TraitStyle, string> = {
-  inactive: "bg-muted",
-  bronze: "bg-trait-bronze",
-  silver: "bg-trait-silver",
-  gold: "bg-trait-gold",
-  prismatic: "bg-linear-to-br from-trait-prismatic via-cost-4 to-trait-gold",
-  unique: "bg-trait-unique",
-};
-
 export const TRAIT_TEXT: Record<TraitStyle, string> = {
   inactive: "text-muted-foreground",
   bronze: "text-trait-bronze",
