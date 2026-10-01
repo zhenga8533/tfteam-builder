@@ -8,6 +8,8 @@ import {
   gameAssetUrl,
   parseAugmentTier,
   pluginAssetUrl,
+  binHash,
+  unhashVariables,
 } from "./transform.ts";
 
 const rawItem = (overrides: Partial<RawItem> & Pick<RawItem, "apiName" | "name">): RawItem => ({
@@ -229,5 +231,20 @@ describe("championTraitApiNames", () => {
     const trait = (apiName: string): RawTrait => ({ apiName, name: "Stargazer", desc: "", icon: null, effects: [] });
     const traits = [trait("TFT17_Stargazer_Wolf"), trait("TFT17_Stargazer"), trait("TFT17_Stargazer_Serpent")];
     expect([...championTraitApiNames(traits, new Set(["Stargazer"]))]).toEqual(["TFT17_Stargazer"]);
+  });
+});
+
+describe("unhashVariables", () => {
+  it("renames hashed keys whose names appear in the description", () => {
+    const desc = "Gain @BrawlerTeamHealth@ Health and @Percent*100@% more. @Unused@";
+    expect(binHash("BrawlerTeamHealth")).toBe("{da2472a7}");
+    expect(
+      unhashVariables({ "{da2472a7}": 100, [binHash("percent")]: 0.2, "{deadbeef}": 1, Named: 3, Empty: null }, desc),
+    ).toEqual({
+      BrawlerTeamHealth: 100,
+      Percent: 0.2,
+      "{deadbeef}": 1,
+      Named: 3,
+    });
   });
 });
