@@ -72,7 +72,7 @@ function AutoCompPage() {
             Usually played at level {comp.level} · {percent(comp.play)} of boards
           </p>
         </div>
-        <Button onClick={() => openInBuilder(set, units, comp.name)}>
+        <Button onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name)}>
           <Hammer /> Open in Team Builder
         </Button>
       </header>

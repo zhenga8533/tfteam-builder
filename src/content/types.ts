@@ -20,6 +20,10 @@ export interface CompUnit {
   items?: string[];
   /** Highlights the unit as a carry on comp cards. */
   carry?: boolean;
+  /** An optional slot; its traits are counted separately in the Team Builder. */
+  flex?: boolean;
+  /** Champion apiNames that can stand in for this unit. */
+  alternatives?: string[];
 }
 
 export interface Comp {

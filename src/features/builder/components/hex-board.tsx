@@ -35,7 +35,7 @@ function PlacedUnit({ unit, index }: { unit: BoardUnit; index: number }) {
           event.preventDefault();
           remove(index);
         }}
-        aria-label={`${champion.name}, ${unit.star} star. Right-click to remove.`}
+        aria-label={`${champion.name}, ${unit.star} star${unit.flex ? ", flex" : ""}. Right-click to remove.`}
         className={cn("absolute inset-0 touch-none outline-none", isDragging && "opacity-30")}
       >
         <HexUnit
@@ -43,6 +43,8 @@ function PlacedUnit({ unit, index }: { unit: BoardUnit; index: number }) {
           star={unit.star}
           items={unit.items.flatMap((apiName) => itemsByApi.get(apiName) ?? [])}
           highlighted={selected === index}
+          flex={unit.flex}
+          alternatives={unit.alternatives?.flatMap((apiName) => championsByApi.get(apiName) ?? [])}
         />
       </button>
     </GameHoverCard>

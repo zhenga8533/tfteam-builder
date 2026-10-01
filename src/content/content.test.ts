@@ -31,6 +31,9 @@ function unitProblems(units: CompUnit[], data: SetData): string[] {
     hexes.add(unit.hex);
     if ((unit.items?.length ?? 0) > MAX_ITEMS) problems.push(`${unit.apiName} has more than ${MAX_ITEMS} items`);
     for (const item of unit.items ?? []) if (!items.has(item)) problems.push(`unknown item ${item}`);
+    for (const alternative of unit.alternatives ?? []) {
+      if (!champions.has(alternative)) problems.push(`unknown alternative ${alternative}`);
+    }
     return problems;
   });
 }

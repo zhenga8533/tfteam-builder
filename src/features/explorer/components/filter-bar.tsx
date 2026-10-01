@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useGameData } from "@/lib/data/hooks";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
 import { traitStyle } from "@/lib/game/traits";
-import { PickerDialog } from "./picker-dialog";
+import { PickerDialog } from "@/components/game/picker-dialog";
 
 type Picker = { kind: "champion" } | { kind: "trait" } | { kind: "item"; index: number } | null;
 

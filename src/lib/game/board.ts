@@ -12,7 +12,20 @@ export interface BoardUnit {
   apiName: string;
   star: StarLevel;
   items: string[];
+  /** An optional slot: shown on the board, but its traits are counted separately. */
+  flex?: boolean;
+  /** Champions that can stand in for this unit (e.g. "Sett or Rammus"). */
+  alternatives?: string[];
 }
+
+/** One board of a team at a given player level (e.g. a level 6 early board and a level 8 final board). */
+export interface LevelBoard {
+  level: number;
+  board: Board;
+}
+
+export const MIN_LEVEL = 1;
+export const MAX_LEVEL = 10;
 
 /** Hexes in row-major order; index = row * BOARD_COLS + col. */
 export type Board = (BoardUnit | null)[];
@@ -70,4 +83,30 @@ export function unequipItem(board: Board, index: number, itemIndex: number): Boa
 /** Gold spent on the board: a 2★ costs three copies, a 3★ nine. */
 export function teamCost(units: BoardUnit[], championsByApi: Map<string, Champion>): number {
   return units.reduce((total, unit) => total + (championsByApi.get(unit.apiName)?.cost ?? 0) * 3 ** (unit.star - 1), 0);
+}
+
+export function toggleFlex(board: Board, index: number): Board {
+  const unit = board[index];
+  return unit ? update(board, index, { ...unit, flex: !unit.flex }) : board;
+}
+
+export function addAlternative(board: Board, index: number, apiName: string): Board {
+  const unit = board[index];
+  if (!unit || unit.apiName === apiName || unit.alternatives?.includes(apiName)) return board;
+  return update(board, index, { ...unit, alternatives: [...(unit.alternatives ?? []), apiName] });
+}
+
+export function removeAlternative(board: Board, index: number, apiName: string): Board {
+  const unit = board[index];
+  if (!unit) return board;
+  const alternatives = (unit.alternatives ?? []).filter((alternative) => alternative !== apiName);
+  return update(board, index, { ...unit, alternatives: alternatives.length ? alternatives : undefined });
+}
+
+/** Makes an alternative the main pick; the previous main pick becomes an alternative. Items stay. */
+export function swapAlternative(board: Board, index: number, apiName: string): Board {
+  const unit = board[index];
+  if (!unit?.alternatives?.includes(apiName)) return board;
+  const alternatives = unit.alternatives.map((alternative) => (alternative === apiName ? unit.apiName : alternative));
+  return update(board, index, { ...unit, apiName, alternatives });
 }

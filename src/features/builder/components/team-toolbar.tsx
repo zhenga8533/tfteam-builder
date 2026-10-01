@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGameData } from "@/lib/data/hooks";
+import { cn } from "@/lib/utils";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
 import { ExportCompDialog } from "./export-comp-dialog";
@@ -32,10 +33,12 @@ type Panel = "import" | "save" | "saved" | "export" | null;
 
 export function TeamToolbar() {
   const { champions } = useGameData();
-  const { set, board, clear, load } = useBuilder();
+  const { set, board, level, clear, setBoard } = useBuilder();
   const { units, cost } = useBoardSummary();
   const [panel, setPanel] = useState<Panel>(null);
   const codesSupported = supportsTeamCodes(champions);
+  const flexUnits = units.filter((unit) => unit.flex).length;
+  const coreUnits = units.length - flexUnits;
 
   const copyCode = async () => {
     const code = encodeTeamCode(
@@ -54,7 +57,7 @@ export function TeamToolbar() {
   const clearBoard = () => {
     const previous = board;
     clear();
-    toast("Board cleared.", { action: { label: "Undo", onClick: () => load(previous) } });
+    toast("Board cleared.", { action: { label: "Undo", onClick: () => setBoard(previous) } });
   };
 
   const panelProps = (name: Exclude<Panel, null>) => ({
@@ -65,9 +68,12 @@ export function TeamToolbar() {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="mr-auto flex items-center gap-4 text-sm">
-        <span>
-          <span className="font-semibold tabular-nums">{units.length}</span>{" "}
+        <span title={`Level ${level} fields up to ${level} units`}>
+          <span className={cn("font-semibold tabular-nums", coreUnits > level && "text-destructive")}>
+            {coreUnits}/{level}
+          </span>{" "}
           <span className="text-muted-foreground">units</span>
+          {flexUnits > 0 && <span className="text-muted-foreground"> · {flexUnits} flex</span>}
         </span>
         <span className="flex items-center gap-1" title="Total gold value">
           <StatIcon stat="gold" />

@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { MAX_ITEMS, STAR_LEVELS, type StarLevel } from "@/lib/game/board";
 import { BestItems } from "@/features/stats/components/best-items";
 import { useBuilder } from "../use-builder";
+import { FlexControls } from "./flex-controls";
 
 export function UnitInspector({ className }: { className?: string }) {
   const { championsByApi, itemsByApi } = useGameData();
@@ -70,6 +71,8 @@ export function UnitInspector({ className }: { className?: string }) {
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
+
+      <FlexControls unit={unit} index={selected} />
 
       <div className="space-y-2">
         <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">

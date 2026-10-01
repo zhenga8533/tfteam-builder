@@ -19,7 +19,7 @@ export function TraitPanel({ className }: { className?: string }) {
         </p>
       ) : (
         <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
-          {traits.map(({ trait, count, activeIndex, style }) => (
+          {traits.map(({ trait, count, activeIndex, style, flex }) => (
             <li key={trait.apiName}>
               <GameHoverCard content={<TraitCard trait={trait} count={count} />} side="right">
                 <div
@@ -41,7 +41,17 @@ export function TraitPanel({ className }: { className?: string }) {
                       ))}
                     </p>
                   </div>
-                  <span className="text-sm font-semibold tabular-nums">{count}</span>
+                  <span className="text-sm font-semibold tabular-nums">
+                    {count}
+                    {flex > 0 && (
+                      <span
+                        className="ml-0.5 text-xs font-normal text-muted-foreground"
+                        title={`+${flex} from flex units`}
+                      >
+                        +{flex}
+                      </span>
+                    )}
+                  </span>
                 </div>
               </GameHoverCard>
             </li>
