@@ -114,6 +114,17 @@ describe("computeTraits", () => {
       ["Fae", 2, "bronze"],
     ]);
   });
+
+  it("counts a trait in traitCounts more than once", () => {
+    const avatar = { ...champion("AhriFae", 4, ["Fae"]), traitCounts: { Fae: 2 } };
+    const traits = computeTraits(
+      [{ apiName: "AhriFae", items: [] }],
+      new Map([["AhriFae", avatar]]),
+      traitsByApi,
+      itemsByApi,
+    );
+    expect(traits.map(({ trait, count }) => [trait.apiName, count])).toEqual([["Fae", 2]]);
+  });
 });
 
 describe("team codes", () => {

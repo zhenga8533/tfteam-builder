@@ -5,6 +5,7 @@ import {
   championStatsQuery,
   itemStatsQuery,
   manifestQuery,
+  patchHistoryQuery,
   setDataQuery,
   statsQuery,
   traitStatsQuery,
@@ -77,6 +78,12 @@ export function useItemStats(apiName: string) {
 export function useTraitStats(apiName: string) {
   const { patch, set } = useActiveSet();
   return useSuspenseQuery(traitStatsQuery(patch, set, apiName)).data;
+}
+
+/** Average placement per patch for every entry; null when not published (or on PBE). */
+export function usePatchHistory() {
+  const { patch, set } = useActiveSet();
+  return useSuspenseQuery(patchHistoryQuery(patch, set)).data;
 }
 
 /** Comps detected from match data, best first; null when not published (or on PBE). */

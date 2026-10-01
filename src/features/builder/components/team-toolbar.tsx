@@ -6,6 +6,7 @@ import {
   Eraser,
   FileCode,
   FolderOpen,
+  Link2,
   Save,
   Share2,
   WandSparkles,
@@ -27,6 +28,7 @@ import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { statsQuery } from "@/lib/data/queries";
 import type { Champion } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
+import { encodeShareCode } from "../share-link";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
 import { ExportCompDialog } from "./export-comp-dialog";
@@ -46,7 +48,7 @@ type Panel = "import" | "save" | "saved" | "export" | null;
 
 export function TeamToolbar() {
   const { champions } = useGameData();
-  const { set, board, level, clear, setBoard, autofill } = useBuilder();
+  const { set, board, boards, level, clear, setBoard, autofill } = useBuilder();
   const { patch } = useActiveSet();
   // Not suspending: autofill works without stats, it just breaks ties by cost instead of placement.
   const stats = useQuery(statsQuery(patch, set)).data;
@@ -55,6 +57,17 @@ export function TeamToolbar() {
   const codesSupported = supportsTeamCodes(champions);
   const flexUnits = units.filter((unit) => unit.flex).length;
   const coreUnits = units.length - flexUnits;
+
+  const copyLink = async () => {
+    const url = new URL(`${import.meta.env.BASE_URL}builder`, location.origin);
+    url.searchParams.set("team", encodeShareCode(set, boards));
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      toast.success("Team link copied.");
+    } catch {
+      toast.error("Couldn't access the clipboard.", { description: url.toString() });
+    }
+  };
 
   const copyCode = async () => {
     const code = encodeTeamCode(
@@ -133,6 +146,11 @@ export function TeamToolbar() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuItem onSelect={copyLink} disabled={units.length === 0}>
+            <Link2 />
+            <MenuText title="Copy link" hint="Opens this team, every level included, in the Team Builder" />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs text-muted-foreground">In-game Team Planner</DropdownMenuLabel>
           <DropdownMenuItem onSelect={copyCode} disabled={!codesSupported || units.length === 0}>
             <ClipboardCopy />

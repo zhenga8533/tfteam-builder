@@ -5,6 +5,7 @@ import { ChampionIcon } from "@/components/game/icons";
 import { SearchInput } from "@/components/layout/search-input";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
+import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
 import { matches, numberParam, stringParam } from "@/lib/search";
@@ -71,6 +72,7 @@ function ChampionTierListPage() {
             label={champion.name}
             line={line}
             link={{ to: "/champions/$apiName", params: { apiName: champion.apiName } }}
+            trend={<StatTrend kind="units" entry={apiName} />}
             card={<ChampionCard champion={champion} />}
           />
         );

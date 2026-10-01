@@ -1,6 +1,7 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import { type BlobStore, FileBlobStore } from "./blob.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
+import type { SetStats } from "../../src/lib/data/schema.ts";
 import type { TftPatch } from "../lib/tft-patches.ts";
 import type { BoardRow, PlatformState } from "./types.ts";
 
@@ -107,6 +108,16 @@ export class StatsStore {
 
   putSummary(set: number, patch: string, json: string) {
     return this.blobs.put(`summaries/set${set}/${patch}.json`, json);
+  }
+
+  /** Every saved patch summary of a set, oldest patch first. */
+  async summaries(set: number): Promise<SetStats[]> {
+    const prefix = `summaries/set${set}/`;
+    const patches = (await this.blobs.list(prefix))
+      .map((key) => key.slice(prefix.length).replace(/\.json$/, ""))
+      .sort(comparePatches);
+    const summaries = await Promise.all(patches.map((patch) => this.readJson<SetStats>(`${prefix}${patch}.json`)));
+    return summaries.filter((summary): summary is SetStats => summary !== null);
   }
 }
 

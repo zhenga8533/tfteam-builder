@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Champion, Trait } from "../../src/lib/data/schema.ts";
 import type { RawChampion, RawItem, RawSet, RawTrait } from "./cdragon.ts";
 import {
   buildAugments,
@@ -11,6 +12,7 @@ import {
   pluginAssetUrl,
   binHash,
   unhashVariables,
+  weightFormTraits,
 } from "./transform.ts";
 
 const rawItem = (overrides: Partial<RawItem> & Pick<RawItem, "apiName" | "name">): RawItem => ({
@@ -262,5 +264,21 @@ describe("unhashVariables", () => {
       "{deadbeef}": 1,
       Named: 3,
     });
+  });
+});
+
+describe("weightFormTraits", () => {
+  it("doubles a form's added trait when its base trait says so", () => {
+    const champions = [
+      { apiName: "Lux", traits: ["Avatar"] },
+      { apiName: "Lux_Coven", formOf: "Lux", traits: ["Coven", "Avatar"] },
+      { apiName: "Mage", traits: ["Coven"] },
+    ] as Champion[];
+    const traits = [
+      { apiName: "Avatar", desc: "An Avatar's chosen Trait is counted twice for Trait bonuses." },
+      { apiName: "Coven", desc: "Covens gain power." },
+    ] as Trait[];
+    const weighted = weightFormTraits(champions, traits);
+    expect(weighted.map((champion) => champion.traitCounts)).toEqual([undefined, { Coven: 2 }, undefined]);
   });
 });

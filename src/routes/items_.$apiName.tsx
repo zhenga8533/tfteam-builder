@@ -8,8 +8,10 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
+import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useGameData, useItemStats, useStats } from "@/lib/data/hooks";
 import type { Item, ItemStats } from "@/lib/data/schema";
@@ -83,7 +85,12 @@ function ItemHeader({ item }: { item: Item }) {
           <ItemRecipe item={item} />
           {trait && <TraitLink trait={trait} iconClassName="size-4" />}
         </p>
-        {line && <StatSummary line={line} />}
+        {line && (
+          <span className="flex items-center gap-2">
+            <StatSummary line={line} />
+            <StatTrend kind="items" entry={item.apiName} />
+          </span>
+        )}
       </div>
       {line?.tier && <TierBadge tier={line.tier} className="size-14 text-3xl" />}
     </header>
@@ -129,12 +136,12 @@ function ItemPage() {
                 </Section>
               )}
             </>
-          ) : (
+          ) : item.kind === "component" ? (
             <EmptyState>
-              {item.kind === "component"
-                ? "Components aren't ranked: they're held mid-game rather than built into a final board."
-                : `No match stats for ${item.name} yet.`}
+              Components aren't ranked: they're held mid-game rather than built into a final board.
             </EmptyState>
+          ) : (
+            <NoStats subject={item.name} />
           )}
         </div>
         <aside className="space-y-4">
@@ -142,6 +149,11 @@ function ItemPage() {
             <ItemCard item={item} />
           </Section>
           {item.kind === "component" && <BuildsInto item={item} />}
+          {stats && (
+            <Section title="Patch history">
+              <PatchHistoryChart kind="items" entry={item.apiName} />
+            </Section>
+          )}
         </aside>
       </div>
     </div>

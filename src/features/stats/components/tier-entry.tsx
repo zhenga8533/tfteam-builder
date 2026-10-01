@@ -11,18 +11,25 @@ interface TierEntryProps {
   card: ReactNode;
   /** Makes the entry a link, e.g. to the champion's stats page. */
   link?: Pick<LinkProps, "to" | "params">;
+  /** Movement since the previous patch, e.g. a `StatTrend`. */
+  trend?: ReactNode;
 }
 
 const ENTRY_CLASS =
   "flex w-16 flex-col items-center gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 /** Icon, name and average placement, with the full game card (plus stats) on hover. */
-export function TierEntry({ icon, label, line, card, link }: TierEntryProps) {
+export function TierEntry({ icon, label, line, card, link, trend }: TierEntryProps) {
   const content = (
     <>
       {icon}
       <span className="line-clamp-2 text-center text-[11px] leading-tight text-muted-foreground">{label}</span>
-      {line && <AvgPlacement line={line} className="text-xs" />}
+      {line && (
+        <span className="flex items-center gap-1">
+          <AvgPlacement line={line} className="text-xs" />
+          {trend}
+        </span>
+      )}
     </>
   );
 

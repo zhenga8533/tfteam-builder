@@ -19,6 +19,8 @@ export const championSchema = z.object({
   plannerCode: z.number().int().optional(),
   /** For an alternate form such as "Lux (Coven)": the apiName of the shop champion it's a form of. */
   formOf: z.string().optional(),
+  /** Traits this champion counts as more than one unit for (e.g. an Avatar's chosen trait counts twice). */
+  traitCounts: z.record(z.string(), z.number().int()).optional(),
   ability: z.object({
     name: z.string(),
     desc: z.string(),
@@ -136,6 +138,26 @@ export type StatLine = z.infer<typeof statLineSchema>;
 export const traitStatSchema = statLineSchema.extend({ trait: z.string(), minUnits: z.number().int() });
 export type TraitStat = z.infer<typeof traitStatSchema>;
 
+/** Change in average placement since `patch` (negative = placing better), keyed like the stats. */
+export const patchTrendSchema = z.object({
+  patch: z.string(),
+  units: numberRecord,
+  items: numberRecord,
+  /** Keyed `apiName:minUnits`. */
+  traits: numberRecord,
+});
+export type PatchTrend = z.infer<typeof patchTrendSchema>;
+
+/** Average placement per patch, oldest first; null where a patch had too few games. */
+export const patchHistorySchema = z.object({
+  patches: z.array(z.string()),
+  units: z.record(z.string(), z.array(z.number().nullable())),
+  items: z.record(z.string(), z.array(z.number().nullable())),
+  /** Keyed `apiName:minUnits`. */
+  traits: z.record(z.string(), z.array(z.number().nullable())),
+});
+export type PatchHistory = z.infer<typeof patchHistorySchema>;
+
 export const setStatsSchema = z.object({
   set: z.number().int(),
   patch: z.string(),
@@ -150,6 +172,8 @@ export const setStatsSchema = z.object({
   items: z.record(z.string(), statLineSchema),
   traits: z.array(traitStatSchema),
   bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),
+  /** Movement since the previous patch with saved stats; absent until there is one. */
+  trend: patchTrendSchema.optional(),
 });
 export type SetStats = z.infer<typeof setStatsSchema>;
 export type RankFloor = SetStats["rankFloor"];
@@ -202,6 +226,8 @@ export const autoCompSchema = statLineSchema.extend({
   id: z.string(),
   /** `carries|coreTraits`, as produced by `compSignature`; used to match hand-written guides. */
   signature: z.string(),
+  /** Signatures of variants merged into this comp (same carries and main trait, a different second trait). */
+  variants: z.array(z.string()),
   name: z.string(),
   carries: z.array(z.string()),
   /** Traits active on most of the comp's boards, at their most common breakpoint. */
