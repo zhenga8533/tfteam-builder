@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { CommandSearch } from "./command-search";
 import { isNavGroup, NAV } from "./nav";
 import { PatchSwitcher } from "./patch-switcher";
 import { ThemeToggle } from "./theme-toggle";
@@ -110,6 +111,9 @@ export function Header() {
         <Logo />
         <DesktopNav />
         <div className="ml-auto flex items-center gap-1">
+          <Suspense>
+            <CommandSearch />
+          </Suspense>
           <ThemeToggle />
           <Suspense>
             <PatchSwitcher />

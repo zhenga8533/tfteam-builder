@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { Builder } from "@/features/builder/components/builder";
+import { useSharedTeam } from "@/features/builder/use-shared-team";
+import { stringParam } from "@/lib/search";
 
 export const Route = createFileRoute("/builder")({
   head: () => ({ meta: [{ title: "Team Builder · TFTeam Builder" }] }),
+  validateSearch: (search: Record<string, unknown>): { team?: string } => ({ team: stringParam(search.team) }),
   component: BuilderPage,
 });
 
 function BuilderPage() {
+  useSharedTeam(Route.useSearch().team);
   return (
     <>
       <PageHeader

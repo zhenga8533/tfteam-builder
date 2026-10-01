@@ -10,6 +10,7 @@ import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { PatchHistoryChart } from "@/features/stats/components/patch-trend";
 import { StatTable } from "@/features/stats/components/stat-table";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useGameData, useStats, useTraitStats } from "@/lib/data/hooks";
 import type { Trait, TraitStats } from "@/lib/data/schema";
@@ -136,7 +137,7 @@ function TraitPage() {
               )}
             </>
           ) : (
-            <EmptyState>No match stats for {trait.name} yet.</EmptyState>
+            <NoStats subject={trait.name} />
           )}
         </div>
         <aside className="space-y-4">

@@ -11,6 +11,7 @@ import { TierBadge } from "@/features/comps/components/tier-badge";
 import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useGameData, useItemStats, useStats } from "@/lib/data/hooks";
 import type { Item, ItemStats } from "@/lib/data/schema";
@@ -135,12 +136,12 @@ function ItemPage() {
                 </Section>
               )}
             </>
-          ) : (
+          ) : item.kind === "component" ? (
             <EmptyState>
-              {item.kind === "component"
-                ? "Components aren't ranked: they're held mid-game rather than built into a final board."
-                : `No match stats for ${item.name} yet.`}
+              Components aren't ranked: they're held mid-game rather than built into a final board.
             </EmptyState>
+          ) : (
+            <NoStats subject={item.name} />
           )}
         </div>
         <aside className="space-y-4">

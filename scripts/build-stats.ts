@@ -22,7 +22,7 @@ import { patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
-import { type BoardChunk, comparePatches, createStatsStore } from "./stats/state.ts";
+import { type BoardChunk, comparePatches, createStatsStore, type StatsStore } from "./stats/state.ts";
 import type { BoardRow, PatchCounters } from "./stats/types.ts";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
@@ -124,6 +124,24 @@ async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, ch
   );
 }
 
+/**
+ * A set whose boards are gone (e.g. deleted to save storage) still publishes its last saved stats and
+ * history; per-champion details need the boards, so those pages show no details.
+ */
+async function publishSavedSummary(store: StatsStore, set: number) {
+  const summaries = await store.summaries(set);
+  const last = summaries.filter((summary) => summary.status === "ready").at(-1);
+  if (!last) return;
+  await writeFile(join(OUT_DIR, `set${set}.json`), JSON.stringify(setStatsSchema.parse(last)));
+  await rm(join(OUT_DIR, `set${set}`), { recursive: true, force: true });
+  await mkdir(join(OUT_DIR, `set${set}`), { recursive: true });
+  await writeFile(
+    join(OUT_DIR, `set${set}`, "history.json"),
+    JSON.stringify(patchHistorySchema.parse(patchHistory(summaries))),
+  );
+  console.log(`set ${set}: saved summary from patch ${last.patch} (no stored boards)`);
+}
+
 async function main() {
   const store = createStatsStore(args.stats);
   if (!store) {
@@ -131,10 +149,6 @@ async function main() {
     return;
   }
   const chunks = await store.listBoardChunks();
-  if (chunks.length === 0) {
-    console.log("No stored boards yet; skipping stats.");
-    return;
-  }
 
   // Stats describe live ranked games, so they're built against live-patch game data only.
   const manifest = await readJson<Manifest>(join(DATA_DIR, "manifest.json"));
@@ -146,7 +160,10 @@ async function main() {
       (chunk) => chunk.patch,
     );
     const newest = [...byPatch.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
-    if (newest.length === 0) continue;
+    if (newest.length === 0) {
+      await publishSavedSummary(store, set);
+      continue;
+    }
 
     const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
     const forms = new FormInference(data);

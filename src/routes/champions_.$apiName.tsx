@@ -14,6 +14,7 @@ import { ItemBuilds } from "@/features/stats/components/item-builds";
 import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion, ChampionStats } from "@/lib/data/schema";
@@ -165,7 +166,7 @@ function ChampionPage() {
               </div>
             </>
           ) : (
-            <EmptyState>No match stats for {champion.name} yet.</EmptyState>
+            <NoStats subject={champion.name} />
           )}
         </div>
         <aside className="space-y-4">

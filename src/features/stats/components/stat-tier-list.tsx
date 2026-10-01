@@ -3,9 +3,10 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import type { TierRows } from "@/content/types";
 import { TierRows as TierRowsView } from "@/features/comps/components/tier-rows";
-import { useActiveSet, useStats } from "@/lib/data/hooks";
+import { useStats } from "@/lib/data/hooks";
 import type { StatLine } from "@/lib/data/schema";
 import { mergeTiers } from "../tiers";
+import { NoStats } from "./no-stats";
 import { StatsMeta } from "./stats-meta";
 
 interface StatTierListProps {
@@ -49,7 +50,6 @@ export function StatTierList({
   toolbar,
   visible = () => true,
 }: StatTierListProps) {
-  const { patch, set } = useActiveSet();
   const stats = useStats();
   const shown = lines.filter(([key]) => visible(key));
   const byKey = new Map(shown);
@@ -70,11 +70,7 @@ export function StatTierList({
       {stats && <StatsMeta stats={stats} />}
       {toolbar && <div className="mb-6 flex flex-wrap items-center gap-2">{toolbar}</div>}
       {!hasStats ? (
-        <EmptyState>
-          {patch === "pbe"
-            ? "Match stats come from live ranked games, so they aren't available on PBE."
-            : `No match stats for Set ${set} yet.`}
-        </EmptyState>
+        <NoStats />
       ) : Object.keys(rows).length === 0 && lowSample.length === 0 ? (
         <EmptyState>Nothing matches these filters.</EmptyState>
       ) : (

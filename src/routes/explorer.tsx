@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ExplorerResults } from "@/features/explorer/components/explorer-results";
 import { FilterBar } from "@/features/explorer/components/filter-bar";
 import { useExplorer } from "@/features/explorer/use-explorer";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count } from "@/features/stats/format";
 import { useActiveSet, useStats } from "@/lib/data/hooks";
@@ -61,11 +62,7 @@ function ExplorerPage() {
       />
       {stats && <StatsMeta stats={stats} />}
       {status.state === "missing" ? (
-        <EmptyState>
-          {patch === "pbe"
-            ? "Match stats come from live ranked games, so they aren't available on PBE."
-            : `No board sample for Set ${set} yet.`}
-        </EmptyState>
+        <NoStats subject={`Set ${set}`} />
       ) : status.state === "error" ? (
         <EmptyState>Couldn't load the board sample: {status.message}</EmptyState>
       ) : status.state === "loading" ? (
