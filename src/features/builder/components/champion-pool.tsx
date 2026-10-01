@@ -84,11 +84,13 @@ export function ChampionPool() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_TRAITS}>All traits</SelectItem>
-            {traits.map((option) => (
-              <SelectItem key={option.apiName} value={option.apiName}>
-                {option.name}
-              </SelectItem>
-            ))}
+            {traits
+              .filter((option) => option.source === "champion")
+              .map((option) => (
+                <SelectItem key={option.apiName} value={option.apiName}>
+                  {option.name}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>

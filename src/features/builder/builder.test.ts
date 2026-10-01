@@ -12,6 +12,7 @@ const champion = (apiName: string, cost: number, traits: string[], plannerCode?:
   icon: "",
   splash: "",
   plannerCode,
+  forms: [],
   ability: { name: "", desc: "", icon: "", variables: {} },
   stats: {
     hp: 0,
@@ -33,6 +34,7 @@ const trait = (apiName: string, minUnits: number[], styles: number[]): Trait => 
   desc: "",
   icon: "",
   breakpoints: minUnits.map((min, i) => ({ minUnits: min, maxUnits: 99, style: styles[i]!, variables: {} })),
+  source: "champion",
 });
 
 const emblem: Item = {
