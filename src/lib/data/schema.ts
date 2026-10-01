@@ -19,6 +19,8 @@ export const championSchema = z.object({
   plannerCode: z.number().int().optional(),
   /** For an alternate form such as "Lux (Coven)": the apiName of the shop champion it's a form of. */
   formOf: z.string().optional(),
+  /** Traits this champion counts as more than one unit for (e.g. an Avatar's chosen trait counts twice). */
+  traitCounts: z.record(z.string(), z.number().int()).optional(),
   ability: z.object({
     name: z.string(),
     desc: z.string(),
@@ -202,6 +204,8 @@ export const autoCompSchema = statLineSchema.extend({
   id: z.string(),
   /** `carries|coreTraits`, as produced by `compSignature`; used to match hand-written guides. */
   signature: z.string(),
+  /** Signatures of variants merged into this comp (same carries and main trait, a different second trait). */
+  variants: z.array(z.string()),
   name: z.string(),
   carries: z.array(z.string()),
   /** Traits active on most of the comp's boards, at their most common breakpoint. */

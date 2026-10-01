@@ -38,6 +38,10 @@ const increment = (map: Map<string, number>, key: string) => map.set(key, (map.g
 
 const mostCommon = (map: Map<string, number>) => [...map].sort((a, b) => b[1] - a[1])[0]?.[0];
 
+const mergeCounts = (target: Map<string, number>, source: Map<string, number>) => {
+  for (const [key, count] of source) target.set(key, (target.get(key) ?? 0) + count);
+};
+
 interface CompDetail {
   counter: Counter;
   units: Map<string, number>;
@@ -159,13 +163,61 @@ export class CompDetector {
     }
   }
 
+  /** The core trait the comp runs at its highest breakpoint, e.g. Riftbeast in Riftbeast + Hunter. */
+  private mainTrait(signature: string, detail: CompDetail): string | undefined {
+    const core = (signature.split("|")[1] ?? "").split("+").filter(Boolean);
+    const breakpoint = (trait: string) =>
+      Number(
+        mostCommon(new Map([...detail.traitBreakpoints].filter(([key]) => key.startsWith(`${trait}|`))))?.split(
+          "|",
+        )[1] ?? 0,
+      );
+    return core.sort((a, b) => breakpoint(b) - breakpoint(a))[0];
+  }
+
+  /**
+   * Signatures with the same carries and main trait are one comp whose second trait varies (Riftbeast
+   * Ashe with Hunter or with Inferno), so their boards are combined under the most played signature.
+   */
+  private merged(): { signature: string; variants: string[]; detail: CompDetail }[] {
+    const groups = Map.groupBy(
+      [...this.details].sort((a, b) => b[1].counter[0] - a[1].counter[0]),
+      ([signature, detail]) => `${signature.split("|")[0]}|${this.mainTrait(signature, detail) ?? signature}`,
+    );
+    return [...groups.values()].map((group) => {
+      // Map.groupBy never makes an empty group.
+      const [[signature, first], ...rest] = group as [[string, CompDetail], ...[string, CompDetail][]];
+      const detail: CompDetail = {
+        counter: [...first.counter] as Counter,
+        units: new Map(first.units),
+        stars: new Map(first.stars),
+        itemSets: new Map(first.itemSets),
+        instances: new Map(first.instances),
+        traits: new Map(first.traits),
+        traitBreakpoints: new Map(first.traitBreakpoints),
+        levels: new Map(first.levels),
+      };
+      for (const [, other] of rest) {
+        other.counter.forEach((value, index) => (detail.counter[index]! += value));
+        mergeCounts(detail.units, other.units);
+        mergeCounts(detail.stars, other.stars);
+        mergeCounts(detail.itemSets, other.itemSets);
+        mergeCounts(detail.instances, other.instances);
+        mergeCounts(detail.traits, other.traits);
+        mergeCounts(detail.traitBreakpoints, other.traitBreakpoints);
+        mergeCounts(detail.levels, other.levels);
+      }
+      return { signature, variants: rest.map(([variant]) => variant), detail };
+    });
+  }
+
   results(): AutoComp[] {
     const championName = new Map(this.data.champions.map((champion) => [champion.apiName, champion.name]));
     const traitsByApi = new Map(this.data.traits.map((trait) => [trait.apiName, trait]));
     const comps: AutoComp[] = [];
     const secondary = new Map<string, string>();
 
-    for (const [signature, detail] of this.details) {
+    for (const { signature, variants, detail } of this.merged()) {
       const games = detail.counter[0];
       const [carryPart = "", traitPart = ""] = signature.split("|");
       const carries = carryPart.split("+").filter(Boolean);
@@ -222,6 +274,7 @@ export class CompDetector {
       comps.push({
         id,
         signature,
+        variants,
         name: name || "Flex",
         carries,
         traits,
@@ -232,11 +285,11 @@ export class CompDetector {
       });
     }
 
-    // Comps sharing a main trait and carry differ in their second core trait; name that to tell them apart.
+    // Variants were merged above, so a shared name is rare (e.g. carries with the same name); the other core
+    // trait tells them apart.
     for (const group of Map.groupBy(comps, (comp) => comp.name).values()) {
       if (group.length < 2) continue;
       for (const comp of group) {
-        // Same main trait and carry, so the other core trait is what tells the variants apart.
         const label = traitsByApi.get(secondary.get(comp.id) ?? "")?.name;
         if (label) comp.name = `${comp.name} (${label})`;
       }

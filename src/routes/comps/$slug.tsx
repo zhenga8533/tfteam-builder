@@ -58,7 +58,7 @@ function Augments({ apiNames }: { apiNames: string[] }) {
 /** Stats for the detected comp whose carries and core traits match this guide's board, if any. */
 function LiveStats({ units }: { units: CompUnit[] }) {
   const signature = useCompSignature(units);
-  const match = useAutoComps()?.find((comp) => comp.signature === signature);
+  const match = useAutoComps()?.find((comp) => comp.signature === signature || comp.variants.includes(signature));
   if (!match) return null;
   return (
     <Link

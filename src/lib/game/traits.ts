@@ -41,7 +41,7 @@ interface UnitLike {
 }
 
 /**
- * Counts each trait once per distinct champion, plus emblems that grant a trait the holder
+ * Counts each trait once per distinct champion (twice for a trait in its `traitCounts`), plus emblems that grant a trait the holder
  * doesn't already have (matching in-game rules).
  */
 export function computeTraits(
@@ -51,7 +51,7 @@ export function computeTraits(
   itemsByApi: Map<string, Item>,
 ): TraitState[] {
   const counts = new Map<string, number>();
-  const increment = (trait: string) => counts.set(trait, (counts.get(trait) ?? 0) + 1);
+  const increment = (trait: string, by = 1) => counts.set(trait, (counts.get(trait) ?? 0) + by);
   const seenChampions = new Set<string>();
 
   for (const unit of units) {
@@ -59,7 +59,7 @@ export function computeTraits(
     if (!champion) continue;
     if (!seenChampions.has(champion.apiName)) {
       seenChampions.add(champion.apiName);
-      champion.traits.forEach(increment);
+      for (const trait of champion.traits) increment(trait, champion.traitCounts?.[trait] ?? 1);
     }
     const granted = new Set(unit.items.flatMap((item) => itemsByApi.get(item)?.trait ?? []));
     for (const trait of granted) if (!champion.traits.includes(trait)) increment(trait);

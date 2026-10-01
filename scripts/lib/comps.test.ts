@@ -128,4 +128,27 @@ describe("CompDetector", () => {
     expect(comps).toHaveLength(1);
     expect(comps[0]!.games).toBe(games + 1);
   });
+
+  it("merges qualifying variants that share carries and main trait, keeping their signatures", () => {
+    const brawlerVariant = (placement: number) =>
+      board(
+        placement,
+        [["Ahri", ["JG", "BB", "Rab"]], ["Sett", []]],
+        [
+          ["Blossom", 5, 5],
+          ["Brawler", 2, 2],
+        ],
+      );
+    const comps = run([
+      ...Array.from({ length: games * 2 }, (_, i) => ahriBlossom(i === 0 ? 1 : 3)),
+      ...Array.from({ length: games }, (_, i) => brawlerVariant(i === 0 ? 1 : 5)),
+    ]);
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toMatchObject({
+      name: "Blossom Ahri",
+      games: games * 3,
+      signature: "Ahri|Blossom+Spellweaver",
+      variants: ["Ahri|Blossom+Brawler"],
+    });
+  });
 });

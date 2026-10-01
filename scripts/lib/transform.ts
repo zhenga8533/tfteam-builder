@@ -354,10 +354,13 @@ export function buildSet(
   return {
     number: set.number,
     name: `Set ${set.number}`,
-    champions: [
-      ...selected.map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, planner)),
-      ...namedForms.map(({ raw, base }) => buildChampion(raw, patch, traitApiByName, undefined, base)),
-    ].sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
+    champions: weightFormTraits(
+      [
+        ...selected.map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, planner)),
+        ...namedForms.map(({ raw, base }) => buildChampion(raw, patch, traitApiByName, undefined, base)),
+      ],
+      traits,
+    ).sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
     traits,
     // Recipes can name set-specific component variants (DA_Component_Spatula) that alias to the kept ones.
     items: items.map((item) => ({ ...item, composition: item.composition.map((part) => aliases[part] ?? part) })),
@@ -367,6 +370,23 @@ export function buildSet(
     ),
     augments: buildAugments(set, itemsByApi, patch),
   };
+}
+
+const COUNTED_TWICE = /counted twice/i;
+
+/**
+ * Some form mechanics count the chosen trait double (Set 18's Avatar: "An Avatar's chosen Trait is counted
+ * twice"). When a base champion's own trait says so, each form's added trait gets a weight of 2.
+ */
+export function weightFormTraits(champions: Champion[], traits: Trait[]): Champion[] {
+  const byApi = new Map(champions.map((champion) => [champion.apiName, champion]));
+  const doubling = new Set(traits.filter((trait) => COUNTED_TWICE.test(trait.desc)).map((trait) => trait.apiName));
+  return champions.map((champion) => {
+    const base = champion.formOf ? byApi.get(champion.formOf) : undefined;
+    if (!base?.traits.some((trait) => doubling.has(trait))) return champion;
+    const added = champion.traits.filter((trait) => !base.traits.includes(trait));
+    return added.length ? { ...champion, traitCounts: Object.fromEntries(added.map((trait) => [trait, 2])) } : champion;
+  });
 }
 
 /** Every mainline set entry (e.g. `TFTSet18`), newest first, excluding PvE/Pairs/Turbo variants. */
