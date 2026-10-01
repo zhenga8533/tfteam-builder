@@ -1,24 +1,44 @@
 import { ItemCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
-import { useGameData, useStats } from "@/lib/data/hooks";
+import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
+import { nextItems } from "../builds";
 import { percent } from "../format";
 import { AvgPlacement, StatSummary } from "./stat-summary";
 
 interface BestItemsProps {
   champion: string;
+  /** Items the unit already holds; suggestions are the best item to add next. */
+  equipped: string[];
   onPick: (item: string) => void;
 }
 
-/** The items that place best on a champion, from match stats; clicking one equips it. */
-export function BestItems({ champion, onPick }: BestItemsProps) {
+const SUGGESTIONS = 6;
+const MAX_ITEMS = 3;
+
+/** The best next item for a champion given what it holds, from match stats; clicking one equips it. */
+export function BestItems({ champion, equipped, onPick }: BestItemsProps) {
   const { itemsByApi } = useGameData();
-  const lines = useStats()?.bestItems[champion];
+  const championStats = useChampionStats(champion);
+  const fallback = useStats()?.bestItems[champion];
+  if (equipped.length >= MAX_ITEMS) return null;
+
+  // Builds only cover rankable items, so components already equipped don't narrow the suggestions.
+  const held = equipped.filter((apiName) => itemsByApi.get(apiName)?.kind !== "component");
+  const lines = championStats
+    ? nextItems(championStats.builds, held)
+        .slice(0, SUGGESTIONS)
+        .map(({ item, build }) => ({ ...build, item }))
+    : held.length === 0
+      ? fallback
+      : undefined;
   if (!lines?.length) return null;
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Best items</p>
+      <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+        {held.length ? "Best next item" : "Best items"}
+      </p>
       <ul className="grid grid-cols-6 gap-1.5">
         {lines.map((line) => {
           const item = itemsByApi.get(line.item);

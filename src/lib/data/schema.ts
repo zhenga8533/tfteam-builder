@@ -157,3 +157,24 @@ export const setStatsSchema = z.object({
 });
 export type SetStats = z.infer<typeof setStatsSchema>;
 export type RankFloor = SetStats["rankFloor"];
+
+/** A stat line plus its difference from the champion's own average placement (negative is better). */
+export const deltaStatSchema = statLineSchema.extend({ delta: z.number() });
+export type DeltaStat = z.infer<typeof deltaStatSchema>;
+
+export const championStatsSchema = z.object({
+  apiName: z.string(),
+  overall: statLineSchema,
+  /** Keyed by star level. */
+  stars: z.record(z.string(), statLineSchema),
+  /**
+   * Item subsets (1–3 items, sorted, duplicates allowed) the champion held, counted per unit instance.
+   * A held set counts toward each of its subsets, so `[A, B]` covers boards with A, B and any third item.
+   */
+  builds: z.array(deltaStatSchema.extend({ items: z.array(z.string()) })),
+  /** Other units on the same board. */
+  partners: z.array(deltaStatSchema.extend({ unit: z.string() })),
+  /** Active trait breakpoints on the same board. */
+  traits: z.array(deltaStatSchema.extend({ trait: z.string(), minUnits: z.number().int() })),
+});
+export type ChampionStats = z.infer<typeof championStatsSchema>;

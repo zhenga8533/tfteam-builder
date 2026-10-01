@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSettings } from "@/stores/settings";
-import { manifestQuery, setDataQuery, statsQuery } from "./queries";
+import { championStatsQuery, manifestQuery, setDataQuery, statsQuery } from "./queries";
 import type { Augment, Champion, Item, SetData, Trait } from "./schema";
 
 export function useManifest() {
@@ -51,4 +51,10 @@ export function useGameData(): GameData {
 export function useStats() {
   const { patch, set } = useActiveSet();
   return useSuspenseQuery(statsQuery(patch, set)).data;
+}
+
+/** Per-champion builds, partners and traits; null when not published (or on PBE). */
+export function useChampionStats(apiName: string) {
+  const { patch, set } = useActiveSet();
+  return useSuspenseQuery(championStatsQuery(patch, set, apiName)).data;
 }

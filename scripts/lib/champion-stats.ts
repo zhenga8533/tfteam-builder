@@ -1,0 +1,137 @@
+import type { ChampionStats, SetData, StatLine } from "../../src/lib/data/schema.ts";
+import type { BoardRow, Counter } from "../stats/types.ts";
+import { rankableItems, resolversFor, round, statLine } from "./stats.ts";
+
+/** Minimum games before a build, partner or trait is listed; larger item sets split the sample further. */
+export const MIN_CHAMPION_GAMES = { build1: 50, build2: 30, build3: 20, partner: 50, trait: 50 } as const;
+
+const BUILD_MIN = [0, MIN_CHAMPION_GAMES.build1, MIN_CHAMPION_GAMES.build2, MIN_CHAMPION_GAMES.build3];
+
+function bump(map: Map<string, Counter>, key: string, placement: number) {
+  let counter = map.get(key);
+  if (!counter) map.set(key, (counter = [0, 0, 0, 0]));
+  counter[0] += 1;
+  counter[1] += placement;
+  if (placement <= 4) counter[2] += 1;
+  if (placement === 1) counter[3] += 1;
+}
+
+/** Every distinct sub-multiset of a sorted item list, e.g. [A, A, B] → A, B, A+A, A+B, A+A+B. */
+export function itemSubsets(items: string[]): string[][] {
+  const subsets = new Map<string, string[]>();
+  for (let mask = 1; mask < 1 << items.length; mask++) {
+    const subset = items.filter((_, index) => mask & (1 << index));
+    subsets.set(subset.join(","), subset);
+  }
+  return [...subsets.values()];
+}
+
+/** Accumulates per-champion builds, partners and traits from boards in the selected sample. */
+export class ChampionAccumulator {
+  private boards = 0;
+  private readonly units = new Map<string, Counter>();
+  private readonly instances = new Map<string, Counter>();
+  private readonly stars = new Map<string, Counter>();
+  private readonly builds = new Map<string, Counter>();
+  private readonly partners = new Map<string, Counter>();
+  private readonly traits = new Map<string, Counter>();
+  private readonly resolve: ReturnType<typeof resolversFor>;
+  private readonly rankable: Set<string>;
+  private readonly breakpoints: Map<string, number[]>;
+
+  constructor(data: SetData) {
+    this.resolve = resolversFor(data);
+    this.rankable = rankableItems(data);
+    this.breakpoints = new Map(data.traits.map((trait) => [trait.apiName, trait.breakpoints.map((b) => b.minUnits)]));
+  }
+
+  add(row: BoardRow) {
+    const [, , , placement, , rawUnits, rawTraits] = row;
+    this.boards += 1;
+
+    const units = rawUnits.flatMap(([rawUnit, star, rawItems]) => {
+      const unit = this.resolve.units.resolve(rawUnit, 0);
+      if (!unit) return [];
+      const items = rawItems
+        .flatMap((item) => this.resolve.items.resolve(item, 0) ?? [])
+        .filter((item) => this.rankable.has(item))
+        .sort();
+      return [{ unit, star, items }];
+    });
+    const traits = rawTraits.flatMap(([rawTrait, tier]) => {
+      const trait = this.resolve.traits.resolve(rawTrait, 0);
+      // `tier_current` counts reached breakpoints, so it is a 1-based index into them.
+      const minUnits = trait ? this.breakpoints.get(trait)?.[tier - 1] : undefined;
+      return trait && minUnits !== undefined ? [`${trait}:${minUnits}`] : [];
+    });
+
+    const present = [...new Set(units.map(({ unit }) => unit))];
+    for (const unit of present) {
+      bump(this.units, unit, placement);
+      for (const other of present) if (other !== unit) bump(this.partners, `${unit}|${other}`, placement);
+      for (const trait of traits) bump(this.traits, `${unit}|${trait}`, placement);
+    }
+    for (const key of new Set(units.map(({ unit, star }) => `${unit}|${star}`))) bump(this.stars, key, placement);
+    for (const { unit, items } of units) {
+      bump(this.instances, unit, placement);
+      for (const subset of itemSubsets(items)) bump(this.builds, `${unit}|${subset.join(",")}`, placement);
+    }
+  }
+
+  results(): ChampionStats[] {
+    const byUnit = new Map<string, ChampionStats>();
+    for (const [unit, counter] of this.units) {
+      byUnit.set(unit, {
+        apiName: unit,
+        overall: statLine(counter, this.boards),
+        stars: {},
+        builds: [],
+        partners: [],
+        traits: [],
+      });
+    }
+    const withDelta = (stats: ChampionStats, line: StatLine) => ({
+      ...line,
+      delta: round(line.avg - stats.overall.avg, 2),
+    });
+
+    for (const [key, counter] of this.stars) {
+      const [unit = "", star = ""] = key.split("|");
+      const stats = byUnit.get(unit);
+      if (stats) stats.stars[star] = statLine(counter, stats.overall.games);
+    }
+    for (const [key, counter] of this.builds) {
+      const [unit = "", list = ""] = key.split("|");
+      const items = list.split(",");
+      const stats = byUnit.get(unit);
+      if (!stats || counter[0] < BUILD_MIN[items.length]!) continue;
+      const instances = this.instances.get(unit)?.[0] ?? counter[0];
+      stats.builds.push({ items, ...withDelta(stats, statLine(counter, instances)) });
+    }
+    for (const [key, counter] of this.partners) {
+      const [unit = "", other = ""] = key.split("|");
+      const stats = byUnit.get(unit);
+      if (!stats || counter[0] < MIN_CHAMPION_GAMES.partner) continue;
+      stats.partners.push({ unit: other, ...withDelta(stats, statLine(counter, stats.overall.games)) });
+    }
+    for (const [key, counter] of this.traits) {
+      const [unit = "", traitKey = ""] = key.split("|");
+      const [trait = "", minUnits = ""] = traitKey.split(":");
+      const stats = byUnit.get(unit);
+      if (!stats || counter[0] < MIN_CHAMPION_GAMES.trait) continue;
+      stats.traits.push({
+        trait,
+        minUnits: Number(minUnits),
+        ...withDelta(stats, statLine(counter, stats.overall.games)),
+      });
+    }
+
+    const byDelta = (a: { delta: number }, b: { delta: number }) => a.delta - b.delta;
+    for (const stats of byUnit.values()) {
+      stats.builds.sort(byDelta);
+      stats.partners.sort(byDelta);
+      stats.traits.sort(byDelta);
+    }
+    return [...byUnit.values()];
+  }
+}
