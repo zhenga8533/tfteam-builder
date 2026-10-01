@@ -12,6 +12,7 @@ import { percent } from "@/features/stats/format";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { TraitStat } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/traits")({
   head: () => ({ meta: [{ title: "Traits · TFTeam Builder" }] }),
@@ -45,11 +46,26 @@ function TraitsPage() {
     const withChampions = traits
       .filter((trait) => matches(trait.name, q))
       .map((trait) => ({ trait, champions: champions.filter((champion) => champion.traits.includes(trait.apiName)) }));
+    type Entry = (typeof withChampions)[number];
+    const fromChampions = (entry: Entry) => entry.trait.source === "champion";
     // Unique traits belong to a single champion and have a single breakpoint.
-    const isUnique = (entry: (typeof withChampions)[number]) => entry.champions.length <= 1;
+    const isUnique = (entry: Entry) => entry.champions.length <= 1;
     return [
-      { title: "Traits", entries: withChampions.filter((entry) => !isUnique(entry)) },
-      { title: "Unique traits", entries: withChampions.filter(isUnique) },
+      {
+        title: "Traits",
+        description: undefined,
+        entries: withChampions.filter((e) => fromChampions(e) && !isUnique(e)),
+      },
+      {
+        title: "Unique traits",
+        description: undefined,
+        entries: withChampions.filter((e) => fromChampions(e) && isUnique(e)),
+      },
+      {
+        title: "Other traits",
+        description: "Granted by augments, champion forms or set mechanics rather than by shop champions.",
+        entries: withChampions.filter((e) => !fromChampions(e)),
+      },
     ].filter((section) => section.entries.length > 0);
   }, [traits, champions, q]);
 
@@ -70,7 +86,10 @@ function TraitsPage() {
         <div className="space-y-8">
           {sections.map((section) => (
             <section key={section.title}>
-              <h2 className="mb-3 font-display text-lg font-semibold">{section.title}</h2>
+              <h2 className={cn("font-display text-lg font-semibold", section.description ? "mb-1" : "mb-3")}>
+                {section.title}
+              </h2>
+              {section.description && <p className="mb-3 text-sm text-muted-foreground">{section.description}</p>}
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {section.entries.map(({ trait, champions: members }) => (
                   <Card key={trait.apiName} className="py-4">
@@ -79,18 +98,20 @@ function TraitsPage() {
                       <TraitBreakpointStats
                         lines={stats?.traits.filter((line) => line.trait === trait.apiName) ?? []}
                       />
-                      <div className="flex flex-wrap gap-1.5 border-t pt-3">
-                        {members.map((champion) => (
-                          <GameHoverCard key={champion.apiName} content={<ChampionCard champion={champion} />}>
-                            <span
-                              tabIndex={0}
-                              className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                              <ChampionIcon champion={champion} className="size-9" />
-                            </span>
-                          </GameHoverCard>
-                        ))}
-                      </div>
+                      {members.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 border-t pt-3">
+                          {members.map((champion) => (
+                            <GameHoverCard key={champion.apiName} content={<ChampionCard champion={champion} />}>
+                              <span
+                                tabIndex={0}
+                                className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              >
+                                <ChampionIcon champion={champion} className="size-9" />
+                              </span>
+                            </GameHoverCard>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

@@ -1,4 +1,13 @@
-import type { Augment, AugmentTier, Champion, Item, ItemKind, SetData, Trait } from "../../src/lib/data/schema.ts";
+import type {
+  Augment,
+  AugmentTier,
+  Champion,
+  ChampionForm,
+  Item,
+  ItemKind,
+  SetData,
+  Trait,
+} from "../../src/lib/data/schema.ts";
 import {
   CDRAGON_BASE,
   type RawChampion,
@@ -40,20 +49,45 @@ export function parseAugmentTier(icon: string | null): AugmentTier | null {
   return digit ? (Number(digit) as AugmentTier) : null;
 }
 
-function buildTraits(set: RawSet, patch: string, usedNames: Set<string>): Trait[] {
+/** Upper bound CDragon uses for open-ended breakpoints; also substituted when it reports none. */
+const UNBOUNDED_UNITS = 25000;
+
+/**
+ * Champions reference traits by display name, but several traits can share one: Set 17 has
+ * `TFT17_Stargazer` plus per-constellation `TFT17_Stargazer_Wolf` etc. The champion-facing trait is
+ * the one whose apiName prefixes the others, else the shortest; the rest are tracked as variants.
+ */
+export function championTraitApiNames(traits: RawTrait[], championTraitNames: Set<string>): Set<string> {
+  const byName = Map.groupBy(
+    traits.filter((trait) => championTraitNames.has(trait.name)),
+    (trait) => trait.name,
+  );
+  return new Set(
+    [...byName.values()].map((group) => {
+      const names = group.map((trait) => trait.apiName).sort((a, b) => a.length - b.length || a.localeCompare(b));
+      return names.find((name) => names.every((other) => other.startsWith(name))) ?? names[0]!;
+    }),
+  );
+}
+
+/**
+ * Keeps every trait in the set, since match data reports augment- and mechanic-granted ones too.
+ * `championApiNames` marks those carried by shop champions (or their forms).
+ */
+function buildTraits(set: RawSet, patch: string, championApiNames: Set<string>): Trait[] {
   return set.traits
-    .filter((trait) => usedNames.has(trait.name))
     .map((trait: RawTrait) => ({
       apiName: trait.apiName,
       name: trait.name,
       desc: trait.desc ?? "",
       icon: gameAssetUrl(patch, trait.icon),
       breakpoints: trait.effects.map((effect) => ({
-        minUnits: effect.minUnits,
-        maxUnits: effect.maxUnits,
+        minUnits: effect.minUnits ?? 1,
+        maxUnits: effect.maxUnits ?? UNBOUNDED_UNITS,
         style: effect.style,
         variables: cleanNumbers(effect.variables),
       })),
+      source: championApiNames.has(trait.apiName) ? ("champion" as const) : ("other" as const),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -62,6 +96,7 @@ function buildChampion(
   raw: RawChampion,
   patch: string,
   traitApiByName: Map<string, string>,
+  forms: ChampionForm[],
   planner?: RawPlannerChampion,
 ): Champion {
   const stat = (key: string) => raw.stats[key] ?? 0;
@@ -73,6 +108,7 @@ function buildChampion(
     icon: planner ? pluginAssetUrl(patch, planner.squareIconPath) : gameAssetUrl(patch, raw.tileIcon ?? raw.squareIcon),
     splash: planner ? pluginAssetUrl(patch, planner.squareSplashIconPath) : gameAssetUrl(patch, raw.squareIcon),
     plannerCode: planner?.team_planner_code,
+    forms,
     ability: {
       name: raw.ability.name ?? "",
       desc: raw.ability.desc ?? "",
@@ -103,10 +139,37 @@ function selectChampions(set: RawSet, planner: RawPlannerChampion[] | undefined)
       .filter((champion) => byId.has(champion.apiName))
       .map((raw) => ({ raw, planner: byId.get(raw.apiName) }));
   }
-  // Older sets have no team planner data, so fall back to "has traits and a shop cost".
-  return set.champions
-    .filter((champion) => champion.traits.length > 0 && champion.cost >= 1 && champion.cost <= 5 && champion.name)
+  // Older sets have no team planner data, so fall back to "has traits and a shop cost", minus forms.
+  const candidates = set.champions.filter(
+    (champion) => champion.traits.length > 0 && champion.cost >= 1 && champion.cost <= 5 && champion.name,
+  );
+  const names = new Set(candidates.map((champion) => champion.name));
+  return candidates
+    .filter((champion) => !names.has(formBaseName(champion.name ?? "") ?? ""))
     .map((raw) => ({ raw, planner: undefined }));
+}
+
+const FORM_NAME = /^(.+?)\s*\((.+)\)$/;
+
+/** "Lux (Coven)" → "Lux"; null when the name has no form suffix. */
+const formBaseName = (name: string) => name.match(FORM_NAME)?.[1] ?? null;
+
+/**
+ * Alternate forms appear in games but not in the shop: traited champions outside the shop list whose
+ * name is a shop champion's, optionally with a "(Form)" suffix (e.g. "Lux (Coven)", or a same-named clone).
+ */
+export function findForms(set: RawSet, shop: RawChampion[]): Map<string, { raw: RawChampion; label: string | null }[]> {
+  const shopIds = new Set(shop.map((champion) => champion.apiName));
+  const shopByName = new Map(shop.map((champion) => [champion.name, champion.apiName]));
+  const forms = new Map<string, { raw: RawChampion; label: string | null }[]>();
+  for (const raw of set.champions) {
+    if (shopIds.has(raw.apiName) || raw.traits.length === 0 || !raw.name) continue;
+    const match = raw.name.match(FORM_NAME);
+    const base = shopByName.get(match?.[1] ?? raw.name);
+    if (!base) continue;
+    forms.set(base, [...(forms.get(base) ?? []), { raw, label: match?.[2] ?? null }]);
+  }
+  return forms;
 }
 
 /**
@@ -224,9 +287,25 @@ export function buildSet(
   patch: string,
 ): SetData {
   const selected = selectChampions(set, teamPlanner[set.mutator]);
-  const usedTraitNames = new Set(selected.flatMap(({ raw }) => raw.traits));
-  const traits = buildTraits(set, patch, usedTraitNames);
-  const traitApiByName = new Map(traits.map((trait) => [trait.name, trait.apiName]));
+  const forms = findForms(
+    set,
+    selected.map(({ raw }) => raw),
+  );
+  const formRaws = [...forms.values()].flat().map(({ raw }) => raw);
+  const championTraitNames = new Set([...selected.map(({ raw }) => raw), ...formRaws].flatMap((raw) => raw.traits));
+  const traits = buildTraits(set, patch, championTraitApiNames(set.traits, championTraitNames));
+  // Champions reference traits by display name, and mechanic traits can reuse a name, so only champion traits resolve.
+  const traitApiByName = new Map(
+    traits.filter((trait) => trait.source === "champion").map((trait) => [trait.name, trait.apiName]),
+  );
+  const championForms = (apiName: string): ChampionForm[] =>
+    (forms.get(apiName) ?? []).map(({ raw, label }) => ({
+      apiName: raw.apiName,
+      name: raw.name ?? raw.apiName,
+      label,
+      traits: raw.traits.flatMap((name) => traitApiByName.get(name) ?? []),
+      icon: gameAssetUrl(patch, raw.tileIcon ?? raw.squareIcon),
+    }));
   const { items: pool, aliases } = buildItems(set, itemsByApi, patch);
   const items = pool.flatMap((item) => {
     if (item.kind !== "emblem") return [item];
@@ -244,11 +323,14 @@ export function buildSet(
     number: set.number,
     name: `Set ${set.number}`,
     champions: selected
-      .map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, planner))
+      .map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, championForms(raw.apiName), planner))
       .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
     traits,
     items,
     itemAliases: Object.fromEntries(Object.entries(aliases).filter(([, target]) => kept.has(target))),
+    championAliases: Object.fromEntries(
+      [...forms].flatMap(([base, list]) => list.map(({ raw }) => [raw.apiName, base] as const)),
+    ),
     augments: buildAugments(set, itemsByApi, patch),
   };
 }

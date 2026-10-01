@@ -33,8 +33,9 @@ export interface RawTrait {
   desc: string | null;
   icon: string | null;
   effects: {
-    minUnits: number;
-    maxUnits: number;
+    /** Null for traits that are active from a single unit (e.g. mechanic traits). */
+    minUnits: number | null;
+    maxUnits: number | null;
     style: number;
     variables: Record<string, number | null>;
   }[];

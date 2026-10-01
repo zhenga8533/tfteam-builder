@@ -9,6 +9,7 @@ import { SearchInput } from "@/components/layout/search-input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
@@ -118,11 +119,13 @@ function ChampionsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>All traits</SelectItem>
-            {traits.map((trait) => (
-              <SelectItem key={trait.apiName} value={trait.apiName}>
-                {trait.name}
-              </SelectItem>
-            ))}
+            {traits
+              .filter((trait) => trait.source === "champion")
+              .map((trait) => (
+                <SelectItem key={trait.apiName} value={trait.apiName}>
+                  {trait.name}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         {stats?.status === "ready" && (
@@ -173,6 +176,7 @@ function ChampionsPage() {
                 className="-mx-6 -mt-6 aspect-[2/1] w-[calc(100%+3rem)] max-w-none rounded-t-lg object-cover object-top"
               />
               <ChampionCard champion={selected} />
+              <ChampionForms champion={selected} className="border-t pt-3" />
               {stats?.units[selected.apiName] && (
                 <StatSummary line={stats.units[selected.apiName]!} className="border-t pt-3" />
               )}

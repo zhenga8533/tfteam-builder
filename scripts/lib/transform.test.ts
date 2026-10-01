@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { RawItem, RawSet } from "./cdragon.ts";
-import { buildAugments, buildItems, gameAssetUrl, parseAugmentTier, pluginAssetUrl } from "./transform.ts";
+import type { RawChampion, RawItem, RawSet, RawTrait } from "./cdragon.ts";
+import {
+  buildAugments,
+  buildItems,
+  buildSet,
+  championTraitApiNames,
+  gameAssetUrl,
+  parseAugmentTier,
+  pluginAssetUrl,
+} from "./transform.ts";
 
 const rawItem = (overrides: Partial<RawItem> & Pick<RawItem, "apiName" | "name">): RawItem => ({
   desc: "",
@@ -132,5 +140,94 @@ describe("buildAugments", () => {
       "TFT_Augment_BandOfThieves2",
       "TFT_Augment_BeltOverflow",
     ]);
+  });
+});
+
+describe("buildSet champions and traits", () => {
+  const rawChampion = (apiName: string, name: string, traits: string[]): RawChampion => ({
+    apiName,
+    name,
+    cost: 5,
+    traits,
+    squareIcon: null,
+    tileIcon: `ASSETS/Characters/${apiName}.tex`,
+    ability: { name: "", desc: "", icon: null, variables: [] },
+    stats: {},
+  });
+  const rawTrait = (apiName: string, name: string, minUnits: number | null): RawTrait => ({
+    apiName,
+    name,
+    desc: "",
+    icon: null,
+    effects: [{ minUnits, maxUnits: null, style: 1, variables: {} }],
+  });
+  const set: RawSet = {
+    number: 18,
+    mutator: "TFTSet18",
+    name: "Set18",
+    champions: [
+      rawChampion("Lux", "Lux", ["Avatar", "Mage"]),
+      rawChampion("Lux_Coven", "Lux (Coven)", ["Avatar", "Coven"]),
+      rawChampion("MF", "Miss Fortune", ["Gunner"]),
+      rawChampion("MF_Clone", "Miss Fortune", ["Gunner", "Clone"]),
+      rawChampion("Dummy", "Training Dummy", []),
+    ],
+    traits: [
+      rawTrait("T_Avatar", "Avatar", 1),
+      rawTrait("T_Mage", "Mage", 2),
+      rawTrait("T_Coven", "Coven", 3),
+      rawTrait("T_Gunner", "Gunner", 2),
+      rawTrait("T_Clone", "Clone", 1),
+      rawTrait("T_Eclipse", "Eclipse", null),
+      rawTrait("T_MechanicMage", "Mage", 1),
+    ],
+    items: [],
+    augments: [],
+  };
+  const planner = {
+    TFTSet18: ["Lux", "MF"].map((id, i) => ({
+      character_id: id,
+      team_planner_code: i + 1,
+      squareIconPath: "",
+      squareSplashIconPath: "",
+    })),
+  };
+
+  it("attaches forms to their shop champion and maps them back to it", () => {
+    const data = buildSet(set, new Map(), planner, "latest");
+    expect(data.champions.map((champion) => champion.apiName)).toEqual(["Lux", "MF"]);
+    const lux = data.champions.find((champion) => champion.apiName === "Lux")!;
+    expect(lux.forms).toMatchObject([{ apiName: "Lux_Coven", label: "Coven", traits: ["T_Avatar", "T_Coven"] }]);
+    expect(data.championAliases).toEqual({ Lux_Coven: "Lux", MF_Clone: "MF" });
+  });
+
+  it("detects forms without team planner data too", () => {
+    const data = buildSet(set, new Map(), {}, "latest");
+    expect(data.champions.map((champion) => champion.apiName).sort()).toEqual(["Lux", "MF", "MF_Clone"]);
+    expect(data.championAliases).toEqual({ Lux_Coven: "Lux" });
+  });
+
+  it("keeps every trait, tags its source, and resolves champion traits by name safely", () => {
+    const data = buildSet(set, new Map(), planner, "latest");
+    const sources = Object.fromEntries(data.traits.map((trait) => [trait.apiName, trait.source]));
+    expect(sources).toEqual({
+      T_Avatar: "champion",
+      T_Mage: "champion",
+      T_Coven: "champion",
+      T_Gunner: "champion",
+      T_Clone: "champion",
+      T_Eclipse: "other",
+      T_MechanicMage: "other",
+    });
+    expect(data.champions.find((champion) => champion.apiName === "Lux")?.traits).toEqual(["T_Avatar", "T_Mage"]);
+    expect(data.traits.find((trait) => trait.apiName === "T_Eclipse")?.breakpoints[0]).toMatchObject({ minUnits: 1 });
+  });
+});
+
+describe("championTraitApiNames", () => {
+  it("picks the base trait when variants share its name (Set 17 Stargazer)", () => {
+    const trait = (apiName: string): RawTrait => ({ apiName, name: "Stargazer", desc: "", icon: null, effects: [] });
+    const traits = [trait("TFT17_Stargazer_Wolf"), trait("TFT17_Stargazer"), trait("TFT17_Stargazer_Serpent")];
+    expect([...championTraitApiNames(traits, new Set(["Stargazer"]))]).toEqual(["TFT17_Stargazer"]);
   });
 });

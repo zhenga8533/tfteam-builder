@@ -168,6 +168,9 @@ match data, so the augment tier list and comp guides stay hand-written.
   come from.
 - **Tiers:** entries are ranked by average placement, pulled toward 4.5 when there are few games. The top 10% are S,
   the next 25% A, the next 35% B and the rest C. Entries in `src/content/tierlists` override individual tiers.
+- **Forms and traits:** champion forms that never appear in the shop (e.g. Lux's elemental forms) are detected from
+  CDragon by name. They count toward their base champion and get their own stats once they have enough games. Every trait
+  in a set is tracked, including ones granted by augments or set mechanics, which the Traits page lists separately.
 
 To enable crawling:
 
