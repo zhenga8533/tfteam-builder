@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSettings } from "@/stores/settings";
-import { championStatsQuery, manifestQuery, setDataQuery, statsQuery } from "./queries";
+import { autoCompsQuery, championStatsQuery, manifestQuery, setDataQuery, statsQuery } from "./queries";
 import type { Augment, Champion, Item, SetData, Trait } from "./schema";
 
 export function useManifest() {
@@ -57,4 +57,10 @@ export function useStats() {
 export function useChampionStats(apiName: string) {
   const { patch, set } = useActiveSet();
   return useSuspenseQuery(championStatsQuery(patch, set, apiName)).data;
+}
+
+/** Comps detected from match data, best first; null when not published (or on PBE). */
+export function useAutoComps() {
+  const { patch, set } = useActiveSet();
+  return useSuspenseQuery(autoCompsQuery(patch, set)).data;
 }

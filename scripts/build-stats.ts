@@ -2,13 +2,16 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import {
+  autoCompsSchema,
   championStatsSchema,
   type Manifest,
   type SetData,
   type SetStats,
   setStatsSchema,
 } from "../src/lib/data/schema.ts";
+import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
+import { CompDetector } from "./lib/comps.ts";
 import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { type BoardChunk, comparePatches, createStatsStore, type StatsStore } from "./stats/state.ts";
@@ -55,18 +58,39 @@ async function writeDetails(store: StatsStore, data: SetData, stats: SetStats, c
   if (stats.status !== "ready") return;
 
   const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
-  const champions = new ChampionAccumulator(data);
-  for (const chunk of chunks.filter((chunk) => chunk.patch === stats.patch)) {
-    for (const row of await store.readBoards(chunk)) if (buckets.has(row[2])) champions.add(row);
+  const resolver = new BoardResolver(data);
+  const sample = chunks.filter((chunk) => chunk.patch === stats.patch);
+  /** Re-reads the sample instead of holding every board in memory between passes. */
+  const eachBoard = async (visit: (board: ResolvedBoard) => void) => {
+    for (const chunk of sample) {
+      for (const row of await store.readBoards(chunk)) if (buckets.has(row[2])) visit(resolver.board(row));
+    }
+  };
+
+  const champions = new ChampionAccumulator();
+  const comps = new CompDetector(data);
+  await eachBoard((board) => {
+    champions.add(board);
+    comps.count(board);
+  });
+  await eachBoard((board) => comps.add(board));
+  const detected = comps.results();
+
+  const championStats = champions.results();
+  const byChampion = new Map(championStats.map((champion) => [champion.apiName, champion]));
+  for (const comp of detected) {
+    for (const unit of comp.units) byChampion.get(unit.apiName)?.comps.push(comp.id);
   }
 
   await mkdir(join(dir, "champions"), { recursive: true });
-  for (const champion of champions.results()) {
+  for (const champion of championStats) {
     await writeFile(
       join(dir, "champions", `${champion.apiName}.json`),
       JSON.stringify(championStatsSchema.parse(champion)),
     );
   }
+  await writeFile(join(dir, "comps.json"), JSON.stringify(autoCompsSchema.parse({ comps: detected })));
+  console.log(`  ${championStats.length} champion files, ${detected.length} comps`);
 }
 
 async function main() {

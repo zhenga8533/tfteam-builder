@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { SetData } from "../../src/lib/data/schema.ts";
 import type { BoardRow } from "../stats/types.ts";
+import { BoardResolver } from "./boards.ts";
 import { ChampionAccumulator, itemSubsets, MIN_CHAMPION_GAMES } from "./champion-stats.ts";
 
 const data = {
   number: 18,
   champions: [{ apiName: "Ahri" }, { apiName: "Sett" }, { apiName: "Lux" }],
-  traits: [{ apiName: "Blossom", breakpoints: [{ minUnits: 3 }, { minUnits: 5 }] }],
+  traits: [
+    {
+      apiName: "Blossom",
+      breakpoints: [
+        { minUnits: 3, style: 1 },
+        { minUnits: 5, style: 3 },
+      ],
+    },
+  ],
   items: [
     { apiName: "JG", kind: "completed" },
     { apiName: "BB", kind: "completed" },
@@ -34,9 +43,10 @@ describe("itemSubsets", () => {
 
 describe("ChampionAccumulator", () => {
   // Ahri with JG+BB places well; Ahri with BB only places poorly. Sett is always alongside.
-  const accumulator = new ChampionAccumulator(data);
+  const accumulator = new ChampionAccumulator();
+  const resolver = new BoardResolver(data);
   const repeat = (count: number, row: BoardRow) => {
-    for (let i = 0; i < count; i++) accumulator.add(row);
+    for (let i = 0; i < count; i++) accumulator.add(resolver.board(row));
   };
   repeat(
     MIN_CHAMPION_GAMES.build2,

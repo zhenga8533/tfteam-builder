@@ -1,22 +1,21 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Hammer } from "lucide-react";
-import { AugmentCard, ItemCard, TraitCard } from "@/components/game/cards";
+import { AugmentCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
-import { AugmentIcon, ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
-import { TRAIT_TEXT } from "@/components/game/styles";
+import { AugmentIcon } from "@/components/game/icons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { findComp } from "@/content";
-import type { Comp } from "@/content/types";
 import { CompBoard } from "@/features/comps/components/comp-board";
+import { Carries, CompTraits, Section } from "@/features/comps/components/comp-sections";
 import { SetGuard } from "@/features/comps/components/set-guard";
 import { TierBadge, TrendBadge } from "@/features/comps/components/tier-badge";
 import { DIFFICULTY_TEXT } from "@/features/comps/styles";
-import { useCompTraits } from "@/features/comps/use-comp-traits";
+import { useCompSignature } from "@/features/comps/use-comp-signature";
 import { useOpenInBuilder } from "@/features/comps/use-open-in-builder";
-import { useGameData } from "@/lib/data/hooks";
-import { cn } from "@/lib/utils";
+import { StatSummary } from "@/features/stats/components/stat-summary";
+import type { CompUnit } from "@/content/types";
+import { useAutoComps, useGameData } from "@/lib/data/hooks";
 
 export const Route = createFileRoute("/comps/$slug")({
   loader: ({ params }) => {
@@ -31,67 +30,6 @@ export const Route = createFileRoute("/comps/$slug")({
   }),
   component: CompGuidePage,
 });
-
-function Section({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
-  return (
-    <Card className={cn("gap-3 py-4", className)}>
-      <CardHeader className="px-4">
-        <CardTitle className="font-display">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="px-4">{children}</CardContent>
-    </Card>
-  );
-}
-
-function CompTraits({ comp }: { comp: Comp }) {
-  const traits = useCompTraits(comp.board);
-  return (
-    <ul className="space-y-1.5">
-      {traits.map(({ trait, count, style }) => (
-        <li key={trait.apiName}>
-          <GameHoverCard content={<TraitCard trait={trait} count={count} />} side="left">
-            <span tabIndex={0} className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2">
-              <TraitIcon trait={trait} style={style} />
-              <span className="flex-1 text-sm">{trait.name}</span>
-              <span className={cn("text-sm font-semibold tabular-nums", TRAIT_TEXT[style])}>{count}</span>
-            </span>
-          </GameHoverCard>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Carries({ comp }: { comp: Comp }) {
-  const { championsByApi, itemsByApi } = useGameData();
-  const carries = comp.board.filter((unit) => unit.carry || (unit.items?.length ?? 0) > 0);
-  return (
-    <ul className="space-y-2">
-      {carries.map((unit) => {
-        const champion = championsByApi.get(unit.apiName);
-        if (!champion) return null;
-        return (
-          <li key={unit.hex} className="flex items-center gap-3">
-            <ChampionIcon champion={champion} className={cn("size-10", unit.carry && "ring-primary")} />
-            <span className="flex-1 truncate text-sm font-medium">{champion.name}</span>
-            <span className="flex gap-1">
-              {(unit.items ?? []).map((apiName, index) => {
-                const item = itemsByApi.get(apiName);
-                return item ? (
-                  <GameHoverCard key={index} content={<ItemCard item={item} />} side="left">
-                    <span tabIndex={0} className="rounded-sm outline-none focus-visible:ring-2">
-                      <ItemIcon item={item} className="size-8" />
-                    </span>
-                  </GameHoverCard>
-                ) : null;
-              })}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 function Augments({ apiNames }: { apiNames: string[] }) {
   const { augmentsByApi } = useGameData();
@@ -112,6 +50,24 @@ function Augments({ apiNames }: { apiNames: string[] }) {
         );
       })}
     </ul>
+  );
+}
+
+/** Stats for the detected comp whose carries and core traits match this guide's board, if any. */
+function LiveStats({ units }: { units: CompUnit[] }) {
+  const signature = useCompSignature(units);
+  const match = useAutoComps()?.find((comp) => comp.signature === signature);
+  if (!match) return null;
+  return (
+    <Link
+      to="/comps/auto/$id"
+      params={{ id: match.id }}
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border bg-card px-3 py-2 text-sm hover:border-primary/50"
+    >
+      <span className="font-medium">Live stats</span>
+      <StatSummary line={match} />
+      <span className="text-xs text-muted-foreground">as &ldquo;{match.name}&rdquo; →</span>
+    </Link>
   );
 }
 
@@ -142,12 +98,15 @@ function CompGuidePage() {
             <span>Updated {comp.updatedAt}</span>
           </p>
         </div>
-        <Button onClick={() => openInBuilder(comp)}>
+        <Button onClick={() => openInBuilder(comp.set, comp.board, comp.name)}>
           <Hammer /> Open in Team Builder
         </Button>
       </header>
 
       <p className="max-w-3xl text-muted-foreground">{comp.summary}</p>
+      <SetGuard set={comp.set} fallback={null}>
+        <LiveStats units={comp.board} />
+      </SetGuard>
 
       <SetGuard set={comp.set}>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -180,10 +139,10 @@ function CompGuidePage() {
           </div>
           <aside className="space-y-4">
             <Section title="Traits">
-              <CompTraits comp={comp} />
+              <CompTraits units={comp.board} />
             </Section>
             <Section title="Carries & items">
-              <Carries comp={comp} />
+              <Carries units={comp.board} />
             </Section>
             {comp.augments && comp.augments.length > 0 && (
               <Section title="Augments">
