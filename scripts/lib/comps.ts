@@ -9,7 +9,8 @@ import {
 import { traitStyle } from "../../src/lib/game/traits.ts";
 import type { Counter } from "../stats/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
-import { assignTiers, round, statLine } from "./stats.ts";
+import { round, statLine } from "../../src/lib/game/stat-line.ts";
+import { assignTiers } from "./stats.ts";
 
 export const COMP_THRESHOLDS = {
   /** A comp needs this many games… */

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { SetData, StatLine } from "../../src/lib/data/schema.ts";
 import { emptyCounters } from "../stats/aggregate.ts";
 import type { Counters, PatchCounters, RankBucket } from "../stats/types.ts";
-import { adjustedAverage, assignTiers, buildSetStats, chooseSample, MIN_GAMES } from "./stats.ts";
+import { adjustedAverage } from "../../src/lib/game/stat-line.ts";
+import { assignTiers, buildSetStats, chooseSample, MIN_GAMES } from "./stats.ts";
 
 const withMatches = (matches: number, extra: Partial<Counters> = {}): Counters => ({
   ...emptyCounters(),

@@ -173,6 +173,14 @@ match data, so the augment tier list and comp guides stay hand-written.
 - **Forms and traits:** champion forms that never appear in the shop (e.g. Lux's elemental forms) are detected from
   CDragon by name. They count toward their base champion and get their own stats once they have enough games. Every trait
   in a set is tracked, including ones granted by augments or set mechanics, which the Traits page lists separately.
+- **Champion pages** (`/champions/{apiName}`): item builds (1–3 item subsets) with a best-next-item finder, best partner
+  units and traits, each compared with the champion's own average placement (the Δ column). Boards with more items
+  place better simply because the player is ahead, so Δ is the fairer comparison.
+- **Detected comps:** boards are grouped by their carries and two core traits. A comp needs at least 150 games, 0.2% of
+  boards and a first place. Match data has no positions, so comp boards are laid out by unit range.
+- **Explorer** (`/explorer`): a sample of the 150,000 most recent boards, queried in the browser (in a Web Worker).
+  Filter by champions (star level, items), traits and level, and see which champions, traits and items do best with
+  them.
 
 To enable crawling:
 

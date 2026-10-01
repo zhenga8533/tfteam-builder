@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { gzipSync } from "node:zlib";
 import {
   autoCompsSchema,
   championStatsSchema,
@@ -9,6 +10,7 @@ import {
   type SetStats,
   setStatsSchema,
 } from "../src/lib/data/schema.ts";
+import { encodeExplorer, type ExplorerBoard } from "../src/lib/explorer/format.ts";
 import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
@@ -21,6 +23,8 @@ const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
 /** The site shows the newest patch, falling back to the previous one right after a patch. */
 const PATCHES_PER_SET = 2;
+/** Boards in the Explorer's sample, newest first; larger samples mean a bigger download. */
+const EXPLORER_SAMPLE = 150_000;
 
 const { values: args } = parseArgs({ options: { stats: { type: "string" } } });
 
@@ -90,6 +94,18 @@ async function writeDetails(store: StatsStore, data: SetData, stats: SetStats, c
     );
   }
   await writeFile(join(dir, "comps.json"), JSON.stringify(autoCompsSchema.parse({ comps: detected })));
+
+  const explorer: ExplorerBoard[] = [];
+  for (const chunk of [...sample].sort((a, b) => b.name.localeCompare(a.name))) {
+    for (const row of await store.readBoards(chunk)) {
+      if (explorer.length >= EXPLORER_SAMPLE) break;
+      if (buckets.has(row[2])) explorer.push(resolver.board(row));
+    }
+    if (explorer.length >= EXPLORER_SAMPLE) break;
+  }
+  const encoded = gzipSync(encodeExplorer(explorer), { level: 9 });
+  await writeFile(join(dir, "explorer.bin.gz"), encoded);
+  console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
   console.log(`  ${championStats.length} champion files, ${detected.length} comps`);
 }
 
