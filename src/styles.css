@@ -5,6 +5,62 @@
 
 :root {
   --radius: 0.625rem;
+  color-scheme: light;
+
+  --background: oklch(0.975 0.005 265);
+  --foreground: oklch(0.22 0.02 265);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.62 0.13 75);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.93 0.01 265);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.94 0.008 265);
+  --muted-foreground: oklch(0.47 0.02 265);
+  --accent: oklch(0.92 0.012 265);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.56 0.22 25);
+  --border: oklch(0.88 0.012 265);
+  --input: oklch(0.86 0.012 265);
+  --ring: oklch(0.62 0.13 75 / 60%);
+
+  --glow-gold: oklch(0.8 0.12 85 / 14%);
+  --glow-violet: oklch(0.7 0.12 280 / 10%);
+  --trait-row-from: oklch(0.22 0.02 265 / 9%);
+  --trait-row-to: oklch(0.22 0.02 265 / 3%);
+  --trait-count: oklch(0.22 0.02 265 / 10%);
+
+  /* Unit shop cost tiers, darkened to stay readable on white */
+  --cost-1: oklch(0.52 0.01 265);
+  --cost-2: oklch(0.55 0.15 150);
+  --cost-3: oklch(0.52 0.16 250);
+  --cost-4: oklch(0.52 0.22 310);
+  --cost-5: oklch(0.66 0.15 70);
+
+  /* Trait activation styles, matching the in-game badge colors */
+  --trait-bronze: oklch(0.52 0.1 55);
+  --trait-silver: oklch(0.52 0.03 250);
+  --trait-gold: oklch(0.62 0.14 80);
+  --trait-prismatic: oklch(0.58 0.12 210);
+  --trait-unique: oklch(0.58 0.18 30);
+
+  /* Tier list ranks */
+  --tier-s: oklch(0.66 0.21 20);
+  --tier-a: oklch(0.74 0.17 55);
+  --tier-b: oklch(0.84 0.15 90);
+  --tier-c: oklch(0.8 0.17 130);
+  --tier-x: oklch(0.6 0.02 265);
+}
+
+.dark {
+  color-scheme: dark;
+  --glow-gold: oklch(0.8 0.12 85 / 8%);
+  --glow-violet: oklch(0.6 0.15 280 / 10%);
+  --trait-row-from: oklch(0 0 0 / 45%);
+  --trait-row-to: oklch(0 0 0 / 15%);
+  --trait-count: oklch(0 0 0 / 50%);
 
   --background: oklch(0.16 0.02 265);
   --foreground: oklch(0.95 0.01 265);
@@ -75,6 +131,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-trait-row-from: var(--trait-row-from);
+  --color-trait-row-to: var(--trait-row-to);
+  --color-trait-count: var(--trait-count);
+
   --color-cost-1: var(--cost-1);
   --color-cost-2: var(--cost-2);
   --color-cost-3: var(--cost-3);
@@ -99,15 +159,14 @@
     @apply border-border outline-ring/50;
   }
   html {
-    color-scheme: dark;
     /* Reserve the scrollbar's space so pages don't shift sideways when it appears or disappears. */
     scrollbar-gutter: stable;
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.8 0.12 85 / 8%), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 0%, oklch(0.6 0.15 280 / 10%), transparent);
+      radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow-gold), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, var(--glow-violet), transparent);
     background-attachment: fixed;
   }
   /*

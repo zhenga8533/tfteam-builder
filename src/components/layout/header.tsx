@@ -11,6 +11,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { isNavGroup, NAV } from "./nav";
 import { PatchSwitcher } from "./patch-switcher";
+import { ThemeToggle } from "./theme-toggle";
 
 function Logo() {
   return (
@@ -108,7 +109,8 @@ export function Header() {
         <MobileNav />
         <Logo />
         <DesktopNav />
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
           <Suspense>
             <PatchSwitcher />
           </Suspense>
