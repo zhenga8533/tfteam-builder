@@ -75,14 +75,14 @@ describe("tiers", () => {
 describe("buildSetStats", () => {
   const data = {
     number: 18,
-    champions: [{ apiName: "TFT18_Ahri" }, { apiName: "TFT18_Lux" }],
+    champions: [{ apiName: "TFT18_Ahri" }, { apiName: "TFT18_Lux" }, { apiName: "TFT18_Lux_Coven" }],
     traits: [{ apiName: "TFT18_Blossom", breakpoints: [{ minUnits: 3 }, { minUnits: 5 }] }],
     items: [
       { apiName: "TFT_Item_BlueBuff", kind: "completed" },
       { apiName: "TFT_Item_BFSword", kind: "component" },
     ],
     itemAliases: { DA_BlueBuff: "TFT_Item_BlueBuff" },
-    championAliases: { TFT18_Lux_Coven: "TFT18_Lux", TFT18_Lux_Fae: "TFT18_Lux" },
+    championAliases: { TFT18_Lux_Clone: "TFT18_Lux" },
   } as unknown as SetData;
 
   const counters = withMatches(3000, {
@@ -91,7 +91,7 @@ describe("buildSetStats", () => {
       TFT18_Mystery: [40, 180, 20, 5],
       TFT18_Lux: [100, 400, 60, 20],
       TFT18_Lux_Coven: [50, 150, 40, 15],
-      TFT18_Lux_Fae: [3, 12, 1, 0],
+      TFT18_Lux_Clone: [3, 12, 1, 0],
     },
     items: {
       TFT_Item_BlueBuff: [150, 450, 110, 40],
@@ -110,12 +110,10 @@ describe("buildSetStats", () => {
     expect([...unknown.units.keys()]).toEqual(["TFT18_Mystery"]);
   });
 
-  it("counts champion forms toward the base champion and keeps per-form stats", () => {
-    expect(stats.units["TFT18_Lux"]?.games).toBe(153);
-    expect(stats.units["TFT18_Lux_Coven"]).toBeUndefined();
-    expect(stats.forms["TFT18_Lux_Coven"]?.games).toBe(50);
-    expect(stats.forms["TFT18_Lux_Fae"]).toBeUndefined();
-    expect(unknown.units.has("TFT18_Lux_Coven")).toBe(false);
+  it("keeps forms as their own champions and counts clones as their base", () => {
+    expect(stats.units["TFT18_Lux"]?.games).toBe(103);
+    expect(stats.units["TFT18_Lux_Coven"]?.games).toBe(50);
+    expect(unknown.units.has("TFT18_Lux_Clone")).toBe(false);
   });
 
   it("does not tier components and maps trait tiers to breakpoints", () => {

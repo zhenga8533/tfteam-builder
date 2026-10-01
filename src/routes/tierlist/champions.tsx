@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ChampionCard } from "@/components/game/cards";
 import { ChampionIcon } from "@/components/game/icons";
 import { tierListForSet } from "@/content";
-import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
@@ -33,12 +32,7 @@ function ChampionTierListPage() {
             label={champion.name}
             line={line}
             link={{ to: "/champions/$apiName", params: { apiName: champion.apiName } }}
-            card={
-              <div className="space-y-3">
-                <ChampionCard champion={champion} />
-                <ChampionForms champion={champion} className="border-t pt-3" />
-              </div>
-            }
+            card={<ChampionCard champion={champion} />}
           />
         );
       }}

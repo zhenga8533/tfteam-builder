@@ -1,13 +1,4 @@
-import type {
-  Augment,
-  AugmentTier,
-  Champion,
-  ChampionForm,
-  Item,
-  ItemKind,
-  SetData,
-  Trait,
-} from "../../src/lib/data/schema.ts";
+import type { Augment, AugmentTier, Champion, Item, ItemKind, SetData, Trait } from "../../src/lib/data/schema.ts";
 import {
   CDRAGON_BASE,
   type RawChampion,
@@ -117,12 +108,29 @@ function buildTraits(set: RawSet, patch: string, championApiNames: Set<string>):
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+const ROLE_DAMAGE: Record<string, string> = { AP: "Magic", AD: "Attack", H: "Hybrid" };
+const ROLE_KIND: Record<string, string> = {
+  Tank: "Tank",
+  Fighter: "Fighter",
+  Caster: "Caster",
+  Carry: "Marksman",
+  Reaper: "Assassin",
+  Specialist: "Specialist",
+};
+const ROLE_CODE = new RegExp(`^(AP|AD|H)(${Object.keys(ROLE_KIND).join("|")})`);
+
+/** "APCaster" → "Magic Caster", "ADCarryCrit" → "Attack Marksman"; the in-game role names. */
+export function championRole(code: string | null): string | undefined {
+  const match = code?.match(ROLE_CODE);
+  return match ? `${ROLE_DAMAGE[match[1]!]} ${ROLE_KIND[match[2]!]}` : undefined;
+}
+
 function buildChampion(
   raw: RawChampion,
   patch: string,
   traitApiByName: Map<string, string>,
-  forms: ChampionForm[],
   planner?: RawPlannerChampion,
+  formOf?: string,
 ): Champion {
   const stat = (key: string) => raw.stats[key] ?? 0;
   return {
@@ -133,9 +141,10 @@ function buildChampion(
     icon: planner
       ? pluginAssetUrl(patch, planner.squareIconPath)
       : gameAssetUrl(patch, presentPath(raw.tileIcon) ?? raw.squareIcon),
-    splash: planner ? pluginAssetUrl(patch, planner.squareSplashIconPath) : gameAssetUrl(patch, raw.squareIcon),
+    splash: raw.icon && !raw.icon.startsWith("{") ? gameAssetUrl(patch, raw.icon) : "",
+    role: championRole(raw.role),
     plannerCode: planner?.team_planner_code,
-    forms,
+    ...(formOf && { formOf }),
     ability: {
       name: raw.ability.name ?? "",
       desc: raw.ability.desc ?? "",
@@ -325,14 +334,10 @@ export function buildSet(
   const traitApiByName = new Map(
     traits.filter((trait) => trait.source === "champion").map((trait) => [trait.name, trait.apiName]),
   );
-  const championForms = (apiName: string): ChampionForm[] =>
-    (forms.get(apiName) ?? []).map(({ raw, label }) => ({
-      apiName: raw.apiName,
-      name: raw.name ?? raw.apiName,
-      label,
-      traits: raw.traits.flatMap((name) => traitApiByName.get(name) ?? []),
-      icon: gameAssetUrl(patch, presentPath(raw.tileIcon) ?? raw.squareIcon),
-    }));
+  // Named forms ("Lux (Coven)") bring different traits, so each is a champion of its own; unnamed
+  // same-name clones are the same unit and count as their base.
+  const formEntries = [...forms].flatMap(([base, list]) => list.map((form) => ({ base, ...form })));
+  const namedForms = formEntries.filter((form) => form.label !== null);
   const { items: pool, aliases } = buildItems(set, itemsByApi, patch);
   const items = pool.flatMap((item) => {
     if (item.kind !== "emblem") return [item];
@@ -349,15 +354,16 @@ export function buildSet(
   return {
     number: set.number,
     name: `Set ${set.number}`,
-    champions: selected
-      .map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, championForms(raw.apiName), planner))
-      .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
+    champions: [
+      ...selected.map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, planner)),
+      ...namedForms.map(({ raw, base }) => buildChampion(raw, patch, traitApiByName, undefined, base)),
+    ].sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
     traits,
     // Recipes can name set-specific component variants (DA_Component_Spatula) that alias to the kept ones.
     items: items.map((item) => ({ ...item, composition: item.composition.map((part) => aliases[part] ?? part) })),
     itemAliases: Object.fromEntries(Object.entries(aliases).filter(([, target]) => kept.has(target))),
     championAliases: Object.fromEntries(
-      [...forms].flatMap(([base, list]) => list.map(({ raw }) => [raw.apiName, base] as const)),
+      formEntries.filter((form) => form.label === null).map(({ raw, base }) => [raw.apiName, base]),
     ),
     augments: buildAugments(set, itemsByApi, patch),
   };

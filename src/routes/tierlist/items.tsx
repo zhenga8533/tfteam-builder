@@ -34,6 +34,7 @@ function ItemTierListPage() {
             icon={<ItemIcon item={item} className="size-12" />}
             label={item.name}
             line={line}
+            link={{ to: "/items/$apiName", params: { apiName: item.apiName } }}
             card={<ItemCard item={item} />}
           />
         );

@@ -110,6 +110,14 @@
       radial-gradient(ellipse 60% 40% at 100% 0%, oklch(0.6 0.15 280 / 10%), transparent);
     background-attachment: fixed;
   }
+  /*
+   * Radix's scroll lock (dialogs, dropdowns) pads the body by the scrollbar's width to stop a shift,
+   * but the gutter above already keeps that space, so the padding would shift the page instead.
+   */
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
+    --removed-body-scroll-bar-size: 0px;
+  }
 }
 
 /* Honeycomb board: 4 rows × 7 pointy-top hexes, odd rows offset by half a hex. */
@@ -138,5 +146,43 @@
   }
   .hex-clip {
     clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  }
+
+  /* In-game trait badges: a light metallic frame around a darker face of the same metal. */
+  .trait-frame-inactive {
+    background: linear-gradient(170deg, oklch(0.42 0.015 265), oklch(0.27 0.015 265));
+  }
+  .trait-face-inactive {
+    background: linear-gradient(170deg, oklch(0.27 0.015 265), oklch(0.2 0.015 265));
+  }
+  .trait-frame-bronze {
+    background: linear-gradient(170deg, oklch(0.8 0.08 60), oklch(0.48 0.08 45));
+  }
+  .trait-face-bronze {
+    background: linear-gradient(170deg, oklch(0.67 0.1 55), oklch(0.52 0.09 45));
+  }
+  .trait-frame-silver {
+    background: linear-gradient(170deg, oklch(0.93 0.015 240), oklch(0.58 0.025 245));
+  }
+  .trait-face-silver {
+    background: linear-gradient(170deg, oklch(0.8 0.02 240), oklch(0.63 0.025 245));
+  }
+  .trait-frame-gold {
+    background: linear-gradient(170deg, oklch(0.94 0.1 95), oklch(0.62 0.12 75));
+  }
+  .trait-face-gold {
+    background: linear-gradient(170deg, oklch(0.84 0.14 88), oklch(0.68 0.13 75));
+  }
+  .trait-frame-prismatic {
+    background: linear-gradient(170deg, oklch(0.95 0.06 200), oklch(0.75 0.14 320));
+  }
+  .trait-face-prismatic {
+    background: linear-gradient(135deg, oklch(0.88 0.1 330), oklch(0.88 0.09 200) 50%, oklch(0.9 0.1 95));
+  }
+  .trait-frame-unique {
+    background: linear-gradient(170deg, oklch(0.88 0.11 55), oklch(0.55 0.16 35));
+  }
+  .trait-face-unique {
+    background: linear-gradient(170deg, oklch(0.74 0.16 45), oklch(0.6 0.17 35));
   }
 }

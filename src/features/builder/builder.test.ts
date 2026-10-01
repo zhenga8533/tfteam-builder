@@ -25,7 +25,6 @@ const champion = (apiName: string, cost: number, traits: string[], plannerCode?:
   icon: "",
   splash: "",
   plannerCode,
-  forms: [],
   ability: { name: "", desc: "", icon: "", variables: {} },
   stats: {
     hp: 0,
@@ -122,6 +121,11 @@ describe("team codes", () => {
     const code = encodeTeamCode(["Ahri", "Ashe", "Ahri"], champions, 18);
     expect(code).toBe(`02${"3e9"}${"3f0"}${"000".repeat(8)}TFTSet18`);
     expect(decodeTeamCode(code, champions)).toEqual({ ok: true, set: 18, apiNames: ["Ahri", "Ashe"] });
+  });
+
+  it("plans a form as its shop champion", () => {
+    const withForm = [...champions, { ...champion("Ahri_Fae", 4, []), formOf: "Ahri" }];
+    expect(encodeTeamCode(["Ahri_Fae", "Ahri"], withForm, 18)).toBe(`02${"3e9"}${"000".repeat(9)}TFTSet18`);
   });
 
   it("decodes the classic two-digit format", () => {

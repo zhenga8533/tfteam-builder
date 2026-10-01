@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import type { AutoComp, ChampionStats, Manifest, Patch, SetData, SetStats } from "./schema";
+import type { AutoComp, ChampionStats, ItemStats, Manifest, Patch, SetData, SetStats, TraitStats } from "./schema";
 
 // Data files are produced and schema-validated by scripts/build-data.ts, so the client trusts their shape.
 async function fetchData<T>(path: string): Promise<T> {
@@ -42,6 +42,18 @@ export const championStatsQuery = (patch: Patch, set: number, apiName: string) =
   queryOptions({
     queryKey: ["stats", patch, set, "champion", apiName],
     queryFn: () => fetchStats<ChampionStats>(patch, `set${set}/champions/${apiName}.json`),
+  });
+
+export const itemStatsQuery = (patch: Patch, set: number, apiName: string) =>
+  queryOptions({
+    queryKey: ["stats", patch, set, "item", apiName],
+    queryFn: () => fetchStats<ItemStats>(patch, `set${set}/items/${apiName}.json`),
+  });
+
+export const traitStatsQuery = (patch: Patch, set: number, apiName: string) =>
+  queryOptions({
+    queryKey: ["stats", patch, set, "trait", apiName],
+    queryFn: () => fetchStats<TraitStats>(patch, `set${set}/traits/${apiName}.json`),
   });
 
 export const autoCompsQuery = (patch: Patch, set: number) =>

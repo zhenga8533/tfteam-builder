@@ -1,39 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import type { ReactNode } from "react";
-import { ChampionCard, TraitCard } from "@/components/game/cards";
-import { GameHoverCard } from "@/components/game/game-hover-card";
-import { ChampionIcon, TraitIcon } from "@/components/game/icons";
+import { ChampionCard } from "@/components/game/cards";
+import { ChampionLink, TraitLink } from "@/components/game/links";
+import { ChampionIcon } from "@/components/game/icons";
 import { COST_TEXT } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AutoCompCard } from "@/features/comps/components/comp-card";
+import { Section } from "@/components/layout/section";
+import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
+import { otherForms } from "@/lib/game/forms";
 import { ItemBuilds } from "@/features/stats/components/item-builds";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { useAutoComps, useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
+import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion, ChampionStats } from "@/lib/data/schema";
 import { traitStyle } from "@/lib/game/traits";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/champions_/$apiName")({
   head: () => ({ meta: [{ title: "Champion Stats · TFTeam Builder" }] }),
   component: ChampionPage,
 });
-
-function Section({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
-  return (
-    <Card className={cn("gap-3 py-4", className)}>
-      <CardHeader className="px-4">
-        <CardTitle className="font-display">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="px-4">{children}</CardContent>
-    </Card>
-  );
-}
 
 function Partners({ stats }: { stats: ChampionStats }) {
   const { championsByApi } = useGameData();
@@ -45,16 +33,7 @@ function Partners({ stats }: { stats: ChampionStats }) {
         return [
           {
             key: partner.unit,
-            label: (
-              <Link
-                to="/champions/$apiName"
-                params={{ apiName: champion.apiName }}
-                className="flex items-center gap-2 hover:underline"
-              >
-                <ChampionIcon champion={champion} className="size-7" />
-                <span className="truncate">{champion.name}</span>
-              </Link>
-            ),
+            label: <ChampionLink champion={champion} />,
             line: partner,
           },
         ];
@@ -75,14 +54,12 @@ function Traits({ stats }: { stats: ChampionStats }) {
           {
             key: `${entry.trait}:${entry.minUnits}`,
             label: (
-              <GameHoverCard content={<TraitCard trait={trait} count={entry.minUnits} />}>
-                <span tabIndex={0} className="flex items-center gap-2 outline-none">
-                  <TraitIcon trait={trait} style={traitStyle(breakpoint.style)} className="size-6" />
-                  <span className="truncate">
-                    {entry.minUnits} {trait.name}
-                  </span>
-                </span>
-              </GameHoverCard>
+              <TraitLink
+                trait={trait}
+                style={traitStyle(breakpoint.style)}
+                count={entry.minUnits}
+                label={`${entry.minUnits} ${trait.name}`}
+              />
             ),
             line: entry,
           },
@@ -105,18 +82,6 @@ function StarLevels({ stats }: { stats: ChampionStats }) {
   );
 }
 
-function ChampionComps({ stats }: { stats: ChampionStats }) {
-  const comps = (useAutoComps() ?? []).filter((comp) => stats.comps.includes(comp.id));
-  if (comps.length === 0) return null;
-  return (
-    <div className="grid gap-2 xl:grid-cols-2">
-      {comps.map((comp) => (
-        <AutoCompCard key={comp.id} comp={comp} />
-      ))}
-    </div>
-  );
-}
-
 function ChampionHeader({ champion }: { champion: Champion }) {
   const { traitsByApi } = useGameData();
   const line = useStats()?.units[champion.apiName];
@@ -127,13 +92,11 @@ function ChampionHeader({ champion }: { champion: Champion }) {
         <h1 className="font-display text-3xl font-bold tracking-tight">{champion.name}</h1>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className={COST_TEXT[champion.cost]}>{champion.cost} cost</span>
+          {champion.role && <span className="text-muted-foreground">{champion.role}</span>}
           {champion.traits.map((apiName) => {
             const trait = traitsByApi.get(apiName);
             return trait ? (
-              <span key={apiName} className="flex items-center gap-1 text-muted-foreground">
-                <TraitIcon trait={trait} className="size-4" />
-                {trait.name}
-              </span>
+              <TraitLink key={apiName} trait={trait} className="gap-1 text-muted-foreground" iconClassName="size-4" />
             ) : null;
           })}
         </p>
@@ -141,6 +104,16 @@ function ChampionHeader({ champion }: { champion: Champion }) {
       </div>
       {line?.tier && <TierBadge tier={line.tier} className="size-14 text-3xl" />}
     </header>
+  );
+}
+
+function FormsSection({ champion }: { champion: Champion }) {
+  const { champions } = useGameData();
+  if (otherForms(champion, champions).length === 0) return null;
+  return (
+    <Section title="Other forms">
+      <ChampionForms champion={champion} />
+    </Section>
   );
 }
 
@@ -173,7 +146,7 @@ function ChampionPage() {
               </Section>
               {stats.comps.length > 0 && (
                 <Section title="Comps">
-                  <ChampionComps stats={stats} />
+                  <AutoCompList ids={stats.comps} />
                 </Section>
               )}
               <div className="grid gap-6 xl:grid-cols-2">
@@ -198,11 +171,7 @@ function ChampionPage() {
               <StarLevels stats={stats} />
             </Section>
           )}
-          {champion.forms.length > 0 && (
-            <Section title="Forms">
-              <ChampionForms champion={champion} />
-            </Section>
-          )}
+          <FormsSection champion={champion} />
         </aside>
       </div>
     </div>

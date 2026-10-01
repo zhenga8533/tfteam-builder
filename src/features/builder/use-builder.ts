@@ -1,8 +1,11 @@
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
-import { computeTraits } from "@/lib/game/traits";
+import { placementOrder } from "@/features/comps/auto-place";
+import type { Champion } from "@/lib/data/schema";
 import * as B from "@/lib/game/board";
+import { autofill } from "@/lib/game/trait-planner";
+import { computeTraits } from "@/lib/game/traits";
 import { DEFAULT_LEVEL, EMPTY_TEAM, teamOf, useBuilderStore } from "./store";
 
 const activeBoard = (team: { boards: B.LevelBoard[]; active: number }) =>
@@ -17,6 +20,13 @@ export function useBuilder() {
   const setTeam = useBuilderStore((state) => state.setTeam);
   const select = useBuilderStore((state) => state.select);
   const { board, level } = activeBoard(team);
+
+  /** Puts each champion where it would usually stand (melee front, ranged back); stops when the board is full. */
+  const placeAll = (from: B.Board, champions: Champion[]) =>
+    champions.reduce((next, champion) => {
+      const hex = placementOrder(champion).find((index) => next[index] === null);
+      return hex === undefined ? next : B.placeChampion(next, hex, champion.apiName);
+    }, from);
 
   const commit = (next: B.Board) =>
     setTeam(set, {
@@ -67,6 +77,29 @@ export function useBuilder() {
       const next = B.addChampion(board, apiName);
       if (next) commit(next);
       else toast.error("The board is full.");
+    },
+    /** Adds a champion where it would usually stand, e.g. from the trait ladder. */
+    addPlaced: (apiName: string) => {
+      const champion = data.championsByApi.get(apiName);
+      if (!champion) return;
+      if (!board.includes(null)) toast.error("The board is full.");
+      else commit(placeAll(board, [champion]));
+    },
+    /**
+     * Fills the open slots up to the board's level with the champions that activate the most traits.
+     * Flex units don't take a slot. Returns the champions added.
+     */
+    autofill: (strength?: (champion: Champion) => number): Champion[] => {
+      const core = B.boardUnits(board).filter((unit) => !unit.flex);
+      const slots = Math.min(level - core.length, board.filter((unit) => unit === null).length);
+      if (slots <= 0) {
+        toast(`Level ${level} already fields ${core.length} units.`);
+        return [];
+      }
+      const picks = autofill(core, slots, data, strength);
+      commit(placeAll(board, picks));
+      select(null);
+      return picks;
     },
     move: (from: number, to: number) => {
       commit(B.moveUnit(board, from, to));

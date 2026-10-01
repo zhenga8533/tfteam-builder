@@ -24,6 +24,16 @@ const COLUMNS: { key: SortKey; label: string; title?: string }[] = [
 /** Lower is better for delta and average placement; higher is better for the rest. */
 const ASCENDING_BEST: Record<SortKey, boolean> = { delta: true, avg: true, top4: false, games: false };
 
+/** Sorts by the value shown, but low samples always go last so a few lucky games can't top the table. */
+function sortRows(rows: StatRow[], sort: SortKey) {
+  const value = (row: StatRow) => (sort === "delta" ? (row.line.delta ?? 0) : row.line[sort]);
+  return [...rows].sort(
+    (a, b) =>
+      Number(isLowSample(a.line)) - Number(isLowSample(b.line)) ||
+      (ASCENDING_BEST[sort] ? value(a) - value(b) : value(b) - value(a)),
+  );
+}
+
 export function DeltaValue({ delta }: { delta: number }) {
   return (
     <span
@@ -43,6 +53,8 @@ interface StatTableProps {
   deltaBaseline?: string;
   empty?: ReactNode;
   limit?: number;
+  /** Keep the rows' own order until a column is picked (e.g. trait breakpoints, smallest first). */
+  keepOrder?: boolean;
 }
 
 /** Sortable table of stat lines; best first by delta (or average placement without deltas), low samples last. */
@@ -52,20 +64,15 @@ export function StatTable({
   deltaBaseline = "the champion's own average placement",
   empty = "Not enough games yet.",
   limit = 15,
+  keepOrder = false,
 }: StatTableProps) {
-  const [sort, setSort] = useState<SortKey>(showDelta ? "delta" : "avg");
+  const [sort, setSort] = useState<SortKey | null>(keepOrder ? null : showDelta ? "delta" : "avg");
   const [expanded, setExpanded] = useState(false);
   const columns = COLUMNS.filter((column) => showDelta || column.key !== "delta");
 
   if (rows.length === 0) return <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>;
 
-  const value = (row: StatRow) => (sort === "delta" ? (row.line.delta ?? 0) : row.line[sort]);
-  // Rows sort by the value shown, but low samples always go last so a few lucky games can't top the table.
-  const sorted = [...rows].sort(
-    (a, b) =>
-      Number(isLowSample(a.line)) - Number(isLowSample(b.line)) ||
-      (ASCENDING_BEST[sort] ? value(a) - value(b) : value(b) - value(a)),
-  );
+  const sorted = sort === null ? rows : sortRows(rows, sort);
   const visible = expanded ? sorted : sorted.slice(0, limit);
 
   return (

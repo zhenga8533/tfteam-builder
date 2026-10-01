@@ -4,6 +4,7 @@ import {
   buildAugments,
   buildItems,
   buildSet,
+  championRole,
   championTraitApiNames,
   gameAssetUrl,
   parseAugmentTier,
@@ -153,6 +154,8 @@ describe("buildSet champions and traits", () => {
     traits,
     squareIcon: null,
     tileIcon: `ASSETS/Characters/${apiName}.tex`,
+    icon: null,
+    role: null,
     ability: { name: "", desc: "", icon: null, variables: [] },
     stats: {},
   });
@@ -195,18 +198,19 @@ describe("buildSet champions and traits", () => {
     })),
   };
 
-  it("attaches forms to their shop champion and maps them back to it", () => {
+  it("makes named forms champions of their own and maps unnamed clones to their base", () => {
     const data = buildSet(set, new Map(), planner, "latest");
-    expect(data.champions.map((champion) => champion.apiName)).toEqual(["Lux", "MF"]);
-    const lux = data.champions.find((champion) => champion.apiName === "Lux")!;
-    expect(lux.forms).toMatchObject([{ apiName: "Lux_Coven", label: "Coven", traits: ["T_Avatar", "T_Coven"] }]);
-    expect(data.championAliases).toEqual({ Lux_Coven: "Lux", MF_Clone: "MF" });
+    expect(data.champions.map((champion) => champion.apiName)).toEqual(["Lux", "Lux_Coven", "MF"]);
+    const coven = data.champions.find((champion) => champion.apiName === "Lux_Coven")!;
+    expect(coven).toMatchObject({ name: "Lux (Coven)", formOf: "Lux", traits: ["T_Avatar", "T_Coven"] });
+    expect(coven.plannerCode).toBeUndefined();
+    expect(data.championAliases).toEqual({ MF_Clone: "MF" });
   });
 
   it("detects forms without team planner data too", () => {
     const data = buildSet(set, new Map(), {}, "latest");
-    expect(data.champions.map((champion) => champion.apiName).sort()).toEqual(["Lux", "MF", "MF_Clone"]);
-    expect(data.championAliases).toEqual({ Lux_Coven: "Lux" });
+    expect(data.champions.map((champion) => champion.apiName).sort()).toEqual(["Lux", "Lux_Coven", "MF", "MF_Clone"]);
+    expect(data.championAliases).toEqual({});
   });
 
   it("keeps every trait, tags its source, and resolves champion traits by name safely", () => {
@@ -231,6 +235,18 @@ describe("championTraitApiNames", () => {
     const trait = (apiName: string): RawTrait => ({ apiName, name: "Stargazer", desc: "", icon: null, effects: [] });
     const traits = [trait("TFT17_Stargazer_Wolf"), trait("TFT17_Stargazer"), trait("TFT17_Stargazer_Serpent")];
     expect([...championTraitApiNames(traits, new Set(["Stargazer"]))]).toEqual(["TFT17_Stargazer"]);
+  });
+});
+
+describe("championRole", () => {
+  it("names roles the way the game does", () => {
+    expect(championRole("APCaster")).toBe("Magic Caster");
+    expect(championRole("ADCarryCrit")).toBe("Attack Marksman");
+    expect(championRole("APCasterHighMana")).toBe("Magic Caster");
+    expect(championRole("HFighter")).toBe("Hybrid Fighter");
+    expect(championRole("ADReaper")).toBe("Attack Assassin");
+    expect(championRole("TutorialADCarry")).toBeUndefined();
+    expect(championRole(null)).toBeUndefined();
   });
 });
 

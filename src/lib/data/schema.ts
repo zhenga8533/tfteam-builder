@@ -6,26 +6,19 @@ export type Patch = z.infer<typeof patchSchema>;
 
 const numberRecord = z.record(z.string(), z.number());
 
-/** An alternate version of a champion that appears in games but not in the shop, e.g. "Lux (Coven)". */
-export const championFormSchema = z.object({
-  apiName: z.string(),
-  name: z.string(),
-  /** The part that distinguishes the form ("Coven" in "Lux (Coven)"), when the name has one. */
-  label: z.string().nullable(),
-  traits: z.array(z.string()),
-  icon: z.string(),
-});
-export type ChampionForm = z.infer<typeof championFormSchema>;
-
 export const championSchema = z.object({
   apiName: z.string(),
   name: z.string(),
   cost: z.number().int().min(1).max(5),
   traits: z.array(z.string()),
   icon: z.string(),
+  /** Wide splash art; empty when the set has none. */
   splash: z.string(),
+  /** In-game combat role, e.g. "Magic Caster"; absent for sets whose data doesn't include roles. */
+  role: z.string().optional(),
   plannerCode: z.number().int().optional(),
-  forms: z.array(championFormSchema),
+  /** For an alternate form such as "Lux (Coven)": the apiName of the shop champion it's a form of. */
+  formOf: z.string().optional(),
   ability: z.object({
     name: z.string(),
     desc: z.string(),
@@ -105,7 +98,7 @@ export const setDataSchema = z.object({
   items: z.array(itemSchema),
   /** Duplicate item apiNames (as they may appear in match data) → the apiName kept in `items`. */
   itemAliases: z.record(z.string(), z.string()),
-  /** Champion form apiNames (as they appear in match data) → their base champion's apiName. */
+  /** Same-name clones of a champion (as they appear in match data) → the champion's apiName. */
   championAliases: z.record(z.string(), z.string()),
   augments: z.array(augmentSchema),
 });
@@ -154,8 +147,6 @@ export const setStatsSchema = z.object({
   /** True when the current patch is too new and the previous patch's stats are shown instead. */
   previousPatch: z.boolean(),
   units: z.record(z.string(), statLineSchema),
-  /** Per-form stats keyed by form apiName; also counted in the base champion's `units` entry. */
-  forms: z.record(z.string(), statLineSchema),
   items: z.record(z.string(), statLineSchema),
   traits: z.array(traitStatSchema),
   bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),
@@ -185,6 +176,26 @@ export const championStatsSchema = z.object({
   comps: z.array(z.string()),
 });
 export type ChampionStats = z.infer<typeof championStatsSchema>;
+
+export const itemStatsSchema = z.object({
+  apiName: z.string(),
+  /** Champions holding the item; delta is against each champion's own average placement. */
+  holders: z.array(deltaStatSchema.extend({ unit: z.string() })),
+  /** Items built on the same unit; delta is against this item's average placement. */
+  pairs: z.array(deltaStatSchema.extend({ item: z.string() })),
+  /** IDs of detected comps whose core board builds this item. */
+  comps: z.array(z.string()),
+});
+export type ItemStats = z.infer<typeof itemStatsSchema>;
+
+export const traitStatsSchema = z.object({
+  apiName: z.string(),
+  /** Units on boards with the trait active; delta is against those boards' average placement. */
+  units: z.array(deltaStatSchema.extend({ unit: z.string() })),
+  /** IDs of detected comps that run the trait. */
+  comps: z.array(z.string()),
+});
+export type TraitStats = z.infer<typeof traitStatsSchema>;
 
 /** A comp detected from match data: boards sharing the same carries and core traits. */
 export const autoCompSchema = statLineSchema.extend({

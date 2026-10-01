@@ -18,6 +18,10 @@ export interface RawChampion {
   traits: string[];
   squareIcon: string | null;
   tileIcon: string | null;
+  /** The wide TFT splash; a hash like `{94230c60604bffc1}` when the path couldn't be resolved. */
+  icon: string | null;
+  /** Combat role such as "APCaster" or "ADTank" (Set 13 on); missing for some sets. */
+  role: string | null;
   ability: {
     name: string | null;
     desc: string | null;

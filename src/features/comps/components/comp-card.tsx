@@ -1,8 +1,6 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { ChampionCard, TraitCard } from "@/components/game/cards";
-import { GameHoverCard } from "@/components/game/game-hover-card";
-import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
+import { ChampionLink, ItemLink, TraitLink } from "@/components/game/links";
 import type { Comp, CompUnit } from "@/content/types";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData } from "@/lib/data/hooks";
@@ -47,16 +45,16 @@ function CompCardView({ title, link, units: board, badge, meta }: CompCardViewPr
         <ul className="flex flex-wrap gap-1.5" aria-label="Champions">
           {units.map(({ unit, champion }) => (
             <li key={unit.hex} className="relative z-10 flex w-11 flex-col items-center gap-0.5">
-              <GameHoverCard content={<ChampionCard champion={champion} star={unit.star} />}>
-                <span tabIndex={0} className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <ChampionIcon champion={champion} className={cn("size-11", unit.carry && "ring-3 ring-primary")} />
-                </span>
-              </GameHoverCard>
+              <ChampionLink
+                champion={champion}
+                label={null}
+                iconClassName={cn("size-11", unit.carry && "ring-3 ring-primary")}
+              />
               {unit.items && unit.items.length > 0 && (
                 <span className="flex gap-px">
                   {unit.items.map((apiName, index) => {
                     const item = itemsByApi.get(apiName);
-                    return item ? <ItemIcon key={index} item={item} className="size-3.5" title={item.name} /> : null;
+                    return item ? <ItemLink key={index} item={item} label={null} iconClassName="size-3.5" /> : null;
                   })}
                 </span>
               )}
@@ -66,14 +64,12 @@ function CompCardView({ title, link, units: board, badge, meta }: CompCardViewPr
         <ul className="relative z-10 flex flex-wrap gap-1" aria-label="Active traits">
           {traits.slice(0, 6).map(({ trait, count, style }) => (
             <li key={trait.apiName}>
-              <GameHoverCard content={<TraitCard trait={trait} count={count} />}>
-                <span tabIndex={0} className="relative block outline-none">
-                  <TraitIcon trait={trait} style={style} />
-                  <span className="absolute -right-1 -bottom-1 rounded bg-background px-0.5 text-[10px] font-semibold">
-                    {count}
-                  </span>
+              <span className="relative block">
+                <TraitLink trait={trait} style={style} count={count} label={null} iconClassName="size-7" />
+                <span className="pointer-events-none absolute -right-1 -bottom-1 rounded bg-background px-0.5 text-[10px] font-semibold">
+                  {count}
                 </span>
-              </GameHoverCard>
+              </span>
             </li>
           ))}
         </ul>

@@ -5,19 +5,23 @@ import { gzipSync } from "node:zlib";
 import {
   autoCompsSchema,
   championStatsSchema,
+  itemStatsSchema,
   type Manifest,
   type SetData,
   type SetStats,
   setStatsSchema,
+  traitStatsSchema,
 } from "../src/lib/data/schema.ts";
 import { encodeExplorer, type ExplorerBoard } from "../src/lib/explorer/format.ts";
 import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
+import { DatabaseAccumulator } from "./lib/database-stats.ts";
+import { FormInference } from "./lib/forms.ts";
 import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
-import { type BoardChunk, comparePatches, createStatsStore, type StatsStore } from "./stats/state.ts";
-import type { PatchCounters } from "./stats/types.ts";
+import { type BoardChunk, comparePatches, createStatsStore } from "./stats/state.ts";
+import type { BoardRow, PatchCounters } from "./stats/types.ts";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
@@ -41,11 +45,13 @@ const top = (names: Map<string, number>) =>
 const chunkTime = (name: string) =>
   name.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z.*$/, "$1-$2-$3T$4:$5:$6Z");
 
+type ReadBoards = (chunk: BoardChunk) => Promise<BoardRow[]>;
+
 /** Streams a patch's chunks one at a time, so memory holds counters rather than every board. */
-async function loadPatch(store: StatsStore, set: number, patch: string, chunks: BoardChunk[]): Promise<PatchCounters> {
+async function loadPatch(read: ReadBoards, set: number, patch: string, chunks: BoardChunk[]): Promise<PatchCounters> {
   const counters: PatchCounters = { set, patch, updatedAt: "", buckets: {} };
   for (const chunk of chunks) {
-    for (const row of await store.readBoards(chunk)) addBoardToPatch(counters, row);
+    for (const row of await read(chunk)) addBoardToPatch(counters, row);
     const time = chunkTime(chunk.name);
     if (time > counters.updatedAt) counters.updatedAt = time;
   }
@@ -56,7 +62,7 @@ async function loadPatch(store: StatsStore, set: number, patch: string, chunks: 
  * Second pass over the boards behind the published stats (chosen patch and rank floor), for the
  * per-champion detail files.
  */
-async function writeDetails(store: StatsStore, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
+async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const dir = join(OUT_DIR, `set${data.number}`);
   await rm(dir, { recursive: true, force: true });
   if (stats.status !== "ready") return;
@@ -67,14 +73,16 @@ async function writeDetails(store: StatsStore, data: SetData, stats: SetStats, c
   /** Re-reads the sample instead of holding every board in memory between passes. */
   const eachBoard = async (visit: (board: ResolvedBoard) => void) => {
     for (const chunk of sample) {
-      for (const row of await store.readBoards(chunk)) if (buckets.has(row[2])) visit(resolver.board(row));
+      for (const row of await read(chunk)) if (buckets.has(row[2])) visit(resolver.board(row));
     }
   };
 
   const champions = new ChampionAccumulator();
+  const database = new DatabaseAccumulator();
   const comps = new CompDetector(data);
   await eachBoard((board) => {
     champions.add(board);
+    database.add(board);
     comps.count(board);
   });
   await eachBoard((board) => comps.add(board));
@@ -86,18 +94,21 @@ async function writeDetails(store: StatsStore, data: SetData, stats: SetStats, c
     for (const unit of comp.units) byChampion.get(unit.apiName)?.comps.push(comp.id);
   }
 
-  await mkdir(join(dir, "champions"), { recursive: true });
-  for (const champion of championStats) {
-    await writeFile(
-      join(dir, "champions", `${champion.apiName}.json`),
-      JSON.stringify(championStatsSchema.parse(champion)),
-    );
-  }
+  const writeAll = async <T extends { apiName: string }>(folder: string, entries: T[], parse: (entry: T) => T) => {
+    await mkdir(join(dir, folder), { recursive: true });
+    for (const entry of entries) {
+      await writeFile(join(dir, folder, `${entry.apiName}.json`), JSON.stringify(parse(entry)));
+    }
+  };
+  const { items, traits } = database.results(championStats, detected);
+  await writeAll("champions", championStats, (entry) => championStatsSchema.parse(entry));
+  await writeAll("items", items, (entry) => itemStatsSchema.parse(entry));
+  await writeAll("traits", traits, (entry) => traitStatsSchema.parse(entry));
   await writeFile(join(dir, "comps.json"), JSON.stringify(autoCompsSchema.parse({ comps: detected })));
 
   const explorer: ExplorerBoard[] = [];
   for (const chunk of [...sample].sort((a, b) => b.name.localeCompare(a.name))) {
-    for (const row of await store.readBoards(chunk)) {
+    for (const row of await read(chunk)) {
       if (explorer.length >= EXPLORER_SAMPLE) break;
       if (buckets.has(row[2])) explorer.push(resolver.board(row));
     }
@@ -106,7 +117,9 @@ async function writeDetails(store: StatsStore, data: SetData, stats: SetStats, c
   const encoded = gzipSync(encodeExplorer(explorer), { level: 9 });
   await writeFile(join(dir, "explorer.bin.gz"), encoded);
   console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
-  console.log(`  ${championStats.length} champion files, ${detected.length} comps`);
+  console.log(
+    `  ${championStats.length} champion, ${items.length} item and ${traits.length} trait files, ${detected.length} comps`,
+  );
 }
 
 async function main() {
@@ -133,14 +146,16 @@ async function main() {
     const newest = [...byPatch.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
     if (newest.length === 0) continue;
 
-    const patches = await Promise.all(newest.map((patch) => loadPatch(store, set, patch, byPatch.get(patch)!)));
     const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
+    const forms = new FormInference(data);
+    const read: ReadBoards = async (chunk) => (await store.readBoards(chunk)).map((row) => forms.row(row));
+    const patches = await Promise.all(newest.map((patch) => loadPatch(read, set, patch, byPatch.get(patch)!)));
     const { stats, unknown } = buildSetStats(data, patches);
     const json = JSON.stringify(setStatsSchema.parse(stats));
     await writeFile(join(OUT_DIR, `set${set}.json`), json);
     if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
     await writeDetails(
-      store,
+      read,
       data,
       stats,
       chunks.filter((chunk) => chunk.set === set),

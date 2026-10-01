@@ -62,6 +62,23 @@ function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: ()
   );
 }
 
+/** Below this width the splash would be visibly upscaled in the dialog; older sets only ship small splashes. */
+const SHARP_SPLASH_WIDTH = 512;
+
+function SplashBanner({ champion }: { champion: Champion }) {
+  const [sharp, setSharp] = useState(true);
+  if (!champion.splash || !sharp) return null;
+  return (
+    <img
+      src={champion.splash}
+      alt=""
+      onLoad={(event) => setSharp(event.currentTarget.naturalWidth >= SHARP_SPLASH_WIDTH)}
+      onError={() => setSharp(false)}
+      className="-mx-6 -mt-6 aspect-[2/1] w-[calc(100%+3rem)] max-w-none rounded-t-lg object-cover object-top"
+    />
+  );
+}
+
 function ChampionsPage() {
   const { champions, traits } = useGameData();
   const search = Route.useSearch();
@@ -174,13 +191,9 @@ function ChampionsPage() {
           <DialogTitle className="sr-only">{selected?.name}</DialogTitle>
           {selected && (
             <>
-              <img
-                src={selected.splash}
-                alt=""
-                className="-mx-6 -mt-6 aspect-[2/1] w-[calc(100%+3rem)] max-w-none rounded-t-lg object-cover object-top"
-              />
+              <SplashBanner key={selected.apiName} champion={selected} />
               <ChampionCard champion={selected} />
-              <ChampionForms champion={selected} className="border-t pt-3" />
+              <ChampionForms champion={selected} title="Other forms" className="border-t pt-3" />
               {stats?.units[selected.apiName] && (
                 <StatSummary line={stats.units[selected.apiName]!} className="border-t pt-3" />
               )}
