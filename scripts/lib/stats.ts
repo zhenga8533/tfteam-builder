@@ -16,7 +16,7 @@ const TIER_CUTOFFS = [0.1, 0.35, 0.7, 1] as const;
 const BEST_ITEMS_PER_UNIT = 6;
 
 /** Rank buckets whose matches count toward each floor, e.g. Diamond+ = Master+ and Diamond. */
-const FLOOR_BUCKETS: Record<RankFloor, RankBucket[]> = {
+export const FLOOR_BUCKETS: Record<RankFloor, RankBucket[]> = {
   diamond: ["master_plus", "diamond"],
   emerald: ["master_plus", "diamond", "emerald"],
   platinum: ["master_plus", "diamond", "emerald", "platinum"],
@@ -58,9 +58,9 @@ export function chooseSample(patches: PatchCounters[], minMatches = MIN_MATCHES)
 export const adjustedAverage = ([games, placementSum]: Counter) =>
   (placementSum + PRIOR_GAMES * AVERAGE_PLACEMENT) / (games + PRIOR_GAMES);
 
-const round = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits;
+export const round = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits;
 
-function statLine(counter: Counter, total: number): StatLine {
+export function statLine(counter: Counter, total: number): StatLine {
   const [games, , top4, wins] = counter;
   return {
     games,
@@ -110,6 +110,25 @@ function collect(record: Record<string, Counter>, resolve: (key: string, games: 
   return result;
 }
 
+/** Items worth ranking: everything but components, which are carried around mid-game rather than built. */
+export const rankableItems = (data: SetData) =>
+  new Set(data.items.filter((item) => item.kind !== "component").map((item) => item.apiName));
+
+/** Resolvers mapping Riot's names in stored boards to the site's apiNames (forms and item variants included). */
+export function resolversFor(data: SetData) {
+  return {
+    units: new NameResolver(
+      data.champions.map((champion) => champion.apiName),
+      data.championAliases,
+    ),
+    items: new NameResolver(
+      data.items.map((item) => item.apiName),
+      data.itemAliases,
+    ),
+    traits: new NameResolver(data.traits.map((trait) => trait.apiName)),
+  };
+}
+
 export interface BuildResult {
   stats: SetStats;
   unknown: { units: Map<string, number>; items: Map<string, number>; traits: Map<string, number> };
@@ -117,15 +136,7 @@ export interface BuildResult {
 
 export function buildSetStats(data: SetData, patches: PatchCounters[], now = new Date()): BuildResult {
   // Forms resolve to their base champion, so e.g. every Lux form counts toward Lux.
-  const units = new NameResolver(
-    data.champions.map((champion) => champion.apiName),
-    data.championAliases,
-  );
-  const items = new NameResolver(
-    data.items.map((item) => item.apiName),
-    data.itemAliases,
-  );
-  const traits = new NameResolver(data.traits.map((trait) => trait.apiName));
+  const { units, items, traits } = resolversFor(data);
   const unknown = { units: units.unknown, items: items.unknown, traits: traits.unknown };
   const sample = chooseSample(patches);
 
@@ -152,7 +163,7 @@ export function buildSetStats(data: SetData, patches: PatchCounters[], now = new
   }
 
   const { counters } = sample;
-  const rankable = new Set(data.items.filter((item) => item.kind !== "component").map((item) => item.apiName));
+  const rankable = rankableItems(data);
 
   const unitCounters = collect(counters.units, (key, games) => units.resolve(key, games));
   const unitLines = Object.fromEntries(

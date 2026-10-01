@@ -32,6 +32,7 @@ function ChampionTierListPage() {
             icon={<ChampionIcon champion={champion} className="size-12" />}
             label={champion.name}
             line={line}
+            link={{ to: "/champions/$apiName", params: { apiName: champion.apiName } }}
             card={
               <div className="space-y-3">
                 <ChampionCard champion={champion} />

@@ -15,6 +15,7 @@ import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as ChampionsRouteImport } from './routes/champions'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as TraitsRouteImport } from './routes/traits'
+import { Route as ChampionsApiNameRouteImport } from './routes/champions_.$apiName'
 import { Route as CompsSlugRouteImport } from './routes/comps/$slug'
 import { Route as TierlistAugmentsRouteImport } from './routes/tierlist/augments'
 import { Route as TierlistChampionsRouteImport } from './routes/tierlist/champions'
@@ -50,6 +51,11 @@ const ItemsRoute = ItemsRouteImport.update({
 const TraitsRoute = TraitsRouteImport.update({
   id: '/traits',
   path: '/traits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChampionsApiNameRoute = ChampionsApiNameRouteImport.update({
+  id: '/champions_/$apiName',
+  path: '/champions/$apiName',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompsSlugRoute = CompsSlugRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/champions': typeof ChampionsRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
+  '/champions/$apiName': typeof ChampionsApiNameRoute
   '/comps/$slug': typeof CompsSlugRoute
   '/tierlist/augments': typeof TierlistAugmentsRoute
   '/tierlist/champions': typeof TierlistChampionsRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/champions': typeof ChampionsRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
+  '/champions/$apiName': typeof ChampionsApiNameRoute
   '/comps/$slug': typeof CompsSlugRoute
   '/tierlist/augments': typeof TierlistAugmentsRoute
   '/tierlist/champions': typeof TierlistChampionsRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/champions': typeof ChampionsRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
+  '/champions_/$apiName': typeof ChampionsApiNameRoute
   '/comps/$slug': typeof CompsSlugRoute
   '/tierlist/augments': typeof TierlistAugmentsRoute
   '/tierlist/champions': typeof TierlistChampionsRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/champions'
     | '/items'
     | '/traits'
+    | '/champions/$apiName'
     | '/comps/$slug'
     | '/tierlist/augments'
     | '/tierlist/champions'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/champions'
     | '/items'
     | '/traits'
+    | '/champions/$apiName'
     | '/comps/$slug'
     | '/tierlist/augments'
     | '/tierlist/champions'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/champions'
     | '/items'
     | '/traits'
+    | '/champions_/$apiName'
     | '/comps/$slug'
     | '/tierlist/augments'
     | '/tierlist/champions'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   ChampionsRoute: typeof ChampionsRoute
   ItemsRoute: typeof ItemsRoute
   TraitsRoute: typeof TraitsRoute
+  ChampionsApiNameRoute: typeof ChampionsApiNameRoute
   CompsSlugRoute: typeof CompsSlugRoute
   TierlistAugmentsRoute: typeof TierlistAugmentsRoute
   TierlistChampionsRoute: typeof TierlistChampionsRoute
@@ -228,6 +241,13 @@ declare module '@tanstack/react-router' {
       path: '/traits'
       fullPath: '/traits'
       preLoaderRoute: typeof TraitsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/champions_/$apiName': {
+      id: '/champions_/$apiName'
+      path: '/champions/$apiName'
+      fullPath: '/champions/$apiName'
+      preLoaderRoute: typeof ChampionsApiNameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/comps/$slug': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChampionsRoute: ChampionsRoute,
   ItemsRoute: ItemsRoute,
   TraitsRoute: TraitsRoute,
+  ChampionsApiNameRoute: ChampionsApiNameRoute,
   CompsSlugRoute: CompsSlugRoute,
   TierlistAugmentsRoute: TierlistAugmentsRoute,
   TierlistChampionsRoute: TierlistChampionsRoute,

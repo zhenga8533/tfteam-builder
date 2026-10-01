@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
 import { ChampionIcon, TraitIcon } from "@/components/game/icons";
@@ -6,6 +7,7 @@ import { COST_TEXT, COSTS } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -180,6 +182,11 @@ function ChampionsPage() {
               {stats?.units[selected.apiName] && (
                 <StatSummary line={stats.units[selected.apiName]!} className="border-t pt-3" />
               )}
+              <Button asChild variant="secondary" className="w-full">
+                <Link to="/champions/$apiName" params={{ apiName: selected.apiName }}>
+                  Builds, partners and full stats <ArrowRight />
+                </Link>
+              </Button>
             </>
           )}
         </DialogContent>

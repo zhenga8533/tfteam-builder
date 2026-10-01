@@ -1,8 +1,15 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { type Manifest, type SetData, setStatsSchema } from "../src/lib/data/schema.ts";
-import { buildSetStats } from "./lib/stats.ts";
+import {
+  championStatsSchema,
+  type Manifest,
+  type SetData,
+  type SetStats,
+  setStatsSchema,
+} from "../src/lib/data/schema.ts";
+import { ChampionAccumulator } from "./lib/champion-stats.ts";
+import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { type BoardChunk, comparePatches, createStatsStore, type StatsStore } from "./stats/state.ts";
 import type { PatchCounters } from "./stats/types.ts";
@@ -38,6 +45,30 @@ async function loadPatch(store: StatsStore, set: number, patch: string, chunks: 
   return counters;
 }
 
+/**
+ * Second pass over the boards behind the published stats (chosen patch and rank floor), for the
+ * per-champion detail files.
+ */
+async function writeDetails(store: StatsStore, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
+  const dir = join(OUT_DIR, `set${data.number}`);
+  await rm(dir, { recursive: true, force: true });
+  if (stats.status !== "ready") return;
+
+  const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
+  const champions = new ChampionAccumulator(data);
+  for (const chunk of chunks.filter((chunk) => chunk.patch === stats.patch)) {
+    for (const row of await store.readBoards(chunk)) if (buckets.has(row[2])) champions.add(row);
+  }
+
+  await mkdir(join(dir, "champions"), { recursive: true });
+  for (const champion of champions.results()) {
+    await writeFile(
+      join(dir, "champions", `${champion.apiName}.json`),
+      JSON.stringify(championStatsSchema.parse(champion)),
+    );
+  }
+}
+
 async function main() {
   const store = createStatsStore(args.stats);
   if (!store) {
@@ -68,6 +99,12 @@ async function main() {
     const json = JSON.stringify(setStatsSchema.parse(stats));
     await writeFile(join(OUT_DIR, `set${set}.json`), json);
     if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
+    await writeDetails(
+      store,
+      data,
+      stats,
+      chunks.filter((chunk) => chunk.set === set),
+    );
 
     console.log(
       `set ${set}: ${stats.status}, patch ${stats.patch}, ${stats.rankFloor}+, ${stats.matches} matches` +

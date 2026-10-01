@@ -101,7 +101,7 @@ export function UnitInspector({ className }: { className?: string }) {
         )}
       </div>
 
-      <BestItems champion={champion.apiName} onPick={(item) => equip(selected, item)} />
+      <BestItems champion={champion.apiName} equipped={unit.items} onPick={(item) => equip(selected, item)} />
 
       {champion.ability.name && (
         <div className="space-y-1 border-t pt-3">
