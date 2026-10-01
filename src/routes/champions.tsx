@@ -9,7 +9,8 @@ import { SearchInput } from "@/components/layout/search-input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useGameData } from "@/lib/data/hooks";
+import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
+import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
 import { matches, numberParam, stringParam } from "@/lib/search";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ interface ChampionSearch {
   q?: string;
   cost?: number;
   trait?: string;
+  sort?: "avg";
 }
 
 export const Route = createFileRoute("/champions")({
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/champions")({
     q: stringParam(search.q),
     cost: numberParam(search.cost),
     trait: stringParam(search.trait),
+    sort: search.sort === "avg" ? "avg" : undefined,
   }),
   component: ChampionsPage,
 });
@@ -34,6 +37,7 @@ const ALL = "all";
 
 function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: () => void }) {
   const { traitsByApi } = useGameData();
+  const line = useStats()?.units[champion.apiName];
   return (
     <button
       type="button"
@@ -50,6 +54,7 @@ function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: ()
           })}
         </div>
       </div>
+      {line && <AvgPlacement line={line} className="self-start text-sm" />}
     </button>
   );
 }
@@ -63,17 +68,24 @@ function ChampionsPage() {
   const update = (patch: Partial<ChampionSearch>) =>
     navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
 
-  const byCost = useMemo(() => {
+  const stats = useStats();
+  const groups = useMemo(() => {
     const filtered = champions.filter(
       (champion) =>
         matches(champion.name, search.q) &&
         (search.cost === undefined || champion.cost === search.cost) &&
         (!search.trait || champion.traits.includes(search.trait)),
     );
-    return COSTS.map((cost) => ({ cost, champions: filtered.filter((champion) => champion.cost === cost) })).filter(
-      (group) => group.champions.length > 0,
-    );
-  }, [champions, search]);
+    if (search.sort === "avg" && stats?.status === "ready") {
+      const avg = (champion: Champion) => stats.units[champion.apiName]?.avg ?? Infinity;
+      return [{ title: "By average placement", cost: undefined, champions: filtered.sort((a, b) => avg(a) - avg(b)) }];
+    }
+    return COSTS.map((cost) => ({
+      title: `${cost} Cost`,
+      cost,
+      champions: filtered.filter((champion) => champion.cost === cost),
+    })).filter((group) => group.champions.length > 0);
+  }, [champions, search, stats]);
 
   return (
     <>
@@ -113,19 +125,32 @@ function ChampionsPage() {
             ))}
           </SelectContent>
         </Select>
+        {stats?.status === "ready" && (
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={search.sort ?? "cost"}
+            onValueChange={(value) => value && update({ sort: value === "avg" ? "avg" : undefined })}
+            aria-label="Sort"
+          >
+            <ToggleGroupItem value="cost" className="px-3">
+              By cost
+            </ToggleGroupItem>
+            <ToggleGroupItem value="avg" className="px-3">
+              By placement
+            </ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </div>
 
-      {byCost.length === 0 ? (
+      {groups.length === 0 ? (
         <EmptyState>No champions match these filters.</EmptyState>
       ) : (
         <div className="space-y-8">
-          {byCost.map((group) => (
-            <section key={group.cost} aria-labelledby={`cost-${group.cost}`}>
-              <h2
-                id={`cost-${group.cost}`}
-                className={cn("mb-3 font-display text-lg font-semibold", COST_TEXT[group.cost])}
-              >
-                {group.cost} Cost
+          {groups.map((group) => (
+            <section key={group.title} aria-label={group.title}>
+              <h2 className={cn("mb-3 font-display text-lg font-semibold", group.cost && COST_TEXT[group.cost])}>
+                {group.title}
               </h2>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
                 {group.champions.map((champion) => (
@@ -148,6 +173,9 @@ function ChampionsPage() {
                 className="-mx-6 -mt-6 aspect-[2/1] w-[calc(100%+3rem)] max-w-none rounded-t-lg object-cover object-top"
               />
               <ChampionCard champion={selected} />
+              {stats?.units[selected.apiName] && (
+                <StatSummary line={stats.units[selected.apiName]!} className="border-t pt-3" />
+              )}
             </>
           )}
         </DialogContent>

@@ -10,11 +10,12 @@ import { useGameData } from "@/lib/data/hooks";
 import { createResolver } from "@/lib/game/description";
 import { cn } from "@/lib/utils";
 import { MAX_ITEMS, STAR_LEVELS, type StarLevel } from "@/lib/game/board";
+import { BestItems } from "@/features/stats/components/best-items";
 import { useBuilder } from "../use-builder";
 
 export function UnitInspector({ className }: { className?: string }) {
   const { championsByApi, itemsByApi } = useGameData();
-  const { board, selected, select, remove, setStar, unequip } = useBuilder();
+  const { board, selected, select, remove, setStar, unequip, equip } = useBuilder();
   const unit = selected === null ? null : board[selected];
   const champion = unit ? championsByApi.get(unit.apiName) : undefined;
   const resolve = useMemo(() => createResolver(champion?.ability.variables ?? {}), [champion]);
@@ -99,6 +100,8 @@ export function UnitInspector({ className }: { className?: string }) {
           </ul>
         )}
       </div>
+
+      <BestItems champion={champion.apiName} onPick={(item) => equip(selected, item)} />
 
       {champion.ability.name && (
         <div className="space-y-1 border-t pt-3">

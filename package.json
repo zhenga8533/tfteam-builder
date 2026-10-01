@@ -18,7 +18,9 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "crawl": "tsx scripts/stats/crawl.ts",
+    "stats": "tsx scripts/build-stats.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

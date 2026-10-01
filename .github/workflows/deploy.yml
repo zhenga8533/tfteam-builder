@@ -3,8 +3,12 @@ name: Deploy
 on:
   push:
     branches: [main]
+  # Publish fresh match stats after each crawl.
+  workflow_run:
+    workflows: [Crawl]
+    types: [completed]
   schedule:
-    # Pick up new patches and PBE updates without a code change.
+    # Picks up new patches even when crawls aren't running (e.g. no API key configured).
     - cron: "0 12 * * *"
   workflow_dispatch:
 
@@ -19,6 +23,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -30,6 +35,13 @@ jobs:
       - run: npm run lint
       - run: npm run data
       - run: npm test
+      # Missing until the first crawl publishes it; the site then simply hides stats.
+      - uses: actions/checkout@v5
+        continue-on-error: true
+        with:
+          ref: stats
+          path: stats
+      - run: npm run stats -- --stats stats
       - run: npm run build
       - uses: actions/upload-pages-artifact@v4
         with:

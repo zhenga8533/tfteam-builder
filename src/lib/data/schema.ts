@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ITEM_KINDS, PATCHES } from "./constants";
+import { ITEM_KINDS, PATCHES, RANK_FLOORS, STAT_TIERS } from "./constants";
 
 export const patchSchema = z.enum(PATCHES);
 export type Patch = z.infer<typeof patchSchema>;
@@ -89,6 +89,8 @@ export const setDataSchema = z.object({
   champions: z.array(championSchema),
   traits: z.array(traitSchema),
   items: z.array(itemSchema),
+  /** Duplicate item apiNames (as they may appear in match data) → the apiName kept in `items`. */
+  itemAliases: z.record(z.string(), z.string()),
   augments: z.array(augmentSchema),
 });
 export type SetData = z.infer<typeof setDataSchema>;
@@ -104,3 +106,36 @@ export const manifestSchema = z.object({
   ),
 });
 export type Manifest = z.infer<typeof manifestSchema>;
+
+export const statLineSchema = z.object({
+  games: z.number().int(),
+  /** Average placement pulled toward 4.5 for small samples; this is what tiers are ranked by. */
+  avg: z.number(),
+  top4: z.number(),
+  win: z.number(),
+  /** Share of boards (units, traits) or of equipped items (items) this entry accounts for. */
+  play: z.number(),
+  tier: z.enum(STAT_TIERS).optional(),
+});
+export type StatLine = z.infer<typeof statLineSchema>;
+
+export const traitStatSchema = statLineSchema.extend({ trait: z.string(), minUnits: z.number().int() });
+export type TraitStat = z.infer<typeof traitStatSchema>;
+
+export const setStatsSchema = z.object({
+  set: z.number().int(),
+  patch: z.string(),
+  updatedAt: z.string(),
+  /** "collecting" until there are enough games at the lowest rank floor. */
+  status: z.enum(["ready", "collecting"]),
+  rankFloor: z.enum(RANK_FLOORS),
+  matches: z.number().int(),
+  /** True when the current patch is too new and the previous patch's stats are shown instead. */
+  previousPatch: z.boolean(),
+  units: z.record(z.string(), statLineSchema),
+  items: z.record(z.string(), statLineSchema),
+  traits: z.array(traitStatSchema),
+  bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),
+});
+export type SetStats = z.infer<typeof setStatsSchema>;
+export type RankFloor = SetStats["rankFloor"];

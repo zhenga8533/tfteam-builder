@@ -66,6 +66,7 @@ describe("buildItems", () => {
       name: "Fae Emblem",
       composition: ["DA_Component_Spatula", "DA_Component_BFSword"],
     }),
+    rawItem({ apiName: "DA_EmblemFaeAugment", name: "Fae Emblem" }),
     rawItem({ apiName: "DA_InfinityEdgeRadiant", name: "Radiant Infinity Edge" }),
     rawItem({ apiName: "DA_PotionRadiant", name: "Radiant Potion" }),
     rawItem({ apiName: "DA_Artifact_Anvil", name: "Artifact Anvil" }),
@@ -73,7 +74,7 @@ describe("buildItems", () => {
     rawItem({ apiName: "DA_Augment_Thing", name: "Some_Placeholder" }),
   ];
   const set = { items: items.map((item) => item.apiName) } as RawSet;
-  const result = buildItems(set, new Map(items.map((item) => [item.apiName, item])), "latest");
+  const { items: result, aliases } = buildItems(set, new Map(items.map((item) => [item.apiName, item])), "latest");
   const byKind = (kind: string) => result.filter((item) => item.kind === kind).map((item) => item.apiName);
 
   it("prefers the set-specific completed item over the generic duplicate", () => {
@@ -89,7 +90,7 @@ describe("buildItems", () => {
       desc: "Gain AD",
     });
     const pool = [stub, real];
-    const built = buildItems(
+    const { items: built } = buildItems(
       { items: pool.map((item) => item.apiName) } as RawSet,
       new Map(pool.map((item) => [item.apiName, item])),
       "latest",
@@ -99,6 +100,14 @@ describe("buildItems", () => {
 
   it("derives components from the chosen recipes only", () => {
     expect(byKind("component").sort()).toEqual(["DA_Component_BFSword", "DA_Component_Gloves", "DA_Component_Spatula"]);
+  });
+
+  it("maps discarded duplicates, including their components, to the kept apiName", () => {
+    expect(aliases).toEqual({
+      TFT_Item_InfinityEdge: "DA_InfinityEdge",
+      TFT_Item_BFSword: "DA_Component_BFSword",
+      DA_EmblemFaeAugment: "DA_EmblemFae",
+    });
   });
 
   it("classifies emblems, radiants and artifacts and drops placeholders", () => {

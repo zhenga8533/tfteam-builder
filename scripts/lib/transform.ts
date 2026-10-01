@@ -112,18 +112,25 @@ function selectChampions(set: RawSet, planner: RawPlannerChampion[] | undefined)
 /**
  * Classifies a set's item pool. The same completed item can appear under several apiNames
  * (e.g. `TFT_Item_InfinityEdge` and a set-specific `DA_InfinityEdge`). Set-specific entries are sometimes
- * empty stubs, so the one with a description wins, then the set-specific one.
+ * empty stubs, so the one with a description wins, then the set-specific one. `aliases` maps every
+ * discarded duplicate to the kept apiName, since match data may reference either.
  */
-export function buildItems(set: RawSet, itemsByApi: Map<string, RawItem>, patch: string): Item[] {
+export function buildItems(
+  set: RawSet,
+  itemsByApi: Map<string, RawItem>,
+  patch: string,
+): { items: Item[]; aliases: Record<string, string> } {
   const pool = set.items.flatMap((apiName) => {
     const item = itemsByApi.get(apiName);
     return item && isDisplayable(item.name) ? [item as RawItem & { name: string }] : [];
   });
 
   const chosen = new Map<string, { raw: RawItem & { name: string }; kind: ItemKind }>();
+  const candidates = new Map<string, string[]>();
   const richness = (item: RawItem) => (item.desc ? 2 : 0) + (item.apiName.startsWith("TFT_Item_") ? 0 : 1);
   const add = (raw: RawItem & { name: string }, kind: ItemKind) => {
     const key = `${kind}:${normalizeName(raw.name)}`;
+    candidates.set(key, [...(candidates.get(key) ?? []), raw.apiName]);
     const existing = chosen.get(key);
     if (!existing || richness(raw) > richness(existing.raw)) {
       chosen.set(key, { raw, kind });
@@ -134,7 +141,7 @@ export function buildItems(set: RawSet, itemsByApi: Map<string, RawItem>, patch:
     if (item.composition.length === 2) add(item, item.name.endsWith("Emblem") ? "emblem" : "completed");
   }
 
-  const componentApiNames = new Set([...chosen.values()].flatMap(({ raw }) => raw.composition));
+  const componentApiNames = new Set(pool.flatMap((item) => (item.composition.length === 2 ? item.composition : [])));
   const completedNames = new Set(
     [...chosen.values()].filter(({ kind }) => kind === "completed").map(({ raw }) => normalizeName(raw.name)),
   );
@@ -152,7 +159,19 @@ export function buildItems(set: RawSet, itemsByApi: Map<string, RawItem>, patch:
     } else if (item.name.endsWith("Emblem") && !/augment/i.test(item.apiName)) add(item, "emblem");
   }
 
-  return [...chosen.values()]
+  const aliases: Record<string, string> = Object.fromEntries(
+    [...chosen.entries()].flatMap(([key, { raw }]) =>
+      (candidates.get(key) ?? []).filter((apiName) => apiName !== raw.apiName).map((apiName) => [apiName, raw.apiName]),
+    ),
+  );
+  // Variants that weren't classified at all (e.g. augment-granted emblems) still count as the item of the same name.
+  const keptByName = new Map([...chosen.values()].map(({ raw }) => [normalizeName(raw.name), raw.apiName]));
+  for (const item of pool) {
+    const target = keptByName.get(normalizeName(item.name));
+    if (target && target !== item.apiName && !aliases[item.apiName]) aliases[item.apiName] = target;
+  }
+
+  const items = [...chosen.values()]
     .map(({ raw, kind }) => ({
       apiName: raw.apiName,
       name: raw.name,
@@ -164,6 +183,7 @@ export function buildItems(set: RawSet, itemsByApi: Map<string, RawItem>, patch:
       unique: raw.unique,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  return { items, aliases };
 }
 
 /**
@@ -207,6 +227,18 @@ export function buildSet(
   const usedTraitNames = new Set(selected.flatMap(({ raw }) => raw.traits));
   const traits = buildTraits(set, patch, usedTraitNames);
   const traitApiByName = new Map(traits.map((trait) => [trait.name, trait.apiName]));
+  const { items: pool, aliases } = buildItems(set, itemsByApi, patch);
+  const items = pool.flatMap((item) => {
+    if (item.kind !== "emblem") return [item];
+    // Emblems carry no trait reference in CDragon, and some belong to traits that aren't in this set.
+    const traitName = item.name.replace(/ Emblem$/, "");
+    const trait = traitApiByName.get(traitName);
+    if (!trait) return [];
+    // Some sets only ship emblem stubs without text; every emblem does the same thing in-game.
+    const desc = item.desc || `The holder gains the <TFTKeyword>${traitName}</TFTKeyword> trait.`;
+    return [{ ...item, trait, desc }];
+  });
+  const kept = new Set(items.map((item) => item.apiName));
 
   return {
     number: set.number,
@@ -215,16 +247,8 @@ export function buildSet(
       .map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, planner))
       .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
     traits,
-    items: buildItems(set, itemsByApi, patch).flatMap((item) => {
-      if (item.kind !== "emblem") return [item];
-      // Emblems carry no trait reference in CDragon, and some belong to traits that aren't in this set.
-      const traitName = item.name.replace(/ Emblem$/, "");
-      const trait = traitApiByName.get(traitName);
-      if (!trait) return [];
-      // Some sets only ship emblem stubs without text; every emblem does the same thing in-game.
-      const desc = item.desc || `The holder gains the <TFTKeyword>${traitName}</TFTKeyword> trait.`;
-      return [{ ...item, trait, desc }];
-    }),
+    items,
+    itemAliases: Object.fromEntries(Object.entries(aliases).filter(([, target]) => kept.has(target))),
     augments: buildAugments(set, itemsByApi, patch),
   };
 }

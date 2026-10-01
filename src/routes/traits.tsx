@@ -7,7 +7,10 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { useGameData } from "@/lib/data/hooks";
+import { AvgPlacement } from "@/features/stats/components/stat-summary";
+import { percent } from "@/features/stats/format";
+import { useGameData, useStats } from "@/lib/data/hooks";
+import type { TraitStat } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
 
 export const Route = createFileRoute("/traits")({
@@ -16,8 +19,25 @@ export const Route = createFileRoute("/traits")({
   component: TraitsPage,
 });
 
+function TraitBreakpointStats({ lines }: { lines: TraitStat[] }) {
+  if (lines.length === 0) return null;
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-xs text-muted-foreground">
+      {[...lines]
+        .sort((a, b) => a.minUnits - b.minUnits)
+        .map((line) => (
+          <li key={line.minUnits}>
+            <span className="font-semibold text-foreground">{line.minUnits}</span> · <AvgPlacement line={line} /> avg ·{" "}
+            {percent(line.top4)} top 4
+          </li>
+        ))}
+    </ul>
+  );
+}
+
 function TraitsPage() {
   const { traits, champions } = useGameData();
+  const stats = useStats();
   const { q } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -56,6 +76,9 @@ function TraitsPage() {
                   <Card key={trait.apiName} className="py-4">
                     <CardContent className="space-y-3 px-4">
                       <TraitCard trait={trait} />
+                      <TraitBreakpointStats
+                        lines={stats?.traits.filter((line) => line.trait === trait.apiName) ?? []}
+                      />
                       <div className="flex flex-wrap gap-1.5 border-t pt-3">
                         {members.map((champion) => (
                           <GameHoverCard key={champion.apiName} content={<ChampionCard champion={champion} />}>
