@@ -2,16 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  addBoard,
-  emptyCounters,
-  matchToRows,
-  isRankedStandard,
-  mergeCounters,
-  patchForMatch,
-  patchFromGameVersion,
-  recordPatch,
-} from "./aggregate.ts";
+import { addBoard, emptyCounters, matchToRows, isRankedStandard, mergeCounters } from "./aggregate.ts";
 import type { Platform } from "./regions.ts";
 import { BudgetExceededError, type Clock, parseRateLimitHeader, RateLimiter, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
@@ -165,27 +156,10 @@ describe("seedPlayers", () => {
 });
 
 describe("aggregation", () => {
-  it("reads the patch from the game version and filters to ranked standard games", () => {
-    expect(patchFromGameVersion(match().info.game_version)).toBe("16.19");
+  it("keeps only standard ranked games", () => {
     expect(isRankedStandard(match())).toBe(true);
     expect(isRankedStandard(match({ queue_id: 1090 }))).toBe(false);
     expect(isRankedStandard(match({ tft_game_type: "pairs" }))).toBe(false);
-  });
-
-  it("infers the patch from when the game was played when the version string has no numbers", () => {
-    let timeline = recordPatch([], "16.18", 1000);
-    timeline = recordPatch(timeline, "16.18", 2000);
-    timeline = recordPatch(timeline, "16.19", 5000);
-    expect(timeline).toEqual([
-      { patch: "16.18", since: 1000 },
-      { patch: "16.19", since: 5000 },
-    ]);
-    const played = (time: number) => match({ game_version: "TFT Unreal Version ?.?.?.?", game_datetime: time });
-    expect(patchForMatch(played(4000), timeline)).toBe("16.18");
-    expect(patchForMatch(played(6000), timeline)).toBe("16.19");
-    expect(patchForMatch(played(10), timeline)).toBe("16.18");
-    expect(patchForMatch(match(), [])).toBe("16.19");
-    expect(patchForMatch(played(10), [])).toBeNull();
   });
 
   it("stores one row per player with only active traits", () => {
@@ -277,6 +251,16 @@ describe("StatsStore", () => {
       "16.11",
     ]);
     expect(await store.blobs.get("summaries/set18/16.9.json")).not.toBeNull();
+  });
+
+  it("orders TFT patch labels, b patches included", () => {
+    expect(["18.10", "18.3b", "17.9", "18.3", "18.4"].sort(comparePatches)).toEqual([
+      "17.9",
+      "18.3",
+      "18.3b",
+      "18.4",
+      "18.10",
+    ]);
   });
 
   it("stamps runs so chunk names sort chronologically", () => {

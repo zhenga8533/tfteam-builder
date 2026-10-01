@@ -116,7 +116,10 @@ export const manifestSchema = z.object({
   patches: z.record(
     patchSchema,
     z.object({
+      /** Game client version from CommunityDragon, e.g. "16.19". */
       version: z.string(),
+      /** TFT's own patch name, e.g. "18.3b"; falls back to `version` when Riot's patch notes can't be read. */
+      label: z.string(),
       sets: z.array(z.number().int()),
     }),
   ),

@@ -36,14 +36,14 @@ const FEATURES: Feature[] = [
 ];
 
 function HomePage() {
-  const { version, set } = useActiveSet();
+  const { label, set } = useActiveSet();
   const data = useGameData();
 
   return (
     <div className="space-y-12">
       <section className="flex flex-col items-start gap-6 py-8 sm:py-16">
         <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          Patch {version} · Set {set}
+          Set {set} · Patch {label}
         </span>
         <h1 className="max-w-3xl font-display text-4xl font-bold tracking-tight sm:text-6xl">
           Plan your next <span className="text-primary">top four</span>.

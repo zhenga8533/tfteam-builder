@@ -14,7 +14,7 @@ export function useActiveSet() {
   const patchInfo = manifest.patches[patch];
   const setNumber = set !== null && patchInfo.sets.includes(set) ? set : patchInfo.sets[0];
   if (setNumber === undefined) throw new Error(`No sets available for patch "${patch}"`);
-  return { patch, set: setNumber, version: patchInfo.version, sets: patchInfo.sets };
+  return { patch, set: setNumber, label: patchInfo.label, sets: patchInfo.sets };
 }
 
 export interface GameData extends SetData {

@@ -178,6 +178,9 @@ match data, so the augment tier list and comp guides stay hand-written.
   place better simply because the player is ahead, so Δ is the fairer comparison.
 - **Detected comps:** boards are grouped by their carries and two core traits. A comp needs at least 150 games, 0.2% of
   boards and a first place. Match data has no positions, so comp boards are laid out by unit range.
+- **Patches:** stats are split by TFT patch, b patches included (18.3, 18.3b), using the release dates in
+  [Riot's patch notes](https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/), because match data no
+  longer reports a version. Right after a patch or b patch, the previous one is shown until there are enough games.
 - **Explorer** (`/explorer`): a sample of the 150,000 most recent boards, queried in the browser (in a Web Worker).
   Filter by champions (star level, items), traits and level, and see which champions, traits and items do best with
   them.
