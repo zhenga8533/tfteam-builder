@@ -36,6 +36,9 @@ export function pluginAssetUrl(patch: string, path: string | null | undefined): 
 const cleanNumbers = (record: Record<string, number | null>) =>
   Object.fromEntries(Object.entries(record).filter((entry): entry is [string, number] => entry[1] !== null));
 
+/** CDragon writes the string "None" for missing asset paths in older sets. */
+const presentPath = (path: string | null | undefined) => (path && path !== "None" ? path : undefined);
+
 const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const isDisplayable = (name: string | null): name is string => !!name && !/[_@{}]/.test(name);
@@ -105,7 +108,9 @@ function buildChampion(
     name: raw.name ?? raw.apiName,
     cost: raw.cost,
     traits: raw.traits.flatMap((name) => traitApiByName.get(name) ?? []),
-    icon: planner ? pluginAssetUrl(patch, planner.squareIconPath) : gameAssetUrl(patch, raw.tileIcon ?? raw.squareIcon),
+    icon: planner
+      ? pluginAssetUrl(patch, planner.squareIconPath)
+      : gameAssetUrl(patch, presentPath(raw.tileIcon) ?? raw.squareIcon),
     splash: planner ? pluginAssetUrl(patch, planner.squareSplashIconPath) : gameAssetUrl(patch, raw.squareIcon),
     plannerCode: planner?.team_planner_code,
     forms,
@@ -304,7 +309,7 @@ export function buildSet(
       name: raw.name ?? raw.apiName,
       label,
       traits: raw.traits.flatMap((name) => traitApiByName.get(name) ?? []),
-      icon: gameAssetUrl(patch, raw.tileIcon ?? raw.squareIcon),
+      icon: gameAssetUrl(patch, presentPath(raw.tileIcon) ?? raw.squareIcon),
     }));
   const { items: pool, aliases } = buildItems(set, itemsByApi, patch);
   const items = pool.flatMap((item) => {
@@ -326,7 +331,8 @@ export function buildSet(
       .map(({ raw, planner }) => buildChampion(raw, patch, traitApiByName, championForms(raw.apiName), planner))
       .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name)),
     traits,
-    items,
+    // Recipes can name set-specific component variants (DA_Component_Spatula) that alias to the kept ones.
+    items: items.map((item) => ({ ...item, composition: item.composition.map((part) => aliases[part] ?? part) })),
     itemAliases: Object.fromEntries(Object.entries(aliases).filter(([, target]) => kept.has(target))),
     championAliases: Object.fromEntries(
       [...forms].flatMap(([base, list]) => list.map(({ raw }) => [raw.apiName, base] as const)),
@@ -335,10 +341,7 @@ export function buildSet(
   };
 }
 
-/** The mainline set entries (e.g. `TFTSet18`), newest first, excluding PvE/Pairs/Turbo variants. */
-export function mainlineSets(sets: RawSet[], limit: number): RawSet[] {
-  return sets
-    .filter((set) => set.mutator === `TFTSet${set.number}`)
-    .sort((a, b) => b.number - a.number)
-    .slice(0, limit);
+/** Every mainline set entry (e.g. `TFTSet18`), newest first, excluding PvE/Pairs/Turbo variants. */
+export function mainlineSets(sets: RawSet[]): RawSet[] {
+  return sets.filter((set) => set.mutator === `TFTSet${set.number}`).sort((a, b) => b.number - a.number);
 }

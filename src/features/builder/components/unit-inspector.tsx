@@ -1,10 +1,11 @@
 import { MousePointerClick, Star, Trash2, X } from "lucide-react";
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { ChampionStats, ChampionTraitList } from "@/components/game/cards";
 import { GameText } from "@/components/game/game-text";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
 import { COST_TEXT } from "@/components/game/styles";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
 import { createResolver } from "@/lib/game/description";
@@ -101,7 +102,10 @@ export function UnitInspector({ className }: { className?: string }) {
         )}
       </div>
 
-      <BestItems champion={champion.apiName} equipped={unit.items} onPick={(item) => equip(selected, item)} />
+      {/* Champion stats load on first selection; keep the wait local instead of suspending the page. */}
+      <Suspense fallback={<Skeleton className="h-16" />}>
+        <BestItems champion={champion.apiName} equipped={unit.items} onPick={(item) => equip(selected, item)} />
+      </Suspense>
 
       {champion.ability.name && (
         <div className="space-y-1 border-t pt-3">

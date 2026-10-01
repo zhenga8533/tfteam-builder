@@ -1,8 +1,16 @@
-import { ClipboardCopy, ClipboardPaste, Eraser, FileCode, FolderOpen, Save } from "lucide-react";
+import { ChevronDown, ClipboardCopy, ClipboardPaste, Eraser, FileCode, FolderOpen, Save, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatIcon } from "@/components/game/stat-icon";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGameData } from "@/lib/data/hooks";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
@@ -10,6 +18,15 @@ import { useBoardSummary, useBuilder } from "../use-builder";
 import { ExportCompDialog } from "./export-comp-dialog";
 import { SavedTeamsSheet, SaveTeamDialog } from "./saved-teams";
 import { ImportTeamCodeDialog } from "./team-code-dialog";
+
+function MenuText({ title, hint }: { title: string; hint: string }) {
+  return (
+    <span className="flex flex-col">
+      <span>{title}</span>
+      <span className="text-xs text-muted-foreground">{hint}</span>
+    </span>
+  );
+}
 
 type Panel = "import" | "save" | "saved" | "export" | null;
 
@@ -58,47 +75,55 @@ export function TeamToolbar() {
         </span>
       </div>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span>
-            <Button variant="outline" size="sm" onClick={() => setPanel("import")} disabled={!codesSupported}>
-              <ClipboardPaste /> Import
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          {codesSupported ? "Import an in-game Team Planner code" : "Team codes aren't available for this set"}
-        </TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span>
-            <Button variant="outline" size="sm" onClick={copyCode} disabled={!codesSupported || units.length === 0}>
-              <ClipboardCopy /> Copy code
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>Copy an in-game Team Planner code (first 10 champions)</TooltipContent>
-      </Tooltip>
-      <Button variant="outline" size="sm" onClick={() => setPanel("saved")}>
-        <FolderOpen /> Saved
-      </Button>
       <Button variant="outline" size="sm" onClick={() => setPanel("save")} disabled={units.length === 0}>
         <Save /> Save
       </Button>
+      <Button variant="outline" size="sm" onClick={() => setPanel("saved")}>
+        <FolderOpen /> Saved
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Share2 /> Share <ChevronDown className="opacity-60" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuLabel className="text-xs text-muted-foreground">In-game Team Planner</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={copyCode} disabled={!codesSupported || units.length === 0}>
+            <ClipboardCopy />
+            <MenuText title="Copy team code" hint="First 10 champions, for the in-game Team Planner" />
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setPanel("import")} disabled={!codesSupported}>
+            <ClipboardPaste />
+            <MenuText
+              title="Import team code"
+              hint={codesSupported ? "Paste a code from the Team Planner" : "Not available for this set"}
+            />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setPanel("export")} disabled={units.length === 0}>
+            <FileCode />
+            <MenuText title="Export as comp file" hint="For a comp guide on the tier list" />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            <Button variant="outline" size="sm" onClick={() => setPanel("export")} disabled={units.length === 0}>
-              <FileCode /> Export
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={clearBoard}
+              disabled={units.length === 0}
+              aria-label="Clear board"
+            >
+              <Eraser />
             </Button>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Export the board as a comp guide file for the tier list</TooltipContent>
+        <TooltipContent>Clear board</TooltipContent>
       </Tooltip>
-      <Button variant="ghost" size="sm" onClick={clearBoard} disabled={units.length === 0}>
-        <Eraser /> Clear
-      </Button>
 
       <ImportTeamCodeDialog {...panelProps("import")} />
       <SaveTeamDialog {...panelProps("save")} />
