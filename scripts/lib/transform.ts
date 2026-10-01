@@ -172,7 +172,7 @@ const formBaseName = (name: string) => name.match(FORM_NAME)?.[1] ?? null;
  * Alternate forms appear in games but not in the shop: traited champions outside the shop list whose
  * name is a shop champion's, optionally with a "(Form)" suffix (e.g. "Lux (Coven)", or a same-named clone).
  */
-export function findForms(set: RawSet, shop: RawChampion[]): Map<string, { raw: RawChampion; label: string | null }[]> {
+function findForms(set: RawSet, shop: RawChampion[]): Map<string, { raw: RawChampion; label: string | null }[]> {
   const shopIds = new Set(shop.map((champion) => champion.apiName));
   const shopByName = new Map(shop.map((champion) => [champion.name, champion.apiName]));
   const forms = new Map<string, { raw: RawChampion; label: string | null }[]>();

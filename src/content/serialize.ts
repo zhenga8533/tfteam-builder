@@ -1,7 +1,7 @@
 import type { Board } from "@/lib/game/board";
 import type { CompUnit } from "./types";
 
-export const slugify = (text: string) =>
+const slugify = (text: string) =>
   text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")

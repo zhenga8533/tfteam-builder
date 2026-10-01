@@ -25,10 +25,14 @@ export function StatsMeta({ stats }: { stats: SetStats }) {
 
   return (
     <div className="mb-6 space-y-2">
-      <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
+      <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
         <Tooltip>
           <TooltipTrigger asChild>
-            <button type="button" aria-label="About these stats" className="rounded-full hover:text-foreground">
+            <button
+              type="button"
+              aria-label="About these stats"
+              className="mt-0.5 shrink-0 rounded-full hover:text-foreground"
+            >
               <Info className="size-4" />
             </button>
           </TooltipTrigger>
@@ -39,12 +43,11 @@ export function StatsMeta({ stats }: { stats: SetStats }) {
         </Tooltip>
         <span>
           Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
-          {RANK_FLOOR_LABEL[stats.rankFloor]} ranked games on patch {stats.patch}
+          {RANK_FLOOR_LABEL[stats.rankFloor]} ranked games on patch {stats.patch} ·{" "}
+          <time dateTime={stats.updatedAt} title={new Date(stats.updatedAt).toLocaleString()}>
+            Updated {timeAgo(stats.updatedAt)}
+          </time>
         </span>
-        <span aria-hidden>·</span>
-        <time dateTime={stats.updatedAt} title={new Date(stats.updatedAt).toLocaleString()}>
-          Updated {timeAgo(stats.updatedAt)}
-        </time>
       </p>
       {notes.map((note) => (
         <p key={note as string} className="flex items-start gap-2 text-xs text-muted-foreground">

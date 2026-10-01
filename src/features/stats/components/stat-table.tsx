@@ -34,7 +34,7 @@ function sortRows(rows: StatRow[], sort: SortKey) {
   );
 }
 
-export function DeltaValue({ delta }: { delta: number }) {
+function DeltaValue({ delta }: { delta: number }) {
   return (
     <span
       className={cn("font-semibold tabular-nums", delta < -0.05 ? "text-cost-2" : delta > 0.05 && "text-destructive")}
@@ -84,7 +84,10 @@ export function StatTable({
             {columns.map((column) => (
               <th
                 key={column.key}
-                className="w-16 py-1.5 text-right font-medium"
+                className={cn(
+                  "w-12 py-1.5 pl-2 text-right font-medium sm:w-16",
+                  column.key === "top4" && "max-sm:hidden",
+                )}
                 title={column.key === "delta" ? `Difference from ${deltaBaseline} (lower is better)` : column.title}
               >
                 <button
@@ -110,17 +113,19 @@ export function StatTable({
               className={cn("border-t", isLowSample(row.line) && "opacity-60")}
               title={isLowSample(row.line) ? LOW_SAMPLE_HINT : undefined}
             >
-              <td className="py-1.5 pr-2">{row.label}</td>
+              <td className="max-w-0 py-1.5 pr-2">{row.label}</td>
               {showDelta && (
-                <td className="py-1.5 text-right">
+                <td className="py-1.5 pl-2 text-right">
                   {row.line.delta !== undefined && <DeltaValue delta={row.line.delta} />}
                 </td>
               )}
-              <td className="py-1.5 text-right">
+              <td className="py-1.5 pl-2 text-right">
                 <AvgPlacement line={row.line} />
               </td>
-              <td className="py-1.5 text-right text-muted-foreground tabular-nums">{percent(row.line.top4)}</td>
-              <td className="py-1.5 text-right text-muted-foreground tabular-nums">{count(row.line.games)}</td>
+              <td className="py-1.5 pl-2 text-right text-muted-foreground tabular-nums max-sm:hidden">
+                {percent(row.line.top4)}
+              </td>
+              <td className="py-1.5 pl-2 text-right text-muted-foreground tabular-nums">{count(row.line.games)}</td>
             </tr>
           ))}
         </tbody>
