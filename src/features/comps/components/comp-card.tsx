@@ -1,18 +1,31 @@
-import { Link } from "@tanstack/react-router";
+import { Link, type LinkProps } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { ChampionCard, TraitCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
-import type { Comp } from "@/content/types";
+import type { Comp, CompUnit } from "@/content/types";
+import { StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData } from "@/lib/data/hooks";
+import type { AutoComp } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
+import { autoCompUnits } from "../auto-place";
 import { DIFFICULTY_TEXT } from "../styles";
 import { useCompTraits } from "../use-comp-traits";
 import { TrendBadge } from "./tier-badge";
 
-export function CompCard({ comp }: { comp: Comp }) {
+interface CompCardViewProps {
+  title: string;
+  link: Pick<LinkProps, "to" | "params">;
+  units: CompUnit[];
+  badge?: ReactNode;
+  meta?: ReactNode;
+}
+
+/** A comp's name, champions (carries ringed, with items) and top traits; the whole card links to it. */
+function CompCardView({ title, link, units: board, badge, meta }: CompCardViewProps) {
   const { championsByApi, itemsByApi } = useGameData();
-  const traits = useCompTraits(comp.board);
-  const units = comp.board
+  const traits = useCompTraits(board);
+  const units = board
     .flatMap((unit) => {
       const champion = championsByApi.get(unit.apiName);
       return champion ? [{ unit, champion }] : [];
@@ -23,19 +36,12 @@ export function CompCard({ comp }: { comp: Comp }) {
     <article className="relative rounded-lg border bg-card p-3 transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-primary/50">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="font-display font-semibold">
-          <Link
-            to="/comps/$slug"
-            params={{ slug: comp.slug }}
-            className="outline-none after:absolute after:inset-0 after:content-['']"
-          >
-            {comp.name}
+          <Link {...link} className="outline-none after:absolute after:inset-0 after:content-['']">
+            {title}
           </Link>
         </h3>
-        {comp.trend && <TrendBadge trend={comp.trend} />}
-        <span className="ml-auto flex gap-3 text-xs text-muted-foreground">
-          <span>{comp.playstyle}</span>
-          <span className={DIFFICULTY_TEXT[comp.difficulty]}>{comp.difficulty}</span>
-        </span>
+        {badge}
+        <span className="ml-auto flex gap-3 text-xs text-muted-foreground">{meta}</span>
       </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <ul className="flex flex-wrap gap-1.5" aria-label="Champions">
@@ -73,5 +79,36 @@ export function CompCard({ comp }: { comp: Comp }) {
         </ul>
       </div>
     </article>
+  );
+}
+
+/** A hand-written comp guide. */
+export function CompCard({ comp }: { comp: Comp }) {
+  return (
+    <CompCardView
+      title={comp.name}
+      link={{ to: "/comps/$slug", params: { slug: comp.slug } }}
+      units={comp.board}
+      badge={comp.trend && <TrendBadge trend={comp.trend} />}
+      meta={
+        <>
+          <span>{comp.playstyle}</span>
+          <span className={DIFFICULTY_TEXT[comp.difficulty]}>{comp.difficulty}</span>
+        </>
+      }
+    />
+  );
+}
+
+/** A comp detected from match data, with its placement stats. */
+export function AutoCompCard({ comp }: { comp: AutoComp }) {
+  const { championsByApi } = useGameData();
+  return (
+    <CompCardView
+      title={comp.name}
+      link={{ to: "/comps/auto/$id", params: { id: comp.id } }}
+      units={autoCompUnits(comp, championsByApi)}
+      meta={<StatSummary line={comp} />}
+    />
   );
 }

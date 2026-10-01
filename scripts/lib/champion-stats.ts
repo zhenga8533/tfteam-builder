@@ -1,6 +1,7 @@
-import type { ChampionStats, SetData, StatLine } from "../../src/lib/data/schema.ts";
-import type { BoardRow, Counter } from "../stats/types.ts";
-import { rankableItems, resolversFor, round, statLine } from "./stats.ts";
+import type { ChampionStats, StatLine } from "../../src/lib/data/schema.ts";
+import type { Counter } from "../stats/types.ts";
+import type { ResolvedBoard } from "./boards.ts";
+import { round, statLine } from "./stats.ts";
 
 /** Minimum games before a build, partner or trait is listed; larger item sets split the sample further. */
 export const MIN_CHAMPION_GAMES = { build1: 50, build2: 30, build3: 20, partner: 50, trait: 50 } as const;
@@ -35,35 +36,12 @@ export class ChampionAccumulator {
   private readonly builds = new Map<string, Counter>();
   private readonly partners = new Map<string, Counter>();
   private readonly traits = new Map<string, Counter>();
-  private readonly resolve: ReturnType<typeof resolversFor>;
-  private readonly rankable: Set<string>;
-  private readonly breakpoints: Map<string, number[]>;
 
-  constructor(data: SetData) {
-    this.resolve = resolversFor(data);
-    this.rankable = rankableItems(data);
-    this.breakpoints = new Map(data.traits.map((trait) => [trait.apiName, trait.breakpoints.map((b) => b.minUnits)]));
-  }
-
-  add(row: BoardRow) {
-    const [, , , placement, , rawUnits, rawTraits] = row;
+  add(board: ResolvedBoard) {
+    const { placement } = board;
     this.boards += 1;
-
-    const units = rawUnits.flatMap(([rawUnit, star, rawItems]) => {
-      const unit = this.resolve.units.resolve(rawUnit, 0);
-      if (!unit) return [];
-      const items = rawItems
-        .flatMap((item) => this.resolve.items.resolve(item, 0) ?? [])
-        .filter((item) => this.rankable.has(item))
-        .sort();
-      return [{ unit, star, items }];
-    });
-    const traits = rawTraits.flatMap(([rawTrait, tier]) => {
-      const trait = this.resolve.traits.resolve(rawTrait, 0);
-      // `tier_current` counts reached breakpoints, so it is a 1-based index into them.
-      const minUnits = trait ? this.breakpoints.get(trait)?.[tier - 1] : undefined;
-      return trait && minUnits !== undefined ? [`${trait}:${minUnits}`] : [];
-    });
+    const units = board.units.map(({ apiName, star, items }) => ({ unit: apiName, star, items }));
+    const traits = board.traits.map(({ apiName, minUnits }) => `${apiName}:${minUnits}`);
 
     const present = [...new Set(units.map(({ unit }) => unit))];
     for (const unit of present) {
@@ -88,6 +66,7 @@ export class ChampionAccumulator {
         builds: [],
         partners: [],
         traits: [],
+        comps: [],
       });
     }
     const withDelta = (stats: ChampionStats, line: StatLine) => ({

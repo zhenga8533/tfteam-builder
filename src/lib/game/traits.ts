@@ -12,7 +12,14 @@ const STYLE_CODES: Record<number, TraitStyle> = {
   6: "prismatic",
 };
 
-const STYLE_RANK: Record<TraitStyle, number> = { inactive: 0, bronze: 1, silver: 2, gold: 3, unique: 4, prismatic: 5 };
+export const STYLE_RANK: Record<TraitStyle, number> = {
+  inactive: 0,
+  bronze: 1,
+  silver: 2,
+  gold: 3,
+  unique: 4,
+  prismatic: 5,
+};
 
 export interface TraitState {
   trait: Trait;

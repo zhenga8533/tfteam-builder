@@ -176,5 +176,29 @@ export const championStatsSchema = z.object({
   partners: z.array(deltaStatSchema.extend({ unit: z.string() })),
   /** Active trait breakpoints on the same board. */
   traits: z.array(deltaStatSchema.extend({ trait: z.string(), minUnits: z.number().int() })),
+  /** IDs of detected comps whose core board includes this champion. */
+  comps: z.array(z.string()),
 });
 export type ChampionStats = z.infer<typeof championStatsSchema>;
+
+/** A comp detected from match data: boards sharing the same carries and core traits. */
+export const autoCompSchema = statLineSchema.extend({
+  id: z.string(),
+  /** `carries|coreTraits`, as produced by `compSignature`; used to match hand-written guides. */
+  signature: z.string(),
+  name: z.string(),
+  carries: z.array(z.string()),
+  /** Traits active on most of the comp's boards, at their most common breakpoint. */
+  traits: z.array(z.object({ trait: z.string(), minUnits: z.number().int(), frequency: z.number() })),
+  /** The core board: units on at least half of the comp's boards, with their usual star level and items. */
+  units: z.array(
+    z.object({ apiName: z.string(), star: z.number().int(), items: z.array(z.string()), frequency: z.number() }),
+  ),
+  /** Units often added on top of the core board. */
+  flex: z.array(z.object({ apiName: z.string(), frequency: z.number() })),
+  /** Median player level. */
+  level: z.number().int(),
+});
+export type AutoComp = z.infer<typeof autoCompSchema>;
+
+export const autoCompsSchema = z.object({ comps: z.array(autoCompSchema) });

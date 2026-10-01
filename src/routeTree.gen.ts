@@ -22,6 +22,7 @@ import { Route as TierlistChampionsRouteImport } from './routes/tierlist/champio
 import { Route as TierlistCompsRouteImport } from './routes/tierlist/comps'
 import { Route as TierlistItemsRouteImport } from './routes/tierlist/items'
 import { Route as TierlistTraitsRouteImport } from './routes/tierlist/traits'
+import { Route as CompsAutoIdRouteImport } from './routes/comps/auto.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +89,11 @@ const TierlistTraitsRoute = TierlistTraitsRouteImport.update({
   path: '/tierlist/traits',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompsAutoIdRoute = CompsAutoIdRouteImport.update({
+  id: '/comps/auto/$id',
+  path: '/comps/auto/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/comps/auto/$id': typeof CompsAutoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/comps/auto/$id': typeof CompsAutoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/comps/auto/$id': typeof CompsAutoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/comps/auto/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/comps/auto/$id'
   id:
     | '__root__'
     | '/'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/comps/auto/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   TierlistCompsRoute: typeof TierlistCompsRoute
   TierlistItemsRoute: typeof TierlistItemsRoute
   TierlistTraitsRoute: typeof TierlistTraitsRoute
+  CompsAutoIdRoute: typeof CompsAutoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TierlistTraitsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/comps/auto/$id': {
+      id: '/comps/auto/$id'
+      path: '/comps/auto/$id'
+      fullPath: '/comps/auto/$id'
+      preLoaderRoute: typeof CompsAutoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,6 +329,7 @@ const rootRouteChildren: RootRouteChildren = {
   TierlistCompsRoute: TierlistCompsRoute,
   TierlistItemsRoute: TierlistItemsRoute,
   TierlistTraitsRoute: TierlistTraitsRoute,
+  CompsAutoIdRoute: CompsAutoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
