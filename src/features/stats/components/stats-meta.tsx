@@ -26,11 +26,11 @@ function RankLabel({ floor, choice }: { floor: RankFloor; choice?: RankChoice })
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="inline-flex items-center gap-0.5 rounded font-medium text-foreground underline decoration-dotted underline-offset-4 outline-none hover:decoration-solid focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex translate-y-[-1px] items-center gap-1 rounded-md border bg-card px-1.5 py-px align-middle text-xs font-medium text-foreground shadow-xs transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent"
         aria-label={`Rank: ${RANK_FLOOR_LABEL[floor]}`}
       >
         {RANK_FLOOR_LABEL[floor]}
-        <ChevronDown className="size-3.5 opacity-60" />
+        <ChevronDown className="size-3 opacity-60" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuRadioGroup

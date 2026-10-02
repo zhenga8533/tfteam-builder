@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 import { ChampionFilter } from "@/components/game/filters";
 import { ChampionIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
@@ -61,13 +61,41 @@ export const Route = createFileRoute("/tools/rolling")({
   component: RollingPage,
 });
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
+/**
+ * A labelled control. Button groups get a named group rather than a <label>: a label passes its hover
+ * and clicks to its first control, which would light up the first button whenever any was hovered.
+ */
+function Field({
+  label,
+  hint,
+  input = false,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  /** The child is a single form input, so a real <label> fits. */
+  input?: boolean;
+  children: ReactNode;
+}) {
+  const id = useId();
+  const caption = (
+    <span id={id} className="block text-xs font-medium text-muted-foreground">
+      {label}
+    </span>
+  );
+  const note = hint && <span className="block text-[11px] text-muted-foreground">{hint}</span>;
+  return input ? (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {caption}
       {children}
-      {hint && <span className="block text-[11px] text-muted-foreground">{hint}</span>}
+      {note}
     </label>
+  ) : (
+    <div role="group" aria-labelledby={id} className="space-y-1">
+      {caption}
+      {children}
+      {note}
+    </div>
   );
 }
 
@@ -215,16 +243,17 @@ function RollingPage() {
               </ToggleGroup>
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Gold to roll" hint={`${shops} rerolls`}>
+              <Field input label="Gold to roll" hint={`${shops} rerolls`}>
                 <NumberField value={gold} onChange={(value) => update({ gold: value })} max={500} />
               </Field>
-              <Field label="Copies you have">
+              <Field input label="Copies you have">
                 <NumberField value={owned} onChange={(value) => update({ owned: value })} max={needed} />
               </Field>
-              <Field label="Held by others" hint="Copies on other boards and benches">
+              <Field input label="Held by others" hint="Copies on other boards and benches">
                 <NumberField value={contested} onChange={(value) => update({ contested: value })} max={copies || 30} />
               </Field>
               <Field
+                input
                 label={`Other ${champion ? `${champion.cost}-costs` : "same-cost units"} out`}
                 hint="Raises your odds"
               >
