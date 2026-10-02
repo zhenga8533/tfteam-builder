@@ -52,9 +52,7 @@ function LittleLegendsPage() {
         title="Little Legends"
         description="The Little Legends and Chibis players bring to ranked games, most popular first."
       />
-      {!stats || stats.status !== "ready" ? (
-        <NoStats />
-      ) : !legends ? (
+      {stats?.status !== "ready" || !legends ? (
         <NoStats subject="Little Legends" />
       ) : (
         <>
