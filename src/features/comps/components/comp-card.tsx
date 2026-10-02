@@ -25,12 +25,25 @@ interface CompCardViewProps {
 
 /** Placement stats in a fixed column, so they line up from card to card. */
 function CompStats({ line }: { line: StatLine }) {
+  const rows = [
+    ["Top 4", percent(line.top4)],
+    ["Win", percent(line.win)],
+    ["Games", count(line.games)],
+  ];
   return (
     <>
-      <AvgPlacement line={line} className="font-display text-xl leading-none" />
-      <span className="text-[11px] text-muted-foreground">avg place</span>
-      <span className="text-xs tabular-nums sm:mt-1.5">{percent(line.top4)} top 4</span>
-      <span className="text-[11px] text-muted-foreground tabular-nums">{count(line.games)} games</span>
+      <div className="flex items-baseline gap-1.5 sm:flex-col sm:items-center sm:gap-0.5">
+        <AvgPlacement line={line} className="font-display text-2xl leading-none" />
+        <span className="text-[11px] text-muted-foreground">avg place</span>
+      </div>
+      <dl className="flex gap-3 text-xs sm:flex-col sm:gap-0.5 sm:border-t sm:pt-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-1.5">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="font-medium tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </>
   );
 }
@@ -108,7 +121,7 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
           ))}
         </ul>
       </div>
-      <div className="flex flex-wrap items-baseline gap-x-2 border-t pt-2 sm:w-20 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-end sm:gap-x-0 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3 sm:text-right">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 sm:w-24 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-2 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
         {aside}
       </div>
     </article>
@@ -125,8 +138,8 @@ export function CompCard({ comp }: { comp: Comp }) {
       badge={comp.trend && <TrendBadge trend={comp.trend} />}
       aside={
         <>
-          <span className="text-sm font-medium">{comp.playstyle}</span>
-          <span className={cn("text-xs", DIFFICULTY_TEXT[comp.difficulty])}>{comp.difficulty}</span>
+          <span className="text-sm font-medium sm:text-center">{comp.playstyle}</span>
+          <span className={cn("text-xs sm:text-center", DIFFICULTY_TEXT[comp.difficulty])}>{comp.difficulty}</span>
         </>
       }
     />
