@@ -12,7 +12,7 @@ import { DIFFICULTY_TEXT } from "../styles";
 import { useCompTraits } from "../use-comp-traits";
 import { TrendBadge } from "./tier-badge";
 
-const MAX_TRAITS = 6;
+const MAX_TRAITS = 8;
 
 interface CompCardViewProps {
   title: string;
@@ -54,10 +54,12 @@ function CompStats({ line }: { line: StatLine }) {
  */
 function CompCardView({ title, link, units: board, badge, aside }: CompCardViewProps) {
   const { championsByApi, itemsByApi } = useGameData();
-  // Unique traits are always active with their single unit, so they say nothing about the comp.
-  const traits = useCompTraits(board)
-    .filter(({ style }) => style !== "unique" && style !== "inactive")
-    .slice(0, MAX_TRAITS);
+  // Breakpoint traits first; unique traits (one unit, always active) follow them.
+  const active = useCompTraits(board).filter(({ style }) => style !== "inactive");
+  const traits = [
+    ...active.filter(({ style }) => style !== "unique"),
+    ...active.filter(({ style }) => style === "unique"),
+  ].slice(0, MAX_TRAITS);
   const units = board
     .flatMap((unit) => {
       const champion = championsByApi.get(unit.apiName);
@@ -113,7 +115,8 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
                 trait={trait}
                 style={style}
                 count={units}
-                label={<span className="font-semibold tabular-nums">{units}</span>}
+                // A unique trait's count is always 1, so its badge stands alone.
+                label={style === "unique" ? null : <span className="font-semibold tabular-nums">{units}</span>}
                 className="gap-1 text-sm"
                 iconClassName="size-6"
               />
