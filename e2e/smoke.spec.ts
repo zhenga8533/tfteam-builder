@@ -23,6 +23,8 @@ const PAGES = [
   ["traits", "traits", "Traits"],
   ["augments", "augments", "Augments"],
   ["explorer", "explorer", "Explorer"],
+  ["patch changes", "tierlist/changes", "Patch Changes"],
+  ["compare", "compare", "Compare"],
 ] as const;
 
 for (const [name, path, heading] of PAGES) {

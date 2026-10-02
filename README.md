@@ -61,10 +61,11 @@
 
 TFTeam Builder was created to simplify planning team compositions in Teamfight Tactics. Whether you're strategizing before a match or exploring trait combinations, it makes it easy to visualize a board and see how each unit contributes to your synergies.
 
-- **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Plan a board per level, mark flex units and alternatives, follow the trait ladder or autofill to your level. Save teams locally and import/export in-game Team Planner codes.
-- **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters. Open any comp in the Team Builder with one click.
+- **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Plan a board per level, mark flex units and alternatives, follow the trait ladder or autofill to your level, see how similar ranked boards place, and equip a champion's best build in one click. Save teams locally and import/export in-game Team Planner codes.
+- **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters and a rank selector (Master+, Diamond+, …). Open any comp in the Team Builder with one click.
 - **Stats pages** – every champion, item and trait has a page: item builds and a best-next-item finder, best holders and partners, breakpoints and the comps that use it.
 - **Explorer** – filter a sample of recent ranked boards by champions, items, traits and level, and see what else does well with them.
+- **Patch Changes and Compare** – what got better or worse since the last patch, and any two champions, items or comps side by side.
 - **Database** – searchable champions, traits, items (with a crafting table) and augments, with filters kept in the URL so views can be shared.
 - **Live and PBE data** – switch between the live patch and PBE, and between every set CommunityDragon has. Light, dark or system theme.
 
@@ -128,6 +129,7 @@ npm run dev
 | `npm run data` / `npm run data:force` | Regenerate game data when the patch changes / always      |
 | `npm run crawl` / `npm run stats`     | Crawl ranked matches (needs `RIOT_API_KEY`) / build stats |
 | `npm test`                            | Run unit tests and validate comp and tier list content    |
+| `npm run test:e2e`                    | Smoke-test the built site in a browser (Playwright)       |
 | `npm run lint` / `npm run format`     | Lint with ESLint / format with Prettier                   |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

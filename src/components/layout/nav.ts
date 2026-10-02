@@ -20,6 +20,7 @@ export const NAV: (NavLink | NavGroup)[] = [
       { label: "Items", to: "/tierlist/items", description: "Best items to slam and build" },
       { label: "Traits", to: "/tierlist/traits", description: "Trait breakpoints ranked by placement" },
       { label: "Augments", to: "/tierlist/augments", description: "Augment rankings by tier" },
+      { label: "Patch Changes", to: "/tierlist/changes", description: "What got better or worse this patch" },
     ],
   },
   { label: "Team Builder", to: "/builder" },
@@ -31,6 +32,7 @@ export const NAV: (NavLink | NavGroup)[] = [
       { label: "Items", to: "/items", description: "Recipes and effects" },
       { label: "Augments", to: "/augments", description: "Silver, gold and prismatic" },
       { label: "Explorer", to: "/explorer", description: "Filter ranked boards and see what wins" },
+      { label: "Compare", to: "/compare", description: "Two champions, items or comps side by side" },
     ],
   },
 ];
