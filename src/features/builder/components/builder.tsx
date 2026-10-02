@@ -17,6 +17,7 @@ import { useBuilder } from "../use-builder";
 import { ChampionPool } from "./champion-pool";
 import { HexBoard } from "./hex-board";
 import { ItemPool } from "./item-pool";
+import { AutofillButton } from "./autofill-button";
 import { LevelTabs } from "./level-tabs";
 import { TeamToolbar } from "./team-toolbar";
 import { TraitPanel } from "./trait-panel";
@@ -71,7 +72,11 @@ export function Builder() {
     >
       <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_18rem]">
         <div className="space-y-3 lg:col-start-2">
-          <LevelTabs />
+          {/* Autofill fills the selected level, so it sits with the level tabs rather than the team actions. */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <LevelTabs />
+            <AutofillButton />
+          </div>
           <TeamToolbar />
           <HexBoard />
         </div>

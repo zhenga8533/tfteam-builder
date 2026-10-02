@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { encodeShareCode } from "../share-link";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
-import { AutofillButton } from "./autofill-button";
 import { ExportCompDialog } from "./export-comp-dialog";
 import { SavedTeamsSheet, SaveTeamDialog } from "./saved-teams";
 import { ImportTeamCodeDialog } from "./team-code-dialog";
@@ -104,7 +103,6 @@ export function TeamToolbar() {
         </span>
       </div>
 
-      <AutofillButton />
       <Button variant="outline" size="sm" onClick={() => setPanel("save")} disabled={units.length === 0}>
         <Save /> Save
       </Button>

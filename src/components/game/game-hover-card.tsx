@@ -41,7 +41,6 @@ const scheduleHide = () => {
   clearTimeout(closeTimer);
   closeTimer = setTimeout(() => useHoverCard.setState({ target: null }), CLOSE_DELAY);
 };
-const cancelHide = () => clearTimeout(closeTimer);
 
 interface GameHoverCardProps {
   children: ReactNode;
@@ -124,11 +123,10 @@ export function GameHoverCardHost() {
     <div
       ref={card}
       role="tooltip"
-      onPointerEnter={cancelHide}
-      onPointerLeave={scheduleHide}
       style={{ left: coordinates?.x ?? 0, top: coordinates?.y ?? 0 }}
       className={cn(
-        "fixed z-50 w-80 rounded-md border bg-popover p-4 text-popover-foreground shadow-md",
+        // Cards hold nothing to click, and in dense grids they cover neighbouring icons, so clicks pass through.
+        "pointer-events-none fixed z-50 w-80 rounded-md border bg-popover p-4 text-popover-foreground shadow-md",
         coordinates ? "animate-in fade-in-0 zoom-in-95" : "invisible",
       )}
     >

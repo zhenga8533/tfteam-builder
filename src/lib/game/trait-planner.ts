@@ -13,10 +13,13 @@ interface UnitLike {
   items: string[];
 }
 
-/** Every unit with a unique trait activates it alone, so those are worth little next to a real breakpoint. */
+/**
+ * Every unit with a unique trait activates it alone, so a unique trait only breaks ties: it never outweighs
+ * a real breakpoint, but between otherwise equal boards the one whose units bring their unique bonus wins.
+ */
 const STYLE_VALUE: Record<TraitStyle, number> = {
   inactive: 0,
-  unique: 0.25,
+  unique: 0.05,
   bronze: 1,
   silver: 2,
   gold: 3,
