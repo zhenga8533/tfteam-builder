@@ -76,7 +76,6 @@ function TraitsPage() {
           value={q ?? ""}
           onChange={(value) => navigate({ search: { q: value || undefined }, replace: true })}
           placeholder="Search traits"
-          className="max-w-sm"
         />
       </div>
       {sections.length === 0 ? (

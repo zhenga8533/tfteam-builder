@@ -22,7 +22,7 @@ const MODES: Record<AutofillGoal["mode"], { title: string; hint: string }> = {
 /** Traits shown per suggestion; the rest are in the board's trait panel once added. */
 const SHOWN_TRAITS = 6;
 
-/** The traits the board would have with `champions` added, breakpoint traits first. */
+/** The active traits the board would have with `champions` added. */
 function useResultingTraits(champions: Champion[]) {
   const { championsByApi, traitsByApi, itemsByApi } = useGameData();
   const { board } = useBuilder();
@@ -30,10 +30,7 @@ function useResultingTraits(champions: Champion[]) {
     ...board.flatMap((unit) => (unit && !unit.flex ? [unit] : [])),
     ...champions.map((champion) => ({ apiName: champion.apiName, items: [] })),
   ];
-  const active = computeTraits(units, championsByApi, traitsByApi, itemsByApi).filter(
-    (state) => state.style !== "inactive",
-  );
-  return [...active.filter((state) => state.style !== "unique"), ...active.filter((state) => state.style === "unique")];
+  return computeTraits(units, championsByApi, traitsByApi, itemsByApi).filter((state) => state.style !== "inactive");
 }
 
 function Suggestion({ index, champions, onAdd }: { index: number; champions: Champion[]; onAdd: () => void }) {

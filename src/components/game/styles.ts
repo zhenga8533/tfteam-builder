@@ -1,4 +1,4 @@
-import type { ItemKind } from "@/lib/data/schema";
+import type { AugmentTier, ItemKind } from "@/lib/data/schema";
 import type { TraitStyle } from "@/lib/game/traits";
 import type { TextStyle } from "@/lib/game/description";
 
@@ -57,3 +57,8 @@ export const ITEM_KIND_LABELS: Record<ItemKind, string> = {
   radiant: "Radiant",
   component: "Components",
 };
+
+export const AUGMENT_TIERS = [1, 2, 3] as const satisfies AugmentTier[];
+
+export const isAugmentTier = (value: number | undefined): value is AugmentTier =>
+  AUGMENT_TIERS.includes(value as AugmentTier);

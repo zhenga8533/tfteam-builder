@@ -12,12 +12,16 @@ const STYLE_CODES: Record<number, TraitStyle> = {
   6: "prismatic",
 };
 
+/**
+ * Display order of trait styles. A unique trait is always active with its one unit, so it's listed after
+ * every real breakpoint but before inactive traits.
+ */
 export const STYLE_RANK: Record<TraitStyle, number> = {
   inactive: 0,
+  unique: 0.5,
   bronze: 1,
   silver: 2,
   gold: 3,
-  unique: 4,
   prismatic: 5,
 };
 

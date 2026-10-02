@@ -1,11 +1,11 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
 import { traitStyle } from "@/lib/game/traits";
-import type { ItemKind } from "@/lib/data/schema";
+import type { AugmentTier, ItemKind } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
 import { EntityPicker } from "./entity-picker";
 import { ChampionIcon, TraitIcon } from "./icons";
-import { COST_TEXT, COSTS, ITEM_KIND_LABELS } from "./styles";
+import { AUGMENT_TIER_LABEL, AUGMENT_TIER_TEXT, AUGMENT_TIERS, COST_TEXT, COSTS, ITEM_KIND_LABELS } from "./styles";
 
 /** Shop cost toggles; pressing the selected cost again clears the filter. */
 export function CostFilter({ value, onChange }: { value?: number; onChange: (cost: number | undefined) => void }) {
@@ -97,6 +97,31 @@ export function ItemKindFilter({
       {kinds.map((kind) => (
         <ToggleGroupItem key={kind} value={kind} className="px-3">
           {ITEM_KIND_LABELS[kind]}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  );
+}
+
+/** Silver / gold / prismatic toggles; pressing the selected one again clears the filter. */
+export function AugmentTierFilter({
+  value,
+  onChange,
+}: {
+  value?: AugmentTier;
+  onChange: (tier: AugmentTier | undefined) => void;
+}) {
+  return (
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      value={value ? String(value) : ""}
+      onValueChange={(next) => onChange(next ? (Number(next) as AugmentTier) : undefined)}
+      aria-label="Filter by augment tier"
+    >
+      {AUGMENT_TIERS.map((tier) => (
+        <ToggleGroupItem key={tier} value={String(tier)} className={cn("px-3", AUGMENT_TIER_TEXT[tier])}>
+          {AUGMENT_TIER_LABEL[tier]}
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
