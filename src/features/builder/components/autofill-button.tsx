@@ -103,8 +103,9 @@ function AutofillPanel({ onDone }: { onDone: () => void }) {
   const around = goal.around ?? [];
   const avoidChampions = goal.avoidChampions ?? [];
   const avoidTraits = goal.avoidTraits ?? [];
-  // Single-breakpoint traits are unique ones: there's nothing to build up.
-  const buildable = traits.filter((trait) => trait.source === "champion" && trait.breakpoints.length > 1);
+  const championTraits = traits.filter((trait) => trait.source === "champion");
+  // Single-breakpoint traits are unique ones: there's nothing to build up, though they can be avoided.
+  const buildable = championTraits.filter((trait) => trait.breakpoints.length > 1);
 
   if (openSlots === 0) {
     return (
@@ -197,7 +198,7 @@ function AutofillPanel({ onDone }: { onDone: () => void }) {
                 icon: <ChampionIcon champion={champion} />,
                 hint: "Champion",
               })),
-            ...buildable
+            ...championTraits
               .filter((trait) => !avoidTraits.includes(trait.apiName))
               .map((trait) => ({
                 key: `trait:${trait.apiName}`,
@@ -238,7 +239,12 @@ function AutofillPanel({ onDone }: { onDone: () => void }) {
           variant="outline"
           size="sm"
           value={String(maxCost)}
-          onValueChange={(value) => value && setGoal({ ...goal, maxCost: Number(value) })}
+          onValueChange={(value) => {
+            if (!value) return;
+            // Picking the level's default means following the level again, not pinning that number.
+            const cost = Number(value);
+            setGoal({ ...goal, maxCost: cost === defaultMaxCost(level) ? undefined : cost });
+          }}
           className="w-full"
           aria-label="Most expensive champion to add"
         >
