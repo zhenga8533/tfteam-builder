@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ITEM_KINDS, PATCHES, RANK_FLOORS, STAT_TIERS } from "./constants";
+import { ITEM_KINDS, PATCHES, RANK_OPTIONS, STAT_TIERS } from "./constants";
 
 export const patchSchema = z.enum(PATCHES);
 export type Patch = z.infer<typeof patchSchema>;
@@ -164,7 +164,9 @@ export const setStatsSchema = z.object({
   updatedAt: z.string(),
   /** "collecting" until there are enough games at the lowest rank floor. */
   status: z.enum(["ready", "collecting"]),
-  rankFloor: z.enum(RANK_FLOORS),
+  rankFloor: z.enum(RANK_OPTIONS),
+  /** Other rank floors with their own tier list stats (`set{N}/ranks/{floor}.json`). */
+  ranks: z.array(z.enum(RANK_OPTIONS)).optional(),
   matches: z.number().int(),
   /** True when the current patch is too new and the previous patch's stats are shown instead. */
   previousPatch: z.boolean(),

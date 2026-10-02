@@ -6,11 +6,12 @@ import {
   itemStatsQuery,
   manifestQuery,
   patchHistoryQuery,
+  rankStatsQuery,
   setDataQuery,
   statsQuery,
   traitStatsQuery,
 } from "./queries";
-import type { Augment, Champion, Item, SetData, Trait } from "./schema";
+import type { Augment, Champion, Item, SetData, Trait, RankFloor } from "./schema";
 
 export function useManifest() {
   return useSuspenseQuery(manifestQuery).data;
@@ -60,6 +61,18 @@ export function useGameData(): GameData {
 export function useStats() {
   const { patch, set } = useActiveSet();
   return useSuspenseQuery(statsQuery(patch, set)).data;
+}
+
+/**
+ * Stats for the tier lists at `rank` when that floor has its own stats, otherwise the default stats.
+ * Detail pages and detected comps always use the default floor.
+ */
+export function useTierStats(rank: RankFloor | undefined) {
+  const { patch, set } = useActiveSet();
+  const base = useStats();
+  const floor = rank && base?.ranks?.includes(rank) ? rank : null;
+  const ranked = useSuspenseQuery(rankStatsQuery(patch, set, floor)).data;
+  return ranked ?? base;
 }
 
 /** Per-champion builds, partners and traits; null when not published (or on PBE). */

@@ -1,6 +1,7 @@
 import type { RankFloor } from "@/lib/data/schema";
 
 export const RANK_FLOOR_LABEL: Record<RankFloor, string> = {
+  master: "Master+",
   diamond: "Diamond+",
   emerald: "Emerald+",
   platinum: "Platinum+",

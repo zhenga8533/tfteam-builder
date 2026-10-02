@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ExplorerFilter, ExplorerResult } from "@/lib/explorer/engine";
+import type { ExplorerFilter, ExplorerResult, SimilarBoards } from "@/lib/explorer/engine";
 import type { WorkerRequest, WorkerResponse } from "./worker";
 
 export type ExplorerStatus =
@@ -8,18 +8,23 @@ export type ExplorerStatus =
   | { state: "missing" }
   | { state: "error"; message: string };
 
+/** A question for the sample: a filtered query (Explorer) or boards similar to a list of units (builder). */
+type Question = { type: "query"; filters: ExplorerFilter[] } | { type: "similar"; units: string[] };
+type Answer<Q extends Question> = Q extends { type: "query" } ? ExplorerResult : SimilarBoards | null;
+
 interface Loaded {
   /** The sample URL this state belongs to; a different URL means a new sample is still loading. */
   url: string;
   status: ExplorerStatus;
-  result: ExplorerResult | null;
+  /** The latest answer; kept while a newer question is being worked out, so results don't flash. */
+  answer: unknown;
 }
 
 /**
- * Loads a set's board sample into a Web Worker and runs queries there, so filtering hundreds of
- * thousands of boards never blocks the page. `result` follows the latest `filters`.
+ * Loads a set's board sample into a Web Worker and asks it `question` there, so scanning hundreds of
+ * thousands of boards never blocks the page. The answer follows the latest question; `null` pauses.
  */
-export function useExplorer(url: string | null, filters: ExplorerFilter[]) {
+function useSampleWorker<Q extends Question>(url: string | null, question: Q | null) {
   const worker = useRef<Worker | null>(null);
   const latest = useRef(0);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -32,8 +37,10 @@ export function useExplorer(url: string | null, filters: ExplorerFilter[]) {
     worker.current = instance;
     instance.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const message = event.data;
-      if (message.type === "result") {
-        if (message.id === latest.current) setLoaded((state) => state && { ...state, result: message.result });
+      if (message.type === "result" || message.type === "similar") {
+        if (message.id === latest.current) {
+          setLoaded((state) => state && { ...state, answer: message.result });
+        }
         return;
       }
       const next: ExplorerStatus =
@@ -42,7 +49,7 @@ export function useExplorer(url: string | null, filters: ExplorerFilter[]) {
           : message.type === "missing"
             ? { state: "missing" }
             : { state: "error", message: message.message };
-      setLoaded({ url, status: next, result: null });
+      setLoaded({ url, status: next, answer: null });
     };
     instance.postMessage({ type: "load", url } satisfies WorkerRequest);
     return () => {
@@ -52,16 +59,25 @@ export function useExplorer(url: string | null, filters: ExplorerFilter[]) {
   }, [url]);
 
   const ready = status.state === "ready";
-  const filterKey = JSON.stringify(filters);
+  const key = question ? JSON.stringify(question) : null;
   useEffect(() => {
-    if (!ready || !worker.current) return;
+    if (!ready || !worker.current || !key) return;
     latest.current += 1;
-    worker.current.postMessage({
-      type: "query",
-      id: latest.current,
-      filters: JSON.parse(filterKey) as ExplorerFilter[],
-    } satisfies WorkerRequest);
-  }, [ready, filterKey]);
+    worker.current.postMessage({ ...(JSON.parse(key) as Question), id: latest.current } satisfies WorkerRequest);
+  }, [ready, key]);
 
-  return { status, result: current?.result ?? null };
+  const answer = (current?.answer ?? null) as Answer<Q> | null;
+  return { status, answer };
+}
+
+/** The Explorer: stats for boards matching `filters`. */
+export function useExplorer(url: string | null, filters: ExplorerFilter[]) {
+  const { status, answer } = useSampleWorker(url, { type: "query", filters });
+  return { status, result: answer };
+}
+
+/** Stats for sample boards that share the most of `units`; `null` units skips loading the sample. */
+export function useSimilarBoards(url: string | null, units: string[] | null) {
+  const { status, answer } = useSampleWorker(units ? url : null, units ? { type: "similar", units } : null);
+  return { status, similar: answer };
 }

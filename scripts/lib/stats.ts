@@ -16,6 +16,7 @@ const BEST_ITEMS_PER_UNIT = 6;
 
 /** Rank buckets whose matches count toward each floor, e.g. Diamond+ = Master+ and Diamond. */
 export const FLOOR_BUCKETS: Record<RankFloor, RankBucket[]> = {
+  master: ["master_plus"],
   diamond: ["master_plus", "diamond"],
   emerald: ["master_plus", "diamond", "emerald"],
   platinum: ["master_plus", "diamond", "emerald", "platinum"],
@@ -117,10 +118,32 @@ export interface BuildResult {
   unknown: { units: Map<string, number>; items: Map<string, number>; traits: Map<string, number> };
 }
 
-export function buildSetStats(data: SetData, patches: PatchCounters[], now = new Date()): BuildResult {
+/**
+ * Stats for one chosen rank floor on the patch `buildSetStats` picked, for the tier lists' rank filter.
+ * Null when that floor has too few games.
+ */
+export function buildFloorStats(
+  data: SetData,
+  patches: PatchCounters[],
+  floor: RankFloor,
+  now = new Date(),
+): SetStats | null {
+  const base = chooseSample(patches);
+  if (!base) return null;
+  const counters = countersAtFloor(base.patch, floor);
+  if (counters.matches < MIN_MATCHES) return null;
+  return buildSetStats(data, patches, now, { ...base, floor, counters }).stats;
+}
+
+export function buildSetStats(
+  data: SetData,
+  patches: PatchCounters[],
+  now = new Date(),
+  chosen: Sample | null = chooseSample(patches),
+): BuildResult {
   const { units, items, traits } = resolversFor(data);
   const unknown = { units: units.unknown, items: items.unknown, traits: traits.unknown };
-  const sample = chooseSample(patches);
+  const sample = chosen;
 
   if (!sample) {
     const newest = [...patches].sort((a, b) => comparePatches(b.patch, a.patch))[0];

@@ -1,5 +1,6 @@
 import { Activity, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { RANK_FLOORS } from "@/lib/data/constants";
 import type { SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
 import { count, RANK_FLOOR_LABEL, timeAgo } from "../format";
@@ -19,7 +20,8 @@ export function StatsMeta({ stats }: { stats: SetStats }) {
   const notes = [
     stats.previousPatch &&
       `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`,
-    stats.rankFloor !== "diamond" &&
+    // Only a fallback below the usual floor needs explaining; Master+ is a floor users pick.
+    RANK_FLOORS.indexOf(stats.rankFloor as (typeof RANK_FLOORS)[number]) > 0 &&
       `Early in the set, few players have reached Diamond, so this includes ${RANK_FLOOR_LABEL[stats.rankFloor]} games.`,
   ].filter(Boolean);
 

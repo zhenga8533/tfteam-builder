@@ -17,7 +17,7 @@ import { FlexControls } from "./flex-controls";
 
 export function UnitInspector({ className }: { className?: string }) {
   const { championsByApi, itemsByApi } = useGameData();
-  const { board, selected, select, remove, setStar, unequip, equip } = useBuilder();
+  const { board, selected, select, remove, setStar, unequip, equip, equipAll } = useBuilder();
   const unit = selected === null ? null : board[selected];
   const champion = unit ? championsByApi.get(unit.apiName) : undefined;
   const resolve = useMemo(() => createResolver(champion?.ability.variables ?? {}), [champion]);
@@ -107,7 +107,12 @@ export function UnitInspector({ className }: { className?: string }) {
 
       {/* Champion stats load on first selection; keep the wait local instead of suspending the page. */}
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <BestItems champion={champion.apiName} equipped={unit.items} onPick={(item) => equip(selected, item)} />
+        <BestItems
+          champion={champion.apiName}
+          equipped={unit.items}
+          onPick={(item) => equip(selected, item)}
+          onPickBuild={(items) => equipAll(selected, items)}
+        />
       </Suspense>
 
       {champion.ability.name && (
