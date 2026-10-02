@@ -13,10 +13,13 @@ interface UnitLike {
   items: string[];
 }
 
-/** Every unit with a unique trait activates it alone, so those are worth little next to a real breakpoint. */
+/**
+ * Every unit with a unique trait activates it alone, so a unique trait only breaks ties: it never outweighs
+ * a real breakpoint, but between otherwise equal boards the one whose units bring their unique bonus wins.
+ */
 const STYLE_VALUE: Record<TraitStyle, number> = {
   inactive: 0,
-  unique: 0.25,
+  unique: 0.05,
   bronze: 1,
   silver: 2,
   gold: 3,
@@ -26,11 +29,38 @@ const STYLE_VALUE: Record<TraitStyle, number> = {
 /** How strong a board's traits are: each active trait scores by its tier (bronze 1 … prismatic 4). */
 const traitScore = (states: TraitState[]) => states.reduce((total, state) => total + STYLE_VALUE[state.style], 0);
 
+/**
+ * What autofill aims for. "most" activates as many different traits as possible (deeper breakpoints only
+ * break ties); "levels" adds up breakpoint tiers, so one gold trait is worth three bronze ones. `around`
+ * first takes that trait as far as the slots allow, then fills by `mode`.
+ */
+export interface AutofillGoal {
+  mode: "most" | "levels";
+  around?: string;
+}
+
+/** Breakpoint depth only decides between boards with the same number of active traits. */
+const LEVEL_TIEBREAK = 0.2;
+/** Any extra unit of the chosen trait outweighs every other consideration. */
+const AROUND_WEIGHT = 100;
+
+const activeCount = (states: TraitState[]) =>
+  states.reduce(
+    (total, state) => total + (state.style === "inactive" ? 0 : state.style === "unique" ? STYLE_VALUE.unique : 1),
+    0,
+  );
+
+function goalScore(states: TraitState[], goal: AutofillGoal) {
+  const base = goal.mode === "levels" ? traitScore(states) : activeCount(states) + LEVEL_TIEBREAK * traitScore(states);
+  const around = goal.around ? (states.find((state) => state.trait.apiName === goal.around)?.count ?? 0) : 0;
+  return AROUND_WEIGHT * around + base;
+}
+
 /** A champion and its forms are one shop unit, so only one of them can be fielded. */
 const unitGroup = (champion: Champion) => champion.formOf ?? champion.apiName;
 
-function boardScore(units: UnitLike[], data: PlannerData) {
-  return traitScore(computeTraits(units, data.championsByApi, data.traitsByApi, data.itemsByApi));
+function boardScore(units: UnitLike[], data: PlannerData, goal: AutofillGoal = { mode: "levels" }) {
+  return goalScore(computeTraits(units, data.championsByApi, data.traitsByApi, data.itemsByApi), goal);
 }
 
 function candidatesFor(units: UnitLike[], data: PlannerData) {
@@ -69,13 +99,14 @@ const BEAM_WIDTH = 24;
 const STRENGTH_WEIGHT = 0.01;
 
 /**
- * Picks `slots` champions to add to `units` for the strongest traits, by beam search. `strength`
- * ranks champions for tie-breaks (higher is better), e.g. from average placement; cost by default.
+ * Picks `slots` champions to add to `units` for `goal`, by beam search. `strength` ranks champions for
+ * tie-breaks (higher is better), e.g. from average placement; cost by default.
  */
 export function autofill(
   units: UnitLike[],
   slots: number,
   data: PlannerData,
+  goal: AutofillGoal = { mode: "most" },
   strength: (champion: Champion) => number = (champion) => champion.cost / 5,
 ): Champion[] {
   type State = { added: Champion[]; value: number };
@@ -92,7 +123,7 @@ export function autofill(
           .join("|");
         if (next.has(key)) continue;
         const value =
-          boardScore([...board, { apiName: champion.apiName, items: [] }], data) +
+          boardScore([...board, { apiName: champion.apiName, items: [] }], data, goal) +
           STRENGTH_WEIGHT * added.reduce((total, entry) => total + strength(entry), 0);
         next.set(key, { added, value });
       }

@@ -4,7 +4,7 @@ import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { placementOrder } from "@/features/comps/auto-place";
 import type { Champion } from "@/lib/data/schema";
 import * as B from "@/lib/game/board";
-import { autofill } from "@/lib/game/trait-planner";
+import { autofill, type AutofillGoal } from "@/lib/game/trait-planner";
 import { computeTraits } from "@/lib/game/traits";
 import { DEFAULT_LEVEL, EMPTY_TEAM, teamOf, useBuilderStore } from "./store";
 
@@ -89,14 +89,14 @@ export function useBuilder() {
      * Fills the open slots up to the board's level with the champions that activate the most traits.
      * Flex units don't take a slot. Returns the champions added.
      */
-    autofill: (strength?: (champion: Champion) => number): Champion[] => {
+    autofill: (goal: AutofillGoal, strength?: (champion: Champion) => number): Champion[] => {
       const core = B.boardUnits(board).filter((unit) => !unit.flex);
       const slots = Math.min(level - core.length, board.filter((unit) => unit === null).length);
       if (slots <= 0) {
         toast(`Level ${level} already fields ${core.length} units.`);
         return [];
       }
-      const picks = autofill(core, slots, data, strength);
+      const picks = autofill(core, slots, data, goal, strength);
       commit(placeAll(board, picks));
       select(null);
       return picks;

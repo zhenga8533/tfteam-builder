@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { type Board, createBoard, type LevelBoard } from "@/lib/game/board";
+import type { AutofillGoal } from "@/lib/game/trait-planner";
 
 /** A team being built: one board per player level, e.g. a level 6 early board and a level 8 final board. */
 export interface BuilderTeam {
@@ -41,6 +42,9 @@ interface BuilderState {
   select: (index: number | null) => void;
   saveTeam: (name: string, set: number, boards: LevelBoard[]) => SavedTeam;
   deleteTeam: (id: string) => void;
+  /** The last autofill choice, repeated by the Autofill button. */
+  autofillGoal: AutofillGoal;
+  setAutofillGoal: (goal: AutofillGoal) => void;
 }
 
 type PersistedState = Pick<BuilderState, "teams" | "saved">;
@@ -79,11 +83,13 @@ export const useBuilderStore = create<BuilderState>()(
         return team;
       },
       deleteTeam: (id) => set((state) => ({ saved: state.saved.filter((team) => team.id !== id) })),
+      autofillGoal: { mode: "most" },
+      setAutofillGoal: (autofillGoal) => set({ autofillGoal }),
     }),
     {
       name: "tfteam-builder",
       version: 2,
-      partialize: ({ teams, saved }) => ({ teams, saved }),
+      partialize: ({ teams, saved, autofillGoal }) => ({ teams, saved, autofillGoal }),
       migrate: (persisted, version) =>
         version < 2 ? migrateV1(persisted as PersistedV1) : (persisted as PersistedState),
     },
