@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSettings } from "@/stores/settings";
+import type { Region } from "./constants";
 import {
   autoCompsQuery,
   championStatsQuery,
@@ -7,6 +8,7 @@ import {
   manifestQuery,
   patchHistoryQuery,
   rankStatsQuery,
+  regionStatsQuery,
   setDataQuery,
   statsQuery,
   traitStatsQuery,
@@ -67,12 +69,15 @@ export function useStats() {
  * Stats for the tier lists at `rank` when that floor has its own stats, otherwise the default stats.
  * Detail pages and detected comps always use the default floor.
  */
-export function useTierStats(rank: RankFloor | undefined) {
+export function useTierStats(rank: RankFloor | undefined, region?: Region) {
   const { patch, set } = useActiveSet();
   const base = useStats();
   const floor = rank && base?.ranks?.includes(rank) ? rank : null;
+  const area = region && base?.regions?.includes(region) ? region : null;
   const ranked = useSuspenseQuery(rankStatsQuery(patch, set, floor)).data;
-  return ranked ?? base;
+  const regional = useSuspenseQuery(regionStatsQuery(patch, set, area)).data;
+  // Regional stats exist at the default floor only, so a region wins over a rank.
+  return regional ?? ranked ?? base;
 }
 
 /** Per-champion builds, partners and traits; null when not published (or on PBE). */
@@ -104,5 +109,13 @@ export function useAutoComps(rank?: RankFloor) {
   const { patch, set } = useActiveSet();
   const base = useStats();
   const floor = rank && base?.ranks?.includes(rank) ? rank : null;
-  return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data;
+  return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data?.comps ?? null;
+}
+
+/** The patch detected comps' `trend` compares with; undefined until a previous patch has comps. */
+export function useCompTrendPatch(rank?: RankFloor) {
+  const { patch, set } = useActiveSet();
+  const base = useStats();
+  const floor = rank && base?.ranks?.includes(rank) ? rank : null;
+  return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data?.trendPatch;
 }

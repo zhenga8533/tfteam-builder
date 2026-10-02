@@ -211,3 +211,52 @@ export function autofill(
 ): Champion[] {
   return autofillOptions(units, slots, data, goal, options)[0] ?? [];
 }
+
+export interface EmblemOption {
+  item: Item;
+  /** Board hex of the unit to give it to. */
+  hex: number;
+  unit: string;
+  /** The emblem's trait after equipping it: its new count and style. */
+  after: TraitState;
+  /** Gain in trait value (bronze 1 … prismatic 4), at least one breakpoint. */
+  gain: number;
+}
+
+/**
+ * Every emblem that would add a trait breakpoint on some unit, best gain first: the unit must have a
+ * free item slot, not already have the trait, and not already hold that emblem.
+ */
+export function emblemOptions(
+  board: ({ apiName: string; items: string[]; flex?: boolean } | null)[],
+  data: PlannerData,
+  maxItems = 3,
+): EmblemOption[] {
+  const fielded = board.flatMap((unit) => (unit && !unit.flex ? [unit] : []));
+  const before = traitScore(computeTraits(fielded, data.championsByApi, data.traitsByApi, data.itemsByApi));
+  const emblems = [...data.itemsByApi.values()].filter((item) => item.kind === "emblem" && item.trait);
+  const options: EmblemOption[] = [];
+  board.forEach((unit, hex) => {
+    if (!unit || unit.flex || unit.items.length >= maxItems) return;
+    const champion = data.championsByApi.get(unit.apiName);
+    if (!champion) return;
+    for (const item of emblems) {
+      if (champion.traits.includes(item.trait!) || unit.items.includes(item.apiName)) continue;
+      const withEmblem = fielded.map((other) =>
+        other === unit ? { ...other, items: [...other.items, item.apiName] } : other,
+      );
+      const states = computeTraits(withEmblem, data.championsByApi, data.traitsByApi, data.itemsByApi);
+      const gain = traitScore(states) - before;
+      const after = states.find((state) => state.trait.apiName === item.trait);
+      // Unique traits count for almost nothing, so only a real breakpoint (bronze or better) is worth an item.
+      if (gain >= STYLE_VALUE.bronze && after) options.push({ item, hex, unit: unit.apiName, after, gain });
+    }
+  });
+  // One line per emblem: the unit that gains the most from it (ties go to the first on the board).
+  const best = new Map<string, EmblemOption>();
+  for (const option of options) {
+    const current = best.get(option.item.apiName);
+    if (!current || option.gain > current.gain) best.set(option.item.apiName, option);
+  }
+  return [...best.values()].sort((a, b) => b.gain - a.gain || b.after.count - a.after.count);
+}

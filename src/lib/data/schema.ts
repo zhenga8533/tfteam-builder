@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ITEM_KINDS, PATCHES, RANK_OPTIONS, STAT_TIERS } from "./constants";
+import { ITEM_KINDS, PATCHES, RANK_OPTIONS, REGIONS, STAT_TIERS } from "./constants";
 
 export const patchSchema = z.enum(PATCHES);
 export type Patch = z.infer<typeof patchSchema>;
@@ -141,6 +141,8 @@ export const statLineSchema = z.object({
   /** Share of boards (units, traits) or of equipped items (items) this entry accounts for. */
   play: z.number(),
   tier: z.enum(STAT_TIERS).optional(),
+  /** Games ending 1st to 8th; only on lines shown with a placement distribution. */
+  places: z.array(z.number().int()).length(8).optional(),
 });
 export type StatLine = z.infer<typeof statLineSchema>;
 
@@ -174,6 +176,10 @@ export const setStatsSchema = z.object({
   /** "collecting" until there are enough games at the lowest rank floor. */
   status: z.enum(["ready", "collecting"]),
   rankFloor: z.enum(RANK_OPTIONS),
+  /** Set on regional stats: the region they cover. */
+  region: z.enum(REGIONS).optional(),
+  /** Regions with their own tier list stats (`set{N}/regions/{region}.json`), at this file's floor. */
+  regions: z.array(z.enum(REGIONS)).optional(),
   /** Other rank floors with their own tier list stats (`set{N}/ranks/{floor}.json`). */
   ranks: z.array(z.enum(RANK_OPTIONS)).optional(),
   matches: z.number().int(),
@@ -251,7 +257,16 @@ export const autoCompSchema = statLineSchema.extend({
   flex: z.array(z.object({ apiName: z.string(), frequency: z.number() })),
   /** Median player level. */
   level: z.number().int(),
+  /** Change in average placement since `trendPatch` (negative = placing better); absent for new comps. */
+  trend: z.number().optional(),
+  /** Placement by the player's final level, for levels with enough games; `play` is the share of the comp's games. */
+  byLevel: z.array(statLineSchema.extend({ level: z.number().int() })),
 });
 export type AutoComp = z.infer<typeof autoCompSchema>;
 
-export const autoCompsSchema = z.object({ comps: z.array(autoCompSchema) });
+export const autoCompsSchema = z.object({
+  comps: z.array(autoCompSchema),
+  /** The previous patch `trend` compares with, when there is one. */
+  trendPatch: z.string().optional(),
+});
+export type AutoComps = z.infer<typeof autoCompsSchema>;

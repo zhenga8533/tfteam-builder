@@ -48,7 +48,7 @@ function useEntries(): Entry[] {
   const { patch, set } = useActiveSet();
   const { champions, items, traits } = useGameData();
   // Not suspending: the palette works before (or without) detected comps.
-  const autoComps = useQuery(autoCompsQuery(patch, set)).data;
+  const autoComps = useQuery(autoCompsQuery(patch, set)).data?.comps;
   return useMemo(
     () => [
       ...champions.map((champion) => ({

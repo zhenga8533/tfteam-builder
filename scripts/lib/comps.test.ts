@@ -97,6 +97,7 @@ describe("CompDetector", () => {
     expect(comps).toHaveLength(1);
     const [comp] = comps;
     expect(comp).toMatchObject({ name: "Blossom Ahri", carries: ["Ahri"], games, level: 8 });
+    expect(comp!.byLevel).toMatchObject([{ level: 8, games, play: 1 }]);
     expect(comp!.units.map((unit) => [unit.apiName, unit.items])).toEqual([
       ["Ahri", ["JG", "BB", "Rab"]],
       ["Sett", []],

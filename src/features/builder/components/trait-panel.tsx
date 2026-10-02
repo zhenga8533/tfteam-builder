@@ -1,12 +1,12 @@
-import { ListOrdered } from "lucide-react";
+import { ListOrdered, Shield } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TraitCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
-import { ChampionIcon, TraitIcon } from "@/components/game/icons";
+import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
 import { TRAIT_TEXT } from "@/components/game/styles";
 import { Toggle } from "@/components/ui/toggle";
 import { useGameData } from "@/lib/data/hooks";
-import { type LadderStep, traitLadder } from "@/lib/game/trait-planner";
+import { emblemOptions, type LadderStep, traitLadder } from "@/lib/game/trait-planner";
 import { cn } from "@/lib/utils";
 import { useBoardSummary, useBuilder } from "../use-builder";
 
@@ -93,10 +93,53 @@ function LadderStepRow({ step }: { step: LadderStep }) {
   );
 }
 
+/** Emblem suggestions shown at once; the list is ranked by how much each improves the traits. */
+const EMBLEM_SUGGESTIONS = 5;
+
+/** The emblems that would improve the board most, and on whom; clicking one equips it. */
+function EmblemFinder() {
+  const data = useGameData();
+  const { board, equip } = useBuilder();
+  const options = useMemo(() => emblemOptions(board, data).slice(0, EMBLEM_SUGGESTIONS), [board, data]);
+  if (options.length === 0) {
+    return (
+      <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+        No emblem adds a breakpoint to this board right now.
+      </p>
+    );
+  }
+  return (
+    <ul className="space-y-1 rounded-md border p-1.5" aria-label="Emblem suggestions">
+      {options.map((option) => {
+        const champion = data.championsByApi.get(option.unit);
+        return (
+          <li key={option.item.apiName}>
+            <button
+              type="button"
+              onClick={() => equip(option.hex, option.item.apiName)}
+              className="flex w-full items-center gap-2 rounded-sm p-1 text-left text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+              title={`Give ${option.item.name} to ${champion?.name ?? option.unit}`}
+            >
+              <ItemIcon item={option.item} className="size-6" />
+              <span className="text-muted-foreground">on</span>
+              {champion && <ChampionIcon champion={champion} className="size-6" />}
+              <span className="ml-auto flex items-center gap-1 font-semibold tabular-nums">
+                <TraitIcon trait={option.after.trait} style={option.after.style} className="size-5" />
+                {option.after.count} {option.after.trait.name}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function TraitPanel({ className }: { className?: string }) {
   const data = useGameData();
   const { units, traits } = useBoardSummary();
   const [showLadder, setShowLadder] = useState(false);
+  const [showEmblems, setShowEmblems] = useState(false);
   const ladder = useMemo(() => {
     if (!showLadder) return new Map<string, LadderStep>();
     const core = units.filter((unit) => !unit.flex);
@@ -109,17 +152,30 @@ export function TraitPanel({ className }: { className?: string }) {
         <h2 id="traits-heading" className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
           Traits
         </h2>
-        <Toggle
-          size="sm"
-          pressed={showLadder}
-          onPressedChange={setShowLadder}
-          disabled={traits.length === 0}
-          className="h-7 gap-1 px-2 text-xs"
-          title="Show what each trait needs for its next breakpoint"
-        >
-          <ListOrdered /> Ladder
-        </Toggle>
+        <span className="flex gap-1">
+          <Toggle
+            size="sm"
+            pressed={showEmblems}
+            onPressedChange={setShowEmblems}
+            disabled={traits.length === 0}
+            className="h-7 gap-1 px-2 text-xs"
+            title="Show which emblems add the most traits"
+          >
+            <Shield /> Emblems
+          </Toggle>
+          <Toggle
+            size="sm"
+            pressed={showLadder}
+            onPressedChange={setShowLadder}
+            disabled={traits.length === 0}
+            className="h-7 gap-1 px-2 text-xs"
+            title="Show what each trait needs for its next breakpoint"
+          >
+            <ListOrdered /> Ladder
+          </Toggle>
+        </span>
       </div>
+      {showEmblems && traits.length > 0 && <EmblemFinder />}
       {traits.length === 0 ? (
         <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
           Add champions to see active traits.

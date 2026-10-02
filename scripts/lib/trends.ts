@@ -1,4 +1,4 @@
-import type { PatchHistory, PatchTrend, SetStats, StatLine } from "../../src/lib/data/schema.ts";
+import type { AutoComp, PatchHistory, PatchTrend, SetStats, StatLine } from "../../src/lib/data/schema.ts";
 import { comparePatches } from "../stats/state.ts";
 import { round } from "../../src/lib/game/stat-line.ts";
 import { MIN_GAMES } from "./stats.ts";
@@ -56,4 +56,13 @@ export function patchHistory(summaries: SetStats[]): PatchHistory {
     items: series((stats) => stats.items, MIN_GAMES.item),
     traits: series(traitLines, MIN_GAMES.trait),
   };
+}
+
+/** Each comp's change in average placement since the same comp (same ID) on the previous patch. */
+export function compTrends(current: AutoComp[], previous: AutoComp[]): AutoComp[] {
+  const before = new Map(previous.map((comp) => [comp.id, comp]));
+  return current.map((comp) => {
+    const old = before.get(comp.id);
+    return old ? { ...comp, trend: round(comp.avg - old.avg, 2) } : comp;
+  });
 }

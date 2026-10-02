@@ -1,21 +1,15 @@
 import type { ChampionStats, StatLine } from "../../src/lib/data/schema.ts";
 import type { Counter } from "../stats/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
-import { round, statLine } from "../../src/lib/game/stat-line.ts";
+import { bump as bumpCounter, counterFor, round, statLine } from "../../src/lib/game/stat-line.ts";
 
 /** Minimum games before a build, partner or trait is listed; larger item sets split the sample further. */
 export const MIN_CHAMPION_GAMES = { build1: 50, build2: 30, build3: 20, partner: 50, trait: 50 } as const;
 
 const BUILD_MIN = [0, MIN_CHAMPION_GAMES.build1, MIN_CHAMPION_GAMES.build2, MIN_CHAMPION_GAMES.build3];
 
-function bump(map: Map<string, Counter>, key: string, placement: number) {
-  let counter = map.get(key);
-  if (!counter) map.set(key, (counter = [0, 0, 0, 0]));
-  counter[0] += 1;
-  counter[1] += placement;
-  if (placement <= 4) counter[2] += 1;
-  if (placement === 1) counter[3] += 1;
-}
+const bump = (map: Map<string, Counter>, key: string, placement: number) =>
+  bumpCounter(counterFor(map, key), placement);
 
 /** Every distinct sub-multiset of a sorted item list, e.g. [A, A, B] → A, B, A+A, A+B, A+A+B. */
 export function itemSubsets(items: string[]): string[][] {
@@ -61,7 +55,7 @@ export class ChampionAccumulator {
     for (const [unit, counter] of this.units) {
       byUnit.set(unit, {
         apiName: unit,
-        overall: statLine(counter, this.boards),
+        overall: statLine(counter, this.boards, { places: true }),
         stars: {},
         builds: [],
         partners: [],

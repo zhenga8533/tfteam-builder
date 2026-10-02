@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
+import type { Region } from "./constants";
 import type {
-  AutoComp,
+  AutoComps,
   ChampionStats,
   ItemStats,
   Manifest,
@@ -50,6 +51,13 @@ export const rankStatsQuery = (patch: Patch, set: number, floor: RankFloor | nul
     queryFn: () => (floor ? fetchStats<SetStats>(patch, `set${set}/ranks/${floor}.json`) : null),
   });
 
+/** A set's tier list stats for one region; null when no region is chosen. */
+export const regionStatsQuery = (patch: Patch, set: number, region: Region | null) =>
+  queryOptions({
+    queryKey: ["stats", patch, set, "region", region],
+    queryFn: () => (region ? fetchStats<SetStats>(patch, `set${set}/regions/${region}.json`) : null),
+  });
+
 export const statsQuery = (patch: Patch, set: number) =>
   queryOptions({
     queryKey: ["stats", patch, set],
@@ -84,11 +92,5 @@ export const patchHistoryQuery = (patch: Patch, set: number) =>
 export const autoCompsQuery = (patch: Patch, set: number, floor: RankFloor | null = null) =>
   queryOptions({
     queryKey: ["stats", patch, set, "comps", floor],
-    queryFn: async () =>
-      (
-        await fetchStats<{ comps: AutoComp[] }>(
-          patch,
-          floor ? `set${set}/ranks/${floor}.comps.json` : `set${set}/comps.json`,
-        )
-      )?.comps ?? null,
+    queryFn: () => fetchStats<AutoComps>(patch, floor ? `set${set}/ranks/${floor}.comps.json` : `set${set}/comps.json`),
   });

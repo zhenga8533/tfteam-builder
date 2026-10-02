@@ -67,8 +67,8 @@ export type BoardRow = [
   traits: BoardTraitRow[],
 ];
 
-/** `[games, placementSum, top4, wins]` — additive, so runs can be merged by summing. */
-export type Counter = [number, number, number, number];
+export type { Counter } from "../../src/lib/game/stat-line.ts";
+import type { Counter } from "../../src/lib/game/stat-line.ts";
 
 export interface Counters {
   matches: number;

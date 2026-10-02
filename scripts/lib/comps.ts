@@ -9,7 +9,7 @@ import {
 import { traitStyle } from "../../src/lib/game/traits.ts";
 import type { Counter } from "../stats/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
-import { round, statLine } from "../../src/lib/game/stat-line.ts";
+import { addCounter, bump, counterFor, emptyCounter, round, statLine } from "../../src/lib/game/stat-line.ts";
 import { assignTiers } from "./stats.ts";
 
 export const COMP_THRESHOLDS = {
@@ -24,15 +24,10 @@ export const COMP_THRESHOLDS = {
   /** Units on at least this share (but below core) are listed as flex. */
   flexFrequency: 0.2,
   maxUnits: 9,
+  /** A final level needs this many of a comp's games before its placement is shown. */
+  minLevelGames: 30,
   maxFlex: 6,
 } as const;
-
-function bump(counter: Counter, placement: number) {
-  counter[0] += 1;
-  counter[1] += placement;
-  if (placement <= 4) counter[2] += 1;
-  if (placement === 1) counter[3] += 1;
-}
 
 const increment = (map: Map<string, number>, key: string) => map.set(key, (map.get(key) ?? 0) + 1);
 
@@ -50,7 +45,8 @@ interface CompDetail {
   instances: Map<string, number>;
   traits: Map<string, number>;
   traitBreakpoints: Map<string, number>;
-  levels: Map<string, number>;
+  /** Placements by the player's final level. */
+  byLevel: Map<number, Counter>;
 }
 
 /**
@@ -94,9 +90,7 @@ export class CompDetector {
   count(board: ResolvedBoard) {
     this.boards += 1;
     const signature = this.signature(board);
-    let counter = this.signatures.get(signature);
-    if (!counter) this.signatures.set(signature, (counter = [0, 0, 0, 0]));
-    bump(counter, board.placement);
+    bump(counterFor(this.signatures, signature), board.placement);
   }
 
   /**
@@ -138,19 +132,19 @@ export class CompDetector {
     let detail = this.details.get(target);
     if (!detail) {
       detail = {
-        counter: [0, 0, 0, 0],
+        counter: emptyCounter(),
         units: new Map(),
         stars: new Map(),
         itemSets: new Map(),
         instances: new Map(),
         traits: new Map(),
         traitBreakpoints: new Map(),
-        levels: new Map(),
+        byLevel: new Map(),
       };
       this.details.set(target, detail);
     }
     bump(detail.counter, board.placement);
-    increment(detail.levels, String(board.level));
+    bump(counterFor(detail.byLevel, board.level), board.placement);
     for (const apiName of new Set(board.units.map((unit) => unit.apiName))) increment(detail.units, apiName);
     for (const unit of board.units) {
       increment(detail.instances, unit.apiName);
@@ -195,17 +189,17 @@ export class CompDetector {
         instances: new Map(first.instances),
         traits: new Map(first.traits),
         traitBreakpoints: new Map(first.traitBreakpoints),
-        levels: new Map(first.levels),
+        byLevel: new Map([...first.byLevel].map(([level, counter]) => [level, [...counter] as Counter])),
       };
       for (const [, other] of rest) {
-        other.counter.forEach((value, index) => (detail.counter[index]! += value));
+        addCounter(detail.counter, other.counter);
         mergeCounts(detail.units, other.units);
         mergeCounts(detail.stars, other.stars);
         mergeCounts(detail.itemSets, other.itemSets);
         mergeCounts(detail.instances, other.instances);
         mergeCounts(detail.traits, other.traits);
         mergeCounts(detail.traitBreakpoints, other.traitBreakpoints);
-        mergeCounts(detail.levels, other.levels);
+        for (const [level, counter] of other.byLevel) addCounter(counterFor(detail.byLevel, level), counter);
       }
       return { signature, variants: rest.map(([variant]) => variant), detail };
     });
@@ -261,7 +255,13 @@ export class CompDetector {
         })
         .sort((a, b) => b.minUnits - a.minUnits || b.frequency - a.frequency);
 
-      const levels = [...detail.levels].flatMap(([level, count]) => Array<number>(count).fill(Number(level))).sort();
+      const levels = [...detail.byLevel]
+        .flatMap(([level, counter]) => Array<number>(counter[0]).fill(level))
+        .sort((a, b) => a - b);
+      const byLevel = [...detail.byLevel]
+        .filter(([, counter]) => counter[0] >= COMP_THRESHOLDS.minLevelGames)
+        .sort(([a], [b]) => a - b)
+        .map(([level, counter]) => ({ level, ...statLine(counter, games) }));
       // Signatures sort core traits alphabetically; the main one is the core trait at the highest breakpoint.
       const main = traits.find((entry) => core.includes(entry.trait))?.trait;
       const other = core.find((trait) => trait !== main);
@@ -281,7 +281,8 @@ export class CompDetector {
         units,
         flex,
         level: levels[Math.floor(levels.length / 2)] ?? 8,
-        ...statLine(detail.counter, this.boards),
+        byLevel,
+        ...statLine(detail.counter, this.boards, { places: true }),
       });
     }
 

@@ -13,6 +13,8 @@ import { Section } from "@/components/layout/section";
 import { Carries, CompTraits } from "@/features/comps/components/comp-sections";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { useOpenInBuilder } from "@/features/comps/use-open-in-builder";
+import { PlacementChart } from "@/features/stats/components/placement-chart";
+import { StatTable } from "@/features/stats/components/stat-table";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { percent } from "@/features/stats/format";
@@ -100,6 +102,20 @@ function AutoCompPage() {
           )}
         </div>
         <aside className="space-y-4">
+          {comp.places && (
+            <Section title="Placements">
+              <PlacementChart places={comp.places} />
+            </Section>
+          )}
+          {comp.byLevel.length > 1 && (
+            <Section title="By final level">
+              <StatTable
+                showDelta={false}
+                keepOrder
+                rows={comp.byLevel.map((line) => ({ key: String(line.level), label: `Level ${line.level}`, line }))}
+              />
+            </Section>
+          )}
           <Section title="Traits">
             <CompTraits units={units} />
           </Section>

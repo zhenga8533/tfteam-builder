@@ -11,12 +11,13 @@ import { ITEM_KINDS } from "@/lib/data/constants";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import type { ItemKind } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { isRankFloor } from "@/lib/data/constants";
+import { isRankFloor, isRegion, type Region } from "@/lib/data/constants";
 import type { RankFloor } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
 
 interface ItemTierSearch {
   rank?: RankFloor;
+  region?: Region;
   q?: string;
   kind?: ItemKind;
 }
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/tierlist/items")({
   head: () => ({ meta: [{ title: "Item Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): ItemTierSearch => ({
     rank: isRankFloor(search.rank) ? search.rank : undefined,
+    region: isRegion(search.region) ? search.region : undefined,
     q: stringParam(search.q),
     kind: RANKED_KINDS.includes(search.kind as ItemKind) ? (search.kind as ItemKind) : undefined,
   }),
@@ -37,7 +39,7 @@ function ItemTierListPage() {
   const { set } = useActiveSet();
   const { itemsByApi } = useGameData();
   const search = Route.useSearch();
-  const stats = useTierStats(search.rank);
+  const stats = useTierStats(search.rank, search.region);
   // Components are carried around mid-game rather than built, so they aren't ranked.
   const lines = Object.entries(stats?.items ?? {}).filter(
     ([apiName]) => itemsByApi.has(apiName) && itemsByApi.get(apiName)?.kind !== "component",
@@ -57,7 +59,8 @@ function ItemTierListPage() {
       overrides={tierListForSet(set)?.items}
       visible={visible}
       stats={stats}
-      rank={{ value: search.rank, onChange: (rank) => update({ rank }) }}
+      rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}
+      region={{ value: search.region, onChange: (region) => update({ region, rank: undefined }) }}
       toolbar={
         <>
           <SearchInput

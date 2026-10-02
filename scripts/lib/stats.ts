@@ -1,6 +1,6 @@
-import { RANK_FLOORS, STAT_TIERS } from "../../src/lib/data/constants.ts";
+import { RANK_FLOORS, type Region, STAT_TIERS } from "../../src/lib/data/constants.ts";
 import type { RankFloor, SetData, SetStats, StatLine, TraitStat } from "../../src/lib/data/schema.ts";
-import { statLine } from "../../src/lib/game/stat-line.ts";
+import { addCounter, counterFor, statLine } from "../../src/lib/game/stat-line.ts";
 import { emptyCounters, mergeCounters } from "../stats/aggregate.ts";
 
 import { comparePatches } from "../stats/state.ts";
@@ -88,8 +88,7 @@ function collect(record: Record<string, Counter>, resolve: (key: string, games: 
   for (const [key, counter] of Object.entries(record)) {
     const target = resolve(key, counter[0]);
     if (!target) continue;
-    const [games, placementSum, top4, wins] = result.get(target) ?? [0, 0, 0, 0];
-    result.set(target, [games + counter[0], placementSum + counter[1], top4 + counter[2], wins + counter[3]]);
+    addCounter(counterFor(result, target), counter);
   }
   return result;
 }
@@ -135,6 +134,26 @@ export function buildFloorStats(
   return buildSetStats(data, patches, now, { ...base, floor, counters }).stats;
 }
 
+/** Regions have a fraction of the games, so they need fewer matches than the whole sample to be shown. */
+export const MIN_REGION_MATCHES = 1000;
+
+/**
+ * Stats for one region's boards at the patch and rank floor of the published stats, for the tier lists'
+ * region choice. Null when the region has too few games.
+ */
+export function buildRegionStats(
+  data: SetData,
+  regional: PatchCounters,
+  base: SetStats,
+  region: Region,
+  now = new Date(),
+): SetStats | null {
+  const counters = countersAtFloor(regional, base.rankFloor);
+  if (counters.matches < MIN_REGION_MATCHES) return null;
+  const sample: Sample = { patch: regional, floor: base.rankFloor, counters, previousPatch: base.previousPatch };
+  return { ...buildSetStats(data, [regional], now, sample).stats, region };
+}
+
 export function buildSetStats(
   data: SetData,
   patches: PatchCounters[],
@@ -171,13 +190,15 @@ export function buildSetStats(
 
   const unitCounters = collect(counters.units, (key, games) => units.resolve(key, games));
   const unitLines = Object.fromEntries(
-    [...unitCounters].map(([name, counter]) => [name, statLine(counter, counters.boards)]),
+    [...unitCounters].map(([name, counter]) => [name, statLine(counter, counters.boards, { places: true })]),
   );
   assignTiers(Object.values(unitLines), MIN_GAMES.unit);
 
   const itemCounters = collect(counters.items, (key, games) => items.resolve(key, games));
   const equipped = [...itemCounters.values()].reduce((total, [games]) => total + games, 0);
-  const itemLines = Object.fromEntries([...itemCounters].map(([name, counter]) => [name, statLine(counter, equipped)]));
+  const itemLines = Object.fromEntries(
+    [...itemCounters].map(([name, counter]) => [name, statLine(counter, equipped, { places: true })]),
+  );
   assignTiers(
     Object.entries(itemLines).flatMap(([name, line]) => (rankable.has(name) ? [line] : [])),
     MIN_GAMES.item,
@@ -191,7 +212,11 @@ export function buildSetStats(
     // `tier_current` counts reached breakpoints, so it is a 1-based index into the trait's breakpoints.
     const breakpoint = apiName ? traitsByApi.get(apiName)?.breakpoints[Number(tierCurrent) - 1] : undefined;
     if (!apiName || !breakpoint) continue;
-    traitLines.push({ trait: apiName, minUnits: breakpoint.minUnits, ...statLine(counter, counters.boards) });
+    traitLines.push({
+      trait: apiName,
+      minUnits: breakpoint.minUnits,
+      ...statLine(counter, counters.boards, { places: true }),
+    });
   }
   assignTiers(traitLines, MIN_GAMES.trait);
 

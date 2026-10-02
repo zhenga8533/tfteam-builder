@@ -1,4 +1,13 @@
+import type { Region } from "@/lib/data/constants";
 import type { RankFloor } from "@/lib/data/schema";
+
+/** Short names for the chip, and the servers each routing region covers for its menu. */
+export const REGION_LABEL: Record<Region, { name: string; servers: string }> = {
+  americas: { name: "Americas", servers: "NA, BR, LAN, LAS" },
+  europe: { name: "Europe", servers: "EUW, EUNE, TR, RU, ME" },
+  asia: { name: "Asia", servers: "KR, JP" },
+  sea: { name: "SEA", servers: "OCE, SG, TW, VN" },
+};
 
 export const RANK_FLOOR_LABEL: Record<RankFloor, string> = {
   master: "Master+",

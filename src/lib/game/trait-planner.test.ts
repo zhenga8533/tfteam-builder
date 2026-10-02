@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Champion, Trait } from "@/lib/data/schema";
-import { autofill, autofillOptions, defaultMaxCost, traitLadder, type PlannerData } from "./trait-planner";
+import type { Champion, Item, Trait } from "@/lib/data/schema";
+import {
+  autofill,
+  autofillOptions,
+  defaultMaxCost,
+  emblemOptions,
+  traitLadder,
+  type PlannerData,
+} from "./trait-planner";
 import { computeTraits } from "./traits";
 
 const champion = (apiName: string, traits: string[], cost = 1, formOf?: string) =>
@@ -128,5 +135,26 @@ describe("trait planner", () => {
 
   it("stops when no champion is left to add", () => {
     expect(autofill(units(...champions.map((entry) => entry.apiName)), 2, data)).toEqual([]);
+  });
+});
+
+describe("emblem options", () => {
+  it("suggests emblems that complete a breakpoint, on a unit that can hold them", () => {
+    const emblems = [
+      { apiName: "MageEmblem", kind: "emblem", trait: "Mage", composition: [] },
+      { apiName: "GuardEmblem", kind: "emblem", trait: "Guard", composition: [] },
+    ] as unknown as Item[];
+    const withEmblems = { ...data, itemsByApi: new Map(emblems.map((item) => [item.apiName, item])) };
+    // A1 and A3 already make 2 Mage, so a third (Mage emblem on B1) changes nothing; a Guard emblem on A1
+    // completes 2 Guard. A3 has no free slot.
+    const board = [
+      { apiName: "A1", items: [] },
+      { apiName: "B1", items: [] },
+      { apiName: "A3", items: ["x", "y", "z"] },
+    ];
+    const options = emblemOptions(board, withEmblems);
+    expect(options.map((option) => [option.item.apiName, option.unit, option.after.count])).toEqual([
+      ["GuardEmblem", "A1", 2],
+    ]);
   });
 });

@@ -4,10 +4,30 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AutoCompCard } from "@/features/comps/components/comp-card";
+import { MIN_TREND } from "@/features/stats/format";
 import { useActiveSet, useAutoComps, useGameData } from "@/lib/data/hooks";
 
 /** Detected comps previewed on the home page. */
 const FEATURED_COMPS = 4;
+
+/** Comps whose average placement improved the most since the previous patch. */
+function RisingComps() {
+  const comps = (useAutoComps() ?? [])
+    .filter((comp) => comp.trend !== undefined && comp.trend <= -MIN_TREND)
+    .sort((a, b) => a.trend! - b.trend!)
+    .slice(0, FEATURED_COMPS);
+  if (comps.length === 0) return null;
+  return (
+    <section className="space-y-3">
+      <h2 className="font-display text-xl font-semibold">Rising this patch</h2>
+      <div className="grid gap-2 xl:grid-cols-2">
+        {comps.map((comp) => (
+          <AutoCompCard key={comp.id} comp={comp} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function TopComps() {
   const comps = (useAutoComps() ?? []).slice(0, FEATURED_COMPS);
@@ -107,6 +127,7 @@ function HomePage() {
       </section>
 
       <TopComps />
+      <RisingComps />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map(({ title, description, to, icon: Icon }) => (

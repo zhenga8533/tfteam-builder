@@ -1,7 +1,29 @@
 import type { StatLine } from "@/lib/data/schema";
 
-/** `[games, placementSum, top4, wins]` — additive, so samples can be merged by summing. */
-export type Counter = [number, number, number, number];
+/**
+ * `[games, placementSum, top4, wins, …boards at 1st … 8th]`, all additive, so counters merge by summing
+ * index by index. The per-placement counts are only published where a distribution is shown.
+ */
+export type Counter = [games: number, placementSum: number, top4: number, wins: number, ...places: number[]];
+
+/** Placements in a lobby. */
+export const PLACEMENTS = 8;
+const FIRST_PLACE_INDEX = 4;
+
+export const emptyCounter = (): Counter => [0, 0, 0, 0, ...Array<number>(PLACEMENTS).fill(0)];
+
+/** Adds `source` into `target` in place. */
+export function addCounter(target: Counter, source: Counter) {
+  source.forEach((value, index) => (target[index] = (target[index] ?? 0) + value));
+  return target;
+}
+
+/** The counter stored under `key`, created empty on first use. */
+export function counterFor<K>(map: Map<K, Counter>, key: K): Counter {
+  let counter = map.get(key);
+  if (!counter) map.set(key, (counter = emptyCounter()));
+  return counter;
+}
 
 /** Weight, in games, of the 4.5 prior that small samples are pulled toward. */
 export const PRIOR_GAMES = 30;
@@ -22,12 +44,20 @@ export function bump(counter: Counter, placement: number) {
   counter[1] += placement;
   if (placement <= 4) counter[2] += 1;
   if (placement === 1) counter[3] += 1;
+  const place = FIRST_PLACE_INDEX + placement - 1;
+  counter[place] = (counter[place] ?? 0) + 1;
 }
 
-/** `play` is the counter's games as a share of `total`. */
-export function statLine(counter: Counter, total: number): StatLine {
+/**
+ * `play` is the counter's games as a share of `total`. With `places`, the line also carries how many
+ * games ended at each placement (1st to 8th), for a distribution chart.
+ */
+export function statLine(counter: Counter, total: number, { places = false } = {}): StatLine {
   const [games, placementSum, top4, wins] = counter;
   return {
+    ...(places && {
+      places: counter.slice(FIRST_PLACE_INDEX, FIRST_PLACE_INDEX + PLACEMENTS).map((count) => count ?? 0),
+    }),
     games,
     avg: round(placementSum / Math.max(games, 1), 2),
     score: round(adjustedAverage(counter), 2),

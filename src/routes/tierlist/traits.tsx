@@ -11,7 +11,7 @@ import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import { type TraitStyle, traitStyle } from "@/lib/game/traits";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { isRankFloor } from "@/lib/data/constants";
+import { isRankFloor, isRegion, type Region } from "@/lib/data/constants";
 import type { RankFloor } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ type BreakpointStyle = (typeof STYLES)[number];
 
 interface TraitTierSearch {
   rank?: RankFloor;
+  region?: Region;
   q?: string;
   style?: BreakpointStyle;
 }
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/tierlist/traits")({
   head: () => ({ meta: [{ title: "Trait Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): TraitTierSearch => ({
     rank: isRankFloor(search.rank) ? search.rank : undefined,
+    region: isRegion(search.region) ? search.region : undefined,
     q: stringParam(search.q),
     style: STYLES.includes(search.style as BreakpointStyle) ? (search.style as BreakpointStyle) : undefined,
   }),
@@ -42,7 +44,7 @@ function TraitTierListPage() {
   const { set } = useActiveSet();
   const { traitsByApi } = useGameData();
   const search = Route.useSearch();
-  const stats = useTierStats(search.rank);
+  const stats = useTierStats(search.rank, search.region);
   const lines = (stats?.traits ?? [])
     .filter((line) => traitsByApi.has(line.trait))
     .map((line) => [traitKey(line.trait, line.minUnits), line] as [string, typeof line]);
@@ -67,7 +69,8 @@ function TraitTierListPage() {
       overrides={tierListForSet(set)?.traits}
       visible={visible}
       stats={stats}
-      rank={{ value: search.rank, onChange: (rank) => update({ rank }) }}
+      rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}
+      region={{ value: search.region, onChange: (region) => update({ region, rank: undefined }) }}
       toolbar={
         <>
           <SearchInput

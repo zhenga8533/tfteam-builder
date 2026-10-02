@@ -7,10 +7,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { RANK_FLOORS } from "@/lib/data/constants";
+import { RANK_FLOORS, type Region } from "@/lib/data/constants";
 import type { RankFloor, SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
-import { count, RANK_FLOOR_LABEL, timeAgo } from "../format";
+import { count, RANK_FLOOR_LABEL, REGION_LABEL, timeAgo } from "../format";
 
 export interface RankChoice {
   /** Floors with stats, highest first. */
@@ -20,26 +20,49 @@ export interface RankChoice {
   onChange: (rank: RankFloor | undefined) => void;
 }
 
-/** The rank floor in the stats sentence, as a menu when other floors have stats (tier lists only). */
-function RankLabel({ floor, choice }: { floor: RankFloor; choice?: RankChoice }) {
-  if (!choice || choice.floors.length < 2) return <>{RANK_FLOOR_LABEL[floor]}</>;
+export interface RegionChoice {
+  /** Regions with stats. */
+  regions: Region[];
+  value?: Region;
+  onChange: (region: Region | undefined) => void;
+}
+
+interface ChipOption {
+  value: string;
+  label: string;
+  hint?: string;
+}
+
+/** A menu inside the stats sentence, shown as a small chip with the current choice. */
+function ChoiceChip({
+  label,
+  value,
+  options,
+  onChange,
+  name,
+}: {
+  label: string;
+  value: string;
+  options: ChipOption[];
+  onChange: (value: string) => void;
+  /** What the chip chooses, for screen readers ("Rank", "Region"). */
+  name: string;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         className="inline-flex translate-y-[-1px] items-center gap-1 rounded-md border bg-card px-1.5 py-px align-middle text-xs font-medium text-foreground shadow-xs transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent"
-        aria-label={`Rank: ${RANK_FLOOR_LABEL[floor]}`}
+        aria-label={`${name}: ${label}`}
       >
-        {RANK_FLOOR_LABEL[floor]}
+        {label}
         <ChevronDown className="size-3 opacity-60" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
-        <DropdownMenuRadioGroup
-          value={floor}
-          onValueChange={(value) => choice.onChange(value === choice.base ? undefined : (value as RankFloor))}
-        >
-          {choice.floors.map((option) => (
-            <DropdownMenuRadioItem key={option} value={option}>
-              {RANK_FLOOR_LABEL[option]}
+        <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
+          {options.map((option) => (
+            <DropdownMenuRadioItem key={option.value} value={option.value} className="flex-col items-start gap-0">
+              <span>{option.label}</span>
+              {option.hint && <span className="text-xs text-muted-foreground">{option.hint}</span>}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
@@ -48,8 +71,48 @@ function RankLabel({ floor, choice }: { floor: RankFloor; choice?: RankChoice })
   );
 }
 
+const ALL_REGIONS = "all";
+
+/** The rank floor in the stats sentence, as a menu when other floors have stats. */
+function RankLabel({ floor, choice }: { floor: RankFloor; choice?: RankChoice }) {
+  if (!choice || choice.floors.length < 2) return <>{RANK_FLOOR_LABEL[floor]}</>;
+  return (
+    <ChoiceChip
+      name="Rank"
+      label={RANK_FLOOR_LABEL[floor]}
+      value={floor}
+      options={choice.floors.map((option) => ({ value: option, label: RANK_FLOOR_LABEL[option] }))}
+      onChange={(value) => choice.onChange(value === choice.base ? undefined : (value as RankFloor))}
+    />
+  );
+}
+
+/** "from all regions" / "in Asia", as a menu when regions have their own stats. */
+function RegionLabel({ region, choice }: { region?: Region; choice?: RegionChoice }) {
+  if (!choice?.regions.length) return region ? <> in {REGION_LABEL[region].name}</> : null;
+  return (
+    <>
+      {region ? " in " : " from "}
+      <ChoiceChip
+        name="Region"
+        label={region ? REGION_LABEL[region].name : "all regions"}
+        value={region ?? ALL_REGIONS}
+        options={[
+          { value: ALL_REGIONS, label: "All regions" },
+          ...choice.regions.map((option) => ({
+            value: option,
+            label: REGION_LABEL[option].name,
+            hint: REGION_LABEL[option].servers,
+          })),
+        ]}
+        onChange={(value) => choice.onChange(value === ALL_REGIONS ? undefined : (value as Region))}
+      />
+    </>
+  );
+}
+
 /** Where the numbers come from, plus notes when the data is thinner than usual. */
-export function StatsMeta({ stats, rank }: { stats: SetStats; rank?: RankChoice }) {
+export function StatsMeta({ stats, rank, region }: { stats: SetStats; rank?: RankChoice; region?: RegionChoice }) {
   if (stats.status === "collecting") {
     return (
       <p className="mb-6 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
@@ -88,7 +151,8 @@ export function StatsMeta({ stats, rank }: { stats: SetStats; rank?: RankChoice 
         </Tooltip>
         <span>
           Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
-          <RankLabel floor={stats.rankFloor} choice={rank} /> ranked games on patch {stats.patch} ·{" "}
+          <RankLabel floor={stats.rankFloor} choice={rank} /> ranked games
+          <RegionLabel region={stats.region} choice={region} /> on patch {stats.patch} ·{" "}
           <time dateTime={stats.updatedAt} title={new Date(stats.updatedAt).toLocaleString()}>
             Updated {timeAgo(stats.updatedAt)}
           </time>
