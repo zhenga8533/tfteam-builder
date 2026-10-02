@@ -1,9 +1,36 @@
 import { createFileRoute, Link, type LinkProps } from "@tanstack/react-router";
-import { ArrowRight, BookOpen, Hammer, Sparkles, Swords, Trophy, Users } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, Compass, Hammer, Sparkles, Swords, Trophy, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useActiveSet, useGameData } from "@/lib/data/hooks";
+import { AutoCompCard } from "@/features/comps/components/comp-card";
+import { useActiveSet, useAutoComps, useGameData } from "@/lib/data/hooks";
+
+/** Detected comps previewed on the home page. */
+const FEATURED_COMPS = 4;
+
+function TopComps() {
+  const comps = (useAutoComps() ?? []).slice(0, FEATURED_COMPS);
+  if (comps.length === 0) return null;
+  return (
+    <section className="space-y-3">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-display text-xl font-semibold">Strongest comps right now</h2>
+        <Link
+          to="/tierlist/comps"
+          className="shrink-0 text-sm whitespace-nowrap text-muted-foreground hover:text-foreground"
+        >
+          All comps <ArrowRight className="inline size-4" />
+        </Link>
+      </div>
+      <div className="grid gap-2 xl:grid-cols-2">
+        {comps.map((comp) => (
+          <AutoCompCard key={comp.id} comp={comp} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -29,6 +56,18 @@ const FEATURES: Feature[] = [
     to: "/builder",
     icon: Hammer,
   },
+  {
+    title: "Champion Tier List",
+    description: "Units, items and traits ranked by placement.",
+    to: "/tierlist/champions",
+    icon: BarChart3,
+  },
+  {
+    title: "Explorer",
+    description: "Filter ranked boards and see what wins with them.",
+    to: "/explorer",
+    icon: Compass,
+  },
   { title: "Champions", description: "Abilities, stats and traits for every unit.", to: "/champions", icon: Users },
   { title: "Traits", description: "Every breakpoint and what it unlocks.", to: "/traits", icon: Sparkles },
   { title: "Items", description: "Recipes, emblems, artifacts and radiants.", to: "/items", icon: Swords },
@@ -38,6 +77,9 @@ const FEATURES: Feature[] = [
 function HomePage() {
   const { label, set } = useActiveSet();
   const data = useGameData();
+  // Forms such as Lux (Coven) and set-mechanic traits aren't separate things to explore.
+  const shopChampions = data.champions.filter((champion) => !champion.formOf).length;
+  const championTraits = data.traits.filter((trait) => trait.source === "champion").length;
 
   return (
     <div className="space-y-12">
@@ -49,8 +91,8 @@ function HomePage() {
           Plan your next <span className="text-primary">top four</span>.
         </h1>
         <p className="max-w-2xl text-lg text-muted-foreground">
-          Build boards, explore {data.champions.length} champions and {data.traits.length} traits, and follow the comps
-          that are winning this patch.
+          Build boards, explore {shopChampions} champions and {championTraits} traits, and follow the comps that are
+          winning this patch.
         </p>
         <div className="flex flex-wrap gap-3">
           <Button asChild size="lg">
@@ -58,13 +100,15 @@ function HomePage() {
               Open Team Builder <ArrowRight />
             </Link>
           </Button>
-          <Button asChild size="lg" variant="secondary">
+          <Button asChild size="lg" variant="outline">
             <Link to="/tierlist/comps">View Tier List</Link>
           </Button>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <TopComps />
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map(({ title, description, to, icon: Icon }) => (
           <Link key={title} to={to} className="group">
             <Card className="h-full transition-colors group-hover:border-primary/50 group-hover:bg-accent/40">

@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AugmentCard } from "@/components/game/cards";
-import { AUGMENT_TIER_LABEL, AUGMENT_TIER_TEXT } from "@/components/game/styles";
+import { AugmentTierFilter } from "@/components/game/filters";
+import { isAugmentTier } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
 import type { AugmentTier } from "@/lib/data/schema";
 import { matches, numberParam, stringParam } from "@/lib/search";
@@ -15,14 +15,11 @@ interface AugmentSearch {
   tier?: AugmentTier;
 }
 
-const TIERS = [1, 2, 3] as const;
-const isTier = (value: number | undefined): value is AugmentTier => TIERS.includes(value as AugmentTier);
-
 export const Route = createFileRoute("/augments")({
   head: () => ({ meta: [{ title: "Augments · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): AugmentSearch => {
     const tier = numberParam(search.tier);
-    return { q: stringParam(search.q), tier: isTier(tier) ? tier : undefined };
+    return { q: stringParam(search.q), tier: isAugmentTier(tier) ? tier : undefined };
   },
   component: AugmentsPage,
 });
@@ -50,19 +47,7 @@ function AugmentsPage() {
           onChange={(q) => update({ q: q || undefined })}
           placeholder="Search augments"
         />
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={search.tier ? String(search.tier) : ""}
-          onValueChange={(value) => update({ tier: value ? (Number(value) as AugmentTier) : undefined })}
-          aria-label="Filter by tier"
-        >
-          {TIERS.map((tier) => (
-            <ToggleGroupItem key={tier} value={String(tier)} className={`px-3 ${AUGMENT_TIER_TEXT[tier]}`}>
-              {AUGMENT_TIER_LABEL[tier]}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <AugmentTierFilter value={search.tier} onChange={(tier) => update({ tier })} />
       </div>
 
       {filtered.length === 0 ? (

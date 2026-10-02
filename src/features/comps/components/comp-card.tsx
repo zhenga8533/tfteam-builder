@@ -54,12 +54,9 @@ function CompStats({ line }: { line: StatLine }) {
  */
 function CompCardView({ title, link, units: board, badge, aside }: CompCardViewProps) {
   const { championsByApi, itemsByApi } = useGameData();
-  // Breakpoint traits first; unique traits (one unit, always active) follow them.
-  const active = useCompTraits(board).filter(({ style }) => style !== "inactive");
-  const traits = [
-    ...active.filter(({ style }) => style !== "unique"),
-    ...active.filter(({ style }) => style === "unique"),
-  ].slice(0, MAX_TRAITS);
+  const traits = useCompTraits(board)
+    .filter(({ style }) => style !== "inactive")
+    .slice(0, MAX_TRAITS);
   const units = board
     .flatMap((unit) => {
       const champion = championsByApi.get(unit.apiName);
