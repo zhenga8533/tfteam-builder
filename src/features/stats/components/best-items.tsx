@@ -2,7 +2,8 @@ import { ItemCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
-import { nextItems } from "../builds";
+import { Button } from "@/components/ui/button";
+import { bestBuild, nextItems, remainder } from "../builds";
 import { percent } from "../format";
 import { AvgPlacement, StatSummary } from "./stat-summary";
 
@@ -11,13 +12,15 @@ interface BestItemsProps {
   /** Items the unit already holds; suggestions are the best item to add next. */
   equipped: string[];
   onPick: (item: string) => void;
+  /** Equips the rest of the best full build at once. */
+  onPickBuild?: (items: string[]) => void;
 }
 
 const SUGGESTIONS = 6;
 const MAX_ITEMS = 3;
 
 /** The best next item for a champion given what it holds, from match stats; clicking one equips it. */
-export function BestItems({ champion, equipped, onPick }: BestItemsProps) {
+export function BestItems({ champion, equipped, onPick, onPickBuild }: BestItemsProps) {
   const { itemsByApi } = useGameData();
   const championStats = useChampionStats(champion);
   const fallback = useStats()?.bestItems[champion];
@@ -33,12 +36,34 @@ export function BestItems({ champion, equipped, onPick }: BestItemsProps) {
       ? fallback
       : undefined;
   if (!lines?.length) return null;
+  const free = MAX_ITEMS - equipped.length;
+  const build = championStats && onPickBuild ? bestBuild(championStats.builds, held, held.length + free) : null;
+  const rest = build ? (remainder(build.items, held) ?? []) : [];
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-        {held.length ? "Best next item" : "Best items"}
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+          {held.length ? "Best next item" : "Best items"}
+        </p>
+        {build && rest.length > 1 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => onPickBuild?.(rest)}
+            title={`${build.avg.toFixed(2)} average placement over ${build.games} games`}
+          >
+            Equip best build
+            <span className="flex">
+              {rest.map((apiName, index) => {
+                const item = itemsByApi.get(apiName);
+                return item ? <ItemIcon key={index} item={item} className="size-4" /> : null;
+              })}
+            </span>
+          </Button>
+        )}
+      </div>
       <ul className="grid grid-cols-6 gap-1.5">
         {lines.map((line) => {
           const item = itemsByApi.get(line.item);

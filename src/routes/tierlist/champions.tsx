@@ -7,11 +7,14 @@ import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
-import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
+import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import { useUpdateSearch } from "@/lib/use-update-search";
+import { isRankFloor } from "@/lib/data/constants";
+import type { RankFloor } from "@/lib/data/schema";
 import { matches, numberParam, stringParam } from "@/lib/search";
 
 interface ChampionTierSearch {
+  rank?: RankFloor;
   q?: string;
   cost?: number;
   trait?: string;
@@ -20,6 +23,7 @@ interface ChampionTierSearch {
 export const Route = createFileRoute("/tierlist/champions")({
   head: () => ({ meta: [{ title: "Champion Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionTierSearch => ({
+    rank: isRankFloor(search.rank) ? search.rank : undefined,
     q: stringParam(search.q),
     cost: numberParam(search.cost),
     trait: stringParam(search.trait),
@@ -30,9 +34,9 @@ export const Route = createFileRoute("/tierlist/champions")({
 function ChampionTierListPage() {
   const { set } = useActiveSet();
   const { championsByApi } = useGameData();
-  const stats = useStats();
-  const lines = Object.entries(stats?.units ?? {}).filter(([apiName]) => championsByApi.has(apiName));
   const search = Route.useSearch();
+  const stats = useTierStats(search.rank);
+  const lines = Object.entries(stats?.units ?? {}).filter(([apiName]) => championsByApi.has(apiName));
   const update = useUpdateSearch<ChampionTierSearch>();
   const visible = (apiName: string) => {
     const champion = championsByApi.get(apiName);
@@ -51,6 +55,8 @@ function ChampionTierListPage() {
       lines={lines}
       overrides={tierListForSet(set)?.champions}
       visible={visible}
+      stats={stats}
+      rank={{ value: search.rank, onChange: (rank) => update({ rank }) }}
       toolbar={
         <>
           <SearchInput

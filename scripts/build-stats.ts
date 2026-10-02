@@ -20,7 +20,8 @@ import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
-import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
+import { RANK_OPTIONS } from "../src/lib/data/constants.ts";
+import { buildFloorStats, buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
@@ -176,6 +177,19 @@ async function main() {
     const summaries = (await store.summaries(set)).filter((summary) => summary.patch !== stats.patch);
     const trend = patchTrend(stats, summaries);
     if (trend) stats.trend = trend;
+    // Tier lists can switch to another rank floor; each one with enough games, and with games the floors
+    // above it don't already cover, gets its own file.
+    const floorStats: SetStats[] = [];
+    if (stats.status === "ready") {
+      let previous = -1;
+      for (const floor of RANK_OPTIONS) {
+        const floorLines = floor === stats.rankFloor ? stats : buildFloorStats(data, patches, floor);
+        if (!floorLines || floorLines.matches === previous) continue;
+        previous = floorLines.matches;
+        if (floor !== stats.rankFloor) floorStats.push(floorLines);
+      }
+    }
+    if (floorStats.length) stats.ranks = floorStats.map((entry) => entry.rankFloor);
     const json = JSON.stringify(setStatsSchema.parse(stats));
     await writeFile(join(OUT_DIR, `set${set}.json`), json);
     if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
@@ -185,6 +199,15 @@ async function main() {
       stats,
       chunks.filter((chunk) => chunk.set === set),
     );
+    if (floorStats.length) {
+      await mkdir(join(OUT_DIR, `set${set}`, "ranks"), { recursive: true });
+      for (const entry of floorStats) {
+        await writeFile(
+          join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.json`),
+          JSON.stringify(setStatsSchema.parse(entry)),
+        );
+      }
+    }
     if (stats.status === "ready") {
       const history = patchHistory([...summaries, stats]);
       await writeFile(join(OUT_DIR, `set${set}`, "history.json"), JSON.stringify(patchHistorySchema.parse(history)));

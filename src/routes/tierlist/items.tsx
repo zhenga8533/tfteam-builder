@@ -8,12 +8,15 @@ import { StatTierList } from "@/features/stats/components/stat-tier-list";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { ITEM_KINDS } from "@/lib/data/constants";
-import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
+import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import type { ItemKind } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
+import { isRankFloor } from "@/lib/data/constants";
+import type { RankFloor } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
 
 interface ItemTierSearch {
+  rank?: RankFloor;
   q?: string;
   kind?: ItemKind;
 }
@@ -23,6 +26,7 @@ const RANKED_KINDS: ItemKind[] = ITEM_KINDS.filter((kind) => kind !== "component
 export const Route = createFileRoute("/tierlist/items")({
   head: () => ({ meta: [{ title: "Item Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): ItemTierSearch => ({
+    rank: isRankFloor(search.rank) ? search.rank : undefined,
     q: stringParam(search.q),
     kind: RANKED_KINDS.includes(search.kind as ItemKind) ? (search.kind as ItemKind) : undefined,
   }),
@@ -32,12 +36,12 @@ export const Route = createFileRoute("/tierlist/items")({
 function ItemTierListPage() {
   const { set } = useActiveSet();
   const { itemsByApi } = useGameData();
-  const stats = useStats();
+  const search = Route.useSearch();
+  const stats = useTierStats(search.rank);
   // Components are carried around mid-game rather than built, so they aren't ranked.
   const lines = Object.entries(stats?.items ?? {}).filter(
     ([apiName]) => itemsByApi.has(apiName) && itemsByApi.get(apiName)?.kind !== "component",
   );
-  const search = Route.useSearch();
   const update = useUpdateSearch<ItemTierSearch>();
   const kinds = RANKED_KINDS.filter((kind) => lines.some(([apiName]) => itemsByApi.get(apiName)?.kind === kind));
   const visible = (apiName: string) => {
@@ -52,6 +56,8 @@ function ItemTierListPage() {
       lines={lines}
       overrides={tierListForSet(set)?.items}
       visible={visible}
+      stats={stats}
+      rank={{ value: search.rank, onChange: (rank) => update({ rank }) }}
       toolbar={
         <>
           <SearchInput

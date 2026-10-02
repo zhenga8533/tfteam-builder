@@ -3,7 +3,7 @@ import type { SetData, StatLine } from "../../src/lib/data/schema.ts";
 import { emptyCounters } from "../stats/aggregate.ts";
 import type { Counters, PatchCounters, RankBucket } from "../stats/types.ts";
 import { adjustedAverage, statLine } from "../../src/lib/game/stat-line.ts";
-import { assignTiers, buildSetStats, chooseSample, MIN_GAMES } from "./stats.ts";
+import { assignTiers, buildFloorStats, buildSetStats, chooseSample, MIN_GAMES } from "./stats.ts";
 
 const withMatches = (matches: number, extra: Partial<Counters> = {}): Counters => ({
   ...emptyCounters(),
@@ -128,5 +128,33 @@ describe("buildSetStats", () => {
   it("reports collecting status until there are enough matches", () => {
     const result = buildSetStats(data, [patch("16.1", { gold: withMatches(50) })]);
     expect(result.stats).toMatchObject({ status: "collecting", matches: 50, patch: "16.1" });
+  });
+});
+
+describe("buildFloorStats", () => {
+  const data = {
+    number: 18,
+    champions: [],
+    traits: [],
+    items: [],
+    itemAliases: {},
+    championAliases: {},
+  } as unknown as SetData;
+  const patches = [
+    patch("18.3", { master_plus: withMatches(2500), diamond: withMatches(1000), gold: withMatches(500) }),
+  ];
+
+  it("builds the chosen floor on the default sample's patch", () => {
+    expect(buildFloorStats(data, patches, "master")).toMatchObject({
+      rankFloor: "master",
+      matches: 2500,
+      status: "ready",
+    });
+    expect(buildFloorStats(data, patches, "gold")?.matches).toBe(4000);
+  });
+
+  it("is null for a floor without enough games", () => {
+    const thin = [patch("18.3", { master_plus: withMatches(500), diamond: withMatches(1600) })];
+    expect(buildFloorStats(data, thin, "master")).toBeNull();
   });
 });

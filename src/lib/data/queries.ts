@@ -6,6 +6,7 @@ import type {
   Manifest,
   Patch,
   PatchHistory,
+  RankFloor,
   SetData,
   SetStats,
   TraitStats,
@@ -41,6 +42,13 @@ async function fetchStats<T>(patch: Patch, path: string): Promise<T | null> {
   if (!response.ok) throw new Error(`Failed to load ${path} (${response.status})`);
   return (await response.json()) as T;
 }
+
+/** A set's tier list stats at another rank floor; null for the default floor (see `statsQuery`). */
+export const rankStatsQuery = (patch: Patch, set: number, floor: RankFloor | null) =>
+  queryOptions({
+    queryKey: ["stats", patch, set, "rank", floor],
+    queryFn: () => (floor ? fetchStats<SetStats>(patch, `set${set}/ranks/${floor}.json`) : null),
+  });
 
 export const statsQuery = (patch: Patch, set: number) =>
   queryOptions({

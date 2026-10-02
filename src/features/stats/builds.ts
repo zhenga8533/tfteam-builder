@@ -26,3 +26,15 @@ export function nextItems(builds: Build[], chosen: string[]): { item: string; bu
     })
     .sort((a, b) => a.build.score - b.build.score);
 }
+
+/**
+ * The best full build that contains `chosen` (up to `size` items), or null when no build with enough
+ * games has them. Builds are ranked by sample-adjusted average placement.
+ */
+export function bestBuild(builds: Build[], chosen: string[], size: number): Build | null {
+  return (
+    builds
+      .filter((build) => build.items.length === size && remainder(build.items, chosen) !== null)
+      .sort((a, b) => a.score - b.score)[0] ?? null
+  );
+}

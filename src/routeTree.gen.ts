@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AugmentsRouteImport } from './routes/augments'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as ChampionsRouteImport } from './routes/champions'
+import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as TraitsRouteImport } from './routes/traits'
@@ -21,9 +22,12 @@ import { Route as CompsSlugRouteImport } from './routes/comps/$slug'
 import { Route as ItemsApiNameRouteImport } from './routes/items_.$apiName'
 import { Route as TierlistAugmentsRouteImport } from './routes/tierlist/augments'
 import { Route as TierlistChampionsRouteImport } from './routes/tierlist/champions'
+import { Route as TierlistChangesRouteImport } from './routes/tierlist/changes'
 import { Route as TierlistCompsRouteImport } from './routes/tierlist/comps'
 import { Route as TierlistItemsRouteImport } from './routes/tierlist/items'
 import { Route as TierlistTraitsRouteImport } from './routes/tierlist/traits'
+import { Route as ToolsComponentsRouteImport } from './routes/tools/components'
+import { Route as ToolsRollingRouteImport } from './routes/tools/rolling'
 import { Route as TraitsApiNameRouteImport } from './routes/traits_.$apiName'
 import { Route as CompsAutoIdRouteImport } from './routes/comps/auto.$id'
 
@@ -45,6 +49,11 @@ const BuilderRoute = BuilderRouteImport.update({
 const ChampionsRoute = ChampionsRouteImport.update({
   id: '/champions',
   path: '/champions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExplorerRoute = ExplorerRouteImport.update({
@@ -87,6 +96,11 @@ const TierlistChampionsRoute = TierlistChampionsRouteImport.update({
   path: '/tierlist/champions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TierlistChangesRoute = TierlistChangesRouteImport.update({
+  id: '/tierlist/changes',
+  path: '/tierlist/changes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TierlistCompsRoute = TierlistCompsRouteImport.update({
   id: '/tierlist/comps',
   path: '/tierlist/comps',
@@ -100,6 +114,16 @@ const TierlistItemsRoute = TierlistItemsRouteImport.update({
 const TierlistTraitsRoute = TierlistTraitsRouteImport.update({
   id: '/tierlist/traits',
   path: '/tierlist/traits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsComponentsRoute = ToolsComponentsRouteImport.update({
+  id: '/tools/components',
+  path: '/tools/components',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsRollingRoute = ToolsRollingRouteImport.update({
+  id: '/tools/rolling',
+  path: '/tools/rolling',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TraitsApiNameRoute = TraitsApiNameRouteImport.update({
@@ -118,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/augments': typeof AugmentsRoute
   '/builder': typeof BuilderRoute
   '/champions': typeof ChampionsRoute
+  '/compare': typeof CompareRoute
   '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
@@ -126,9 +151,12 @@ export interface FileRoutesByFullPath {
   '/items/$apiName': typeof ItemsApiNameRoute
   '/tierlist/augments': typeof TierlistAugmentsRoute
   '/tierlist/champions': typeof TierlistChampionsRoute
+  '/tierlist/changes': typeof TierlistChangesRoute
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/tools/components': typeof ToolsComponentsRoute
+  '/tools/rolling': typeof ToolsRollingRoute
   '/traits/$apiName': typeof TraitsApiNameRoute
   '/comps/auto/$id': typeof CompsAutoIdRoute
 }
@@ -137,6 +165,7 @@ export interface FileRoutesByTo {
   '/augments': typeof AugmentsRoute
   '/builder': typeof BuilderRoute
   '/champions': typeof ChampionsRoute
+  '/compare': typeof CompareRoute
   '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
@@ -145,9 +174,12 @@ export interface FileRoutesByTo {
   '/items/$apiName': typeof ItemsApiNameRoute
   '/tierlist/augments': typeof TierlistAugmentsRoute
   '/tierlist/champions': typeof TierlistChampionsRoute
+  '/tierlist/changes': typeof TierlistChangesRoute
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/tools/components': typeof ToolsComponentsRoute
+  '/tools/rolling': typeof ToolsRollingRoute
   '/traits/$apiName': typeof TraitsApiNameRoute
   '/comps/auto/$id': typeof CompsAutoIdRoute
 }
@@ -157,6 +189,7 @@ export interface FileRoutesById {
   '/augments': typeof AugmentsRoute
   '/builder': typeof BuilderRoute
   '/champions': typeof ChampionsRoute
+  '/compare': typeof CompareRoute
   '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
   '/traits': typeof TraitsRoute
@@ -165,9 +198,12 @@ export interface FileRoutesById {
   '/items_/$apiName': typeof ItemsApiNameRoute
   '/tierlist/augments': typeof TierlistAugmentsRoute
   '/tierlist/champions': typeof TierlistChampionsRoute
+  '/tierlist/changes': typeof TierlistChangesRoute
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/tools/components': typeof ToolsComponentsRoute
+  '/tools/rolling': typeof ToolsRollingRoute
   '/traits_/$apiName': typeof TraitsApiNameRoute
   '/comps/auto/$id': typeof CompsAutoIdRoute
 }
@@ -178,6 +214,7 @@ export interface FileRouteTypes {
     | '/augments'
     | '/builder'
     | '/champions'
+    | '/compare'
     | '/explorer'
     | '/items'
     | '/traits'
@@ -186,9 +223,12 @@ export interface FileRouteTypes {
     | '/items/$apiName'
     | '/tierlist/augments'
     | '/tierlist/champions'
+    | '/tierlist/changes'
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/tools/components'
+    | '/tools/rolling'
     | '/traits/$apiName'
     | '/comps/auto/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +237,7 @@ export interface FileRouteTypes {
     | '/augments'
     | '/builder'
     | '/champions'
+    | '/compare'
     | '/explorer'
     | '/items'
     | '/traits'
@@ -205,9 +246,12 @@ export interface FileRouteTypes {
     | '/items/$apiName'
     | '/tierlist/augments'
     | '/tierlist/champions'
+    | '/tierlist/changes'
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/tools/components'
+    | '/tools/rolling'
     | '/traits/$apiName'
     | '/comps/auto/$id'
   id:
@@ -216,6 +260,7 @@ export interface FileRouteTypes {
     | '/augments'
     | '/builder'
     | '/champions'
+    | '/compare'
     | '/explorer'
     | '/items'
     | '/traits'
@@ -224,9 +269,12 @@ export interface FileRouteTypes {
     | '/items_/$apiName'
     | '/tierlist/augments'
     | '/tierlist/champions'
+    | '/tierlist/changes'
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/tools/components'
+    | '/tools/rolling'
     | '/traits_/$apiName'
     | '/comps/auto/$id'
   fileRoutesById: FileRoutesById
@@ -236,6 +284,7 @@ export interface RootRouteChildren {
   AugmentsRoute: typeof AugmentsRoute
   BuilderRoute: typeof BuilderRoute
   ChampionsRoute: typeof ChampionsRoute
+  CompareRoute: typeof CompareRoute
   ExplorerRoute: typeof ExplorerRoute
   ItemsRoute: typeof ItemsRoute
   TraitsRoute: typeof TraitsRoute
@@ -244,9 +293,12 @@ export interface RootRouteChildren {
   ItemsApiNameRoute: typeof ItemsApiNameRoute
   TierlistAugmentsRoute: typeof TierlistAugmentsRoute
   TierlistChampionsRoute: typeof TierlistChampionsRoute
+  TierlistChangesRoute: typeof TierlistChangesRoute
   TierlistCompsRoute: typeof TierlistCompsRoute
   TierlistItemsRoute: typeof TierlistItemsRoute
   TierlistTraitsRoute: typeof TierlistTraitsRoute
+  ToolsComponentsRoute: typeof ToolsComponentsRoute
+  ToolsRollingRoute: typeof ToolsRollingRoute
   TraitsApiNameRoute: typeof TraitsApiNameRoute
   CompsAutoIdRoute: typeof CompsAutoIdRoute
 }
@@ -279,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/champions'
       fullPath: '/champions'
       preLoaderRoute: typeof ChampionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explorer': {
@@ -337,6 +396,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TierlistChampionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tierlist/changes': {
+      id: '/tierlist/changes'
+      path: '/tierlist/changes'
+      fullPath: '/tierlist/changes'
+      preLoaderRoute: typeof TierlistChangesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tierlist/comps': {
       id: '/tierlist/comps'
       path: '/tierlist/comps'
@@ -356,6 +422,20 @@ declare module '@tanstack/react-router' {
       path: '/tierlist/traits'
       fullPath: '/tierlist/traits'
       preLoaderRoute: typeof TierlistTraitsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/components': {
+      id: '/tools/components'
+      path: '/tools/components'
+      fullPath: '/tools/components'
+      preLoaderRoute: typeof ToolsComponentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/rolling': {
+      id: '/tools/rolling'
+      path: '/tools/rolling'
+      fullPath: '/tools/rolling'
+      preLoaderRoute: typeof ToolsRollingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/traits_/$apiName': {
@@ -380,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   AugmentsRoute: AugmentsRoute,
   BuilderRoute: BuilderRoute,
   ChampionsRoute: ChampionsRoute,
+  CompareRoute: CompareRoute,
   ExplorerRoute: ExplorerRoute,
   ItemsRoute: ItemsRoute,
   TraitsRoute: TraitsRoute,
@@ -388,9 +469,12 @@ const rootRouteChildren: RootRouteChildren = {
   ItemsApiNameRoute: ItemsApiNameRoute,
   TierlistAugmentsRoute: TierlistAugmentsRoute,
   TierlistChampionsRoute: TierlistChampionsRoute,
+  TierlistChangesRoute: TierlistChangesRoute,
   TierlistCompsRoute: TierlistCompsRoute,
   TierlistItemsRoute: TierlistItemsRoute,
   TierlistTraitsRoute: TierlistTraitsRoute,
+  ToolsComponentsRoute: ToolsComponentsRoute,
+  ToolsRollingRoute: ToolsRollingRoute,
   TraitsApiNameRoute: TraitsApiNameRoute,
   CompsAutoIdRoute: CompsAutoIdRoute,
 }

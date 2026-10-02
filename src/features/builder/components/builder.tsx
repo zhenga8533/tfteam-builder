@@ -18,6 +18,7 @@ import { ChampionPool } from "./champion-pool";
 import { HexBoard } from "./hex-board";
 import { ItemPool } from "./item-pool";
 import { AutofillButton } from "./autofill-button";
+import { BoardInsight } from "./board-insight";
 import { LevelTabs } from "./level-tabs";
 import { TeamToolbar } from "./team-toolbar";
 import { TraitPanel } from "./trait-panel";
@@ -78,6 +79,7 @@ export function Builder() {
             <AutofillButton />
           </div>
           <TeamToolbar />
+          <BoardInsight />
           <HexBoard />
         </div>
         <TraitPanel className="lg:col-start-1 lg:row-span-2 lg:row-start-1" />

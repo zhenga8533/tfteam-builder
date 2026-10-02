@@ -1,14 +1,24 @@
 /// <reference lib="webworker" />
-import { type ExplorerFilter, type ExplorerResult, runQuery } from "@/lib/explorer/engine";
+import {
+  type ExplorerFilter,
+  type ExplorerResult,
+  runQuery,
+  type SimilarBoards,
+  similarBoards,
+} from "@/lib/explorer/engine";
 import { decodeExplorer, type ExplorerData } from "@/lib/explorer/format";
 
-export type WorkerRequest = { type: "load"; url: string } | { type: "query"; id: number; filters: ExplorerFilter[] };
+export type WorkerRequest =
+  | { type: "load"; url: string }
+  | { type: "query"; id: number; filters: ExplorerFilter[] }
+  | { type: "similar"; id: number; units: string[] };
 
 export type WorkerResponse =
   | { type: "ready"; boards: number }
   | { type: "missing" }
   | { type: "error"; message: string }
-  | { type: "result"; id: number; result: ExplorerResult };
+  | { type: "result"; id: number; result: ExplorerResult }
+  | { type: "similar"; id: number; result: SimilarBoards | null };
 
 let data: ExplorerData | null = null;
 const post = (message: WorkerResponse) => self.postMessage(message);
@@ -36,7 +46,9 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
     load(request.url).catch((error: unknown) =>
       post({ type: "error", message: error instanceof Error ? error.message : String(error) }),
     );
-  } else if (data) {
+  } else if (data && request.type === "query") {
     post({ type: "result", id: request.id, result: runQuery(data, request.filters) });
+  } else if (data && request.type === "similar") {
+    post({ type: "similar", id: request.id, result: similarBoards(data, request.units) });
   }
 };

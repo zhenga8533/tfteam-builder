@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runQuery } from "./engine";
+import { runQuery, similarBoards } from "./engine";
 import { decodeExplorer, encodeExplorer, type ExplorerBoard } from "./format";
 
 const board = (placement: number, units: [string, number, string[]][], traits: [string, number][], level = 8) => ({
@@ -62,5 +62,23 @@ describe("explorer engine", () => {
   it("hides rows below the minimum games and handles unknown names", () => {
     expect(runQuery(data, [{ type: "unit", unit: "Ahri" }], 15).units.map((row) => row.key)).toEqual(["Sett"]);
     expect(runQuery(data, [{ type: "unit", unit: "Nobody" }]).summary).toBeNull();
+  });
+});
+
+describe("similar boards", () => {
+  it("uses the largest overlap with enough games", () => {
+    // Ahri + Sett + Zyra appear together on 10 boards, all first place.
+    expect(similarBoards(data, ["Ahri", "Sett", "Zyra"], 10)).toMatchObject({
+      shared: 3,
+      total: 3,
+      line: { games: 10, avg: 1 },
+    });
+    // Asking for 15 games can't be met by 3 shared units, and fewer than 3 never counts.
+    expect(similarBoards(data, ["Ahri", "Sett", "Zyra"], 15)).toBeNull();
+  });
+
+  it("counts boards missing one of four units once the full match is too rare", () => {
+    // Nobody fields Kayle, so the 10 Ahri + Sett + Zyra boards share 3 of the 4.
+    expect(similarBoards(data, ["Ahri", "Sett", "Zyra", "Kayle"], 10)).toMatchObject({ shared: 3, total: 3 });
   });
 });

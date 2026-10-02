@@ -116,6 +116,18 @@ export function useBuilder() {
       commit(B.equipItem(board, index, itemApiName));
       return true;
     },
+    /** Equips several items on one unit at once, skipping any the unit can't hold. */
+    equipAll: (index: number, itemApiNames: string[]) => {
+      let next = board;
+      for (const itemApiName of itemApiNames) {
+        const unit = next[index];
+        const champion = unit && data.championsByApi.get(unit.apiName);
+        const item = data.itemsByApi.get(itemApiName);
+        if (!unit || !champion || !item || B.equipBlocker(unit, champion, item)) continue;
+        next = B.equipItem(next, index, itemApiName);
+      }
+      commit(next);
+    },
     /** Equips the selected unit, or the first unit with a free slot. */
     equipAnywhere: (itemApiName: string) => {
       const target =

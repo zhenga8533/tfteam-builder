@@ -2,9 +2,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { usePatchHistory, useStats } from "@/lib/data/hooks";
 import type { PatchHistory, PatchTrend } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
-
-/** Movement smaller than this is noise between patches, so it isn't shown. */
-const MIN_TREND = 0.05;
+import { MIN_TREND } from "../format";
 
 /**
  * Change in average placement since the previous patch. Lower placements are better, so a negative

@@ -1,6 +1,7 @@
 import type { RankFloor } from "@/lib/data/schema";
 
 export const RANK_FLOOR_LABEL: Record<RankFloor, string> = {
+  master: "Master+",
   diamond: "Diamond+",
   emerald: "Emerald+",
   platinum: "Platinum+",
@@ -29,3 +30,6 @@ export function timeAgo(iso: string, now = Date.now()) {
   if (Math.abs(hours) < 48) return RELATIVE.format(hours, "hour");
   return RELATIVE.format(Math.round(hours / 24), "day");
 }
+
+/** Movement in average placement smaller than this is noise between patches, so it isn't shown. */
+export const MIN_TREND = 0.05;

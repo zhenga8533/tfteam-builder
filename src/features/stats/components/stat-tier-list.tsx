@@ -4,7 +4,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import type { TierRows } from "@/content/types";
 import { TierRows as TierRowsView } from "@/features/comps/components/tier-rows";
 import { useStats } from "@/lib/data/hooks";
-import type { StatLine } from "@/lib/data/schema";
+import { RANK_OPTIONS } from "@/lib/data/constants";
+import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { mergeTiers } from "../tiers";
 import { NoStats } from "./no-stats";
 import { StatsMeta } from "./stats-meta";
@@ -20,6 +21,10 @@ interface StatTierListProps {
   toolbar?: ReactNode;
   /** Whether an entry passes the toolbar's filters; everything shows by default. */
   visible?: (key: string) => boolean;
+  /** The stats `lines` come from, when they're for a chosen rank floor. */
+  stats?: SetStats | null;
+  /** The chosen rank floor and how to change it; the stats line offers floors that have their own stats. */
+  rank?: { value?: RankFloor; onChange: (rank: RankFloor | undefined) => void };
 }
 
 interface EntryListProps extends Pick<StatTierListProps, "renderEntry"> {
@@ -49,8 +54,12 @@ export function StatTierList({
   renderEntry,
   toolbar,
   visible = () => true,
+  stats: shownStats,
+  rank,
 }: StatTierListProps) {
-  const stats = useStats();
+  const base = useStats();
+  const stats = shownStats === undefined ? base : shownStats;
+  const floors = base?.ranks?.length ? [base.rankFloor, ...base.ranks] : [];
   const shown = lines.filter(([key]) => visible(key));
   const byKey = new Map(shown);
   const overridden = new Set(Object.values(overrides).flat());
@@ -67,7 +76,20 @@ export function StatTierList({
   return (
     <>
       <PageHeader title={title} description={description} />
-      {stats && <StatsMeta stats={stats} />}
+      {stats && (
+        <StatsMeta
+          stats={stats}
+          rank={
+            rank && base && floors.length > 1
+              ? {
+                  floors: RANK_OPTIONS.filter((floor) => floors.includes(floor)),
+                  base: base.rankFloor,
+                  onChange: rank.onChange,
+                }
+              : undefined
+          }
+        />
+      )}
       {toolbar && <div className="mb-6 flex flex-wrap items-center gap-2">{toolbar}</div>}
       {!hasStats ? (
         <NoStats />

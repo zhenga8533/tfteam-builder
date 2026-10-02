@@ -167,3 +167,43 @@ export function runQuery(data: ExplorerData, filters: ExplorerFilter[], minGames
     ),
   };
 }
+
+export interface SimilarBoards {
+  /** How many of the board's units each matching board shares. */
+  shared: number;
+  /** Units on the board that was compared. */
+  total: number;
+  line: StatLine;
+}
+
+/** The fewest units two boards must share before they count as similar. */
+const MIN_SHARED = 3;
+
+/**
+ * Stats for sample boards that share as many of `units` as possible: the largest overlap with at least
+ * `minGames` boards. Null when no overlap of `MIN_SHARED` or more units has enough boards.
+ */
+export function similarBoards(data: ExplorerData, units: string[], minGames = MIN_ROW_GAMES): SimilarBoards | null {
+  const index = new Map(data.units.map((name, i) => [name, i]));
+  const wanted = new Set(units.flatMap((unit) => index.get(unit) ?? []));
+  if (wanted.size < MIN_SHARED) return null;
+
+  // byOverlap[k] counts boards sharing exactly k of the wanted units.
+  const byOverlap = Array.from({ length: wanted.size + 1 }, (): Counter => [0, 0, 0, 0]);
+  for (let board = 0; board < data.boards; board++) {
+    const seen = new Set<number>();
+    for (let row = data.unitStart[board]!; row < data.unitStart[board + 1]!; row++) {
+      const unit = data.unitIndex[row]!;
+      if (wanted.has(unit)) seen.add(unit);
+    }
+    bump(byOverlap[seen.size]!, data.placement[board]!);
+  }
+
+  // Walk down from a full match, adding boards with one fewer shared unit until there are enough.
+  const total: Counter = [0, 0, 0, 0];
+  for (let shared = wanted.size; shared >= MIN_SHARED; shared--) {
+    byOverlap[shared]!.forEach((value, i) => (total[i]! += value));
+    if (total[0] >= minGames) return { shared, total: wanted.size, line: statLine(total, data.boards) };
+  }
+  return null;
+}
