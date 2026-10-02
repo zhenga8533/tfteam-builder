@@ -99,8 +99,10 @@ export function usePatchHistory() {
   return useSuspenseQuery(patchHistoryQuery(patch, set)).data;
 }
 
-/** Comps detected from match data, best first; null when not published (or on PBE). */
-export function useAutoComps() {
+/** Comps detected from match data (at `rank` when it has its own), best first; null when not published (or on PBE). */
+export function useAutoComps(rank?: RankFloor) {
   const { patch, set } = useActiveSet();
-  return useSuspenseQuery(autoCompsQuery(patch, set)).data;
+  const base = useStats();
+  const floor = rank && base?.ranks?.includes(rank) ? rank : null;
+  return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data;
 }

@@ -212,6 +212,20 @@ describe("StatsStore", () => {
     if (root) await rm(root, { recursive: true, force: true });
   });
 
+  it("keeps rank floor summaries apart from the default ones", async () => {
+    root = await mkdtemp(join(tmpdir(), "tft-stats-"));
+    const store = new StatsStore(new FileBlobStore(root));
+    const summary = (patch: string, matches: number) => JSON.stringify({ patch, matches, status: "ready" });
+    await store.putSummary(18, "18.3b", summary("18.3b", 3000));
+    await store.putSummary(18, "18.3", summary("18.3", 2500));
+    await store.putSummary(18, "18.3b", summary("18.3b", 2100), "master");
+    expect((await store.summaries(18)).map((entry) => [entry.patch, entry.matches])).toEqual([
+      ["18.3", 2500],
+      ["18.3b", 3000],
+    ]);
+    expect((await store.summaries(18, "master")).map((entry) => entry.matches)).toEqual([2100]);
+  });
+
   it("round-trips state and boards, and prunes old patches and match IDs", async () => {
     root = await mkdtemp(join(tmpdir(), "tft-stats-"));
     const store = new StatsStore(new FileBlobStore(root));

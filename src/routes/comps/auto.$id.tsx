@@ -1,3 +1,5 @@
+import { isRankFloor } from "@/lib/data/constants";
+import type { RankFloor } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Hammer } from "lucide-react";
 import { ChampionCard } from "@/components/game/cards";
@@ -14,10 +16,12 @@ import { useOpenInBuilder } from "@/features/comps/use-open-in-builder";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { percent } from "@/features/stats/format";
-import { useActiveSet, useAutoComps, useGameData, useStats } from "@/lib/data/hooks";
+import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 
 export const Route = createFileRoute("/comps/auto/$id")({
   head: () => ({ meta: [{ title: "Comp Stats · TFTeam Builder" }] }),
+  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } =>
+    isRankFloor(search.rank) ? { rank: search.rank } : {},
   component: AutoCompPage,
 });
 
@@ -47,8 +51,9 @@ function AutoCompPage() {
   const { id } = Route.useParams();
   const { set } = useActiveSet();
   const { championsByApi } = useGameData();
-  const stats = useStats();
-  const comp = useAutoComps()?.find((entry) => entry.id === id);
+  const { rank } = Route.useSearch();
+  const stats = useTierStats(rank);
+  const comp = useAutoComps(rank)?.find((entry) => entry.id === id);
   const openInBuilder = useOpenInBuilder();
 
   if (!comp)

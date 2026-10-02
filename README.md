@@ -62,7 +62,7 @@
 TFTeam Builder was created to simplify planning team compositions in Teamfight Tactics. Whether you're strategizing before a match or exploring trait combinations, it makes it easy to visualize a board and see how each unit contributes to your synergies.
 
 - **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Plan a board per level, mark flex units and alternatives, follow the trait ladder or autofill to your level, see how similar ranked boards place, and equip a champion's best build in one click. Save teams locally and import/export in-game Team Planner codes.
-- **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters and a rank selector (Master+, Diamond+, …). Open any comp in the Team Builder with one click.
+- **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters. Tier lists, detected comps and Patch Changes can switch rank (Master+, Diamond+, …). Open any comp in the Team Builder with one click.
 - **Stats pages** – every champion, item and trait has a page: item builds and a best-next-item finder, best holders and partners, breakpoints and the comps that use it.
 - **Explorer** – filter a sample of recent ranked boards by champions, items, traits and level, and see what else does well with them.
 - **Patch Changes** – what got better or worse since the last patch.

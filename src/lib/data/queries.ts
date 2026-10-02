@@ -80,8 +80,15 @@ export const patchHistoryQuery = (patch: Patch, set: number) =>
     queryFn: () => fetchStats<PatchHistory>(patch, `set${set}/history.json`),
   });
 
-export const autoCompsQuery = (patch: Patch, set: number) =>
+/** Detected comps, at a rank floor with its own comps or (`null`) the default floor. */
+export const autoCompsQuery = (patch: Patch, set: number, floor: RankFloor | null = null) =>
   queryOptions({
-    queryKey: ["stats", patch, set, "comps"],
-    queryFn: async () => (await fetchStats<{ comps: AutoComp[] }>(patch, `set${set}/comps.json`))?.comps ?? null,
+    queryKey: ["stats", patch, set, "comps", floor],
+    queryFn: async () =>
+      (
+        await fetchStats<{ comps: AutoComp[] }>(
+          patch,
+          floor ? `set${set}/ranks/${floor}.comps.json` : `set${set}/comps.json`,
+        )
+      )?.comps ?? null,
   });

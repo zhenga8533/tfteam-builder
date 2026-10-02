@@ -5,7 +5,7 @@ import type { Comp, CompUnit } from "@/content/types";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent } from "@/features/stats/format";
 import { useGameData } from "@/lib/data/hooks";
-import type { AutoComp, StatLine } from "@/lib/data/schema";
+import type { AutoComp, RankFloor, StatLine } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
 import { autoCompUnits } from "../auto-place";
 import { DIFFICULTY_TEXT } from "../styles";
@@ -16,7 +16,7 @@ const MAX_TRAITS = 8;
 
 interface CompCardViewProps {
   title: string;
-  link: Pick<LinkProps, "to" | "params">;
+  link: Pick<LinkProps, "to" | "params" | "search">;
   units: CompUnit[];
   badge?: ReactNode;
   /** The right-hand column: placement stats, or a guide's playstyle and difficulty. */
@@ -147,12 +147,12 @@ export function CompCard({ comp }: { comp: Comp }) {
 }
 
 /** A comp detected from match data, with its placement stats. */
-export function AutoCompCard({ comp }: { comp: AutoComp }) {
+export function AutoCompCard({ comp, rank }: { comp: AutoComp; rank?: RankFloor }) {
   const { championsByApi } = useGameData();
   return (
     <CompCardView
       title={comp.name}
-      link={{ to: "/comps/auto/$id", params: { id: comp.id } }}
+      link={{ to: "/comps/auto/$id", params: { id: comp.id }, search: rank ? { rank } : {} }}
       units={autoCompUnits(comp, championsByApi)}
       aside={<CompStats line={comp} />}
     />

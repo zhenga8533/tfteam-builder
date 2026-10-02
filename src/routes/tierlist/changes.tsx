@@ -8,12 +8,17 @@ import { TrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { MIN_TREND } from "@/features/stats/format";
-import { useGameData, useStats } from "@/lib/data/hooks";
-import type { PatchTrend, StatLine } from "@/lib/data/schema";
+import { useRankChoice } from "@/features/stats/use-rank-choice";
+import { useUpdateSearch } from "@/lib/use-update-search";
+import { isRankFloor } from "@/lib/data/constants";
+import { useGameData, useTierStats } from "@/lib/data/hooks";
+import type { PatchTrend, RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/tierlist/changes")({
   head: () => ({ meta: [{ title: "Patch Changes · TFTeam Builder" }] }),
+  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } =>
+    isRankFloor(search.rank) ? { rank: search.rank } : {},
   component: PatchChangesPage,
 });
 
@@ -67,9 +72,8 @@ function Movers({ title, movers }: { title: string; movers: Mover[] }) {
   );
 }
 
-function useMovers(trend: PatchTrend) {
+function useMovers(trend: PatchTrend, stats: SetStats) {
   const { championsByApi, itemsByApi, traitsByApi } = useGameData();
-  const stats = useStats()!;
   const units = Object.entries(trend.units).flatMap(([apiName, delta]) => {
     const champion = championsByApi.get(apiName);
     const line = stats.units[apiName];
@@ -107,8 +111,8 @@ function useMovers(trend: PatchTrend) {
   return { units, items, traits };
 }
 
-function Changes({ trend }: { trend: PatchTrend }) {
-  const { units, items, traits } = useMovers(trend);
+function Changes({ trend, stats }: { trend: PatchTrend; stats: SetStats }) {
+  const { units, items, traits } = useMovers(trend, stats);
   return (
     <div className="space-y-6">
       <Movers title="Champions" movers={units} />
@@ -121,7 +125,10 @@ function Changes({ trend }: { trend: PatchTrend }) {
 }
 
 function PatchChangesPage() {
-  const stats = useStats();
+  const { rank } = Route.useSearch();
+  const stats = useTierStats(rank);
+  const update = useUpdateSearch<{ rank?: RankFloor }>();
+  const rankChoice = useRankChoice((value) => update({ rank: value }));
   const trend = stats?.trend;
   return (
     <>
@@ -133,11 +140,11 @@ function PatchChangesPage() {
             : "What moved the most since the previous patch, by change in average placement."
         }
       />
-      {stats && <StatsMeta stats={stats} />}
+      {stats && <StatsMeta stats={stats} rank={rankChoice} />}
       {!stats ? (
         <NoStats />
       ) : trend ? (
-        <Changes trend={trend} />
+        <Changes trend={trend} stats={stats} />
       ) : (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
           Changes appear once there are stats for two patches of Set {stats.set}; so far there's only patch{" "}

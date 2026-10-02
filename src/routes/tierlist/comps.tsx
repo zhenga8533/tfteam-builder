@@ -12,8 +12,10 @@ import { type Comp, type Playstyle, PLAYSTYLES, type Tier } from "@/content/type
 import { AutoCompCard, CompCard } from "@/features/comps/components/comp-card";
 import { TierRows } from "@/features/comps/components/tier-rows";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { useActiveSet, useAutoComps, useGameData, useStats } from "@/lib/data/hooks";
-import type { AutoComp } from "@/lib/data/schema";
+import { useRankChoice } from "@/features/stats/use-rank-choice";
+import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
+import { isRankFloor } from "@/lib/data/constants";
+import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, stringParam } from "@/lib/search";
@@ -30,6 +32,7 @@ interface CompSearch {
   trait?: string;
   playstyle?: Playstyle;
   view?: View;
+  rank?: RankFloor;
 }
 
 type CompFilters = Pick<CompSearch, "q" | "champion" | "carry" | "trait">;
@@ -47,6 +50,7 @@ export const Route = createFileRoute("/tierlist/comps")({
     trait: stringParam(search.trait),
     playstyle: isPlaystyle(search.playstyle) ? search.playstyle : undefined,
     view: search.view === "stats" || search.view === "guides" ? search.view : undefined,
+    rank: isRankFloor(search.rank) ? search.rank : undefined,
   }),
   component: CompTierListPage,
 });
@@ -101,7 +105,7 @@ function GuideRows({ comps, filters, playstyle }: { comps: Comp[]; filters: Comp
   );
 }
 
-function StatRows({ comps, filters }: { comps: AutoComp[]; filters: CompFilters }) {
+function StatRows({ comps, filters, rank }: { comps: AutoComp[]; filters: CompFilters; rank?: RankFloor }) {
   const { championsByApi } = useGameData();
   const championName = (apiName: string) => championsByApi.get(apiName)?.name ?? "";
   const filtered = comps.filter((comp) =>
@@ -121,7 +125,7 @@ function StatRows({ comps, filters }: { comps: AutoComp[]; filters: CompFilters 
       renderRow={(entries) => (
         <div className="grid gap-2 xl:grid-cols-2">
           {entries.map((comp) => (
-            <AutoCompCard key={comp.id} comp={comp} />
+            <AutoCompCard key={comp.id} comp={comp} rank={rank} />
           ))}
         </div>
       )}
@@ -131,13 +135,14 @@ function StatRows({ comps, filters }: { comps: AutoComp[]; filters: CompFilters 
 
 function CompTierListPage() {
   const { set } = useActiveSet();
-  const stats = useStats();
-  const detected = useAutoComps() ?? [];
-  const guides = compsForSet(set);
   const search = Route.useSearch();
+  const stats = useTierStats(search.rank);
+  const detected = useAutoComps(search.rank) ?? [];
+  const guides = compsForSet(set);
   const view: View = search.view ?? (detected.length > 0 ? "stats" : "guides");
 
   const update = useUpdateSearch<CompSearch>();
+  const rankChoice = useRankChoice((rank) => update({ rank }));
 
   return (
     <>
@@ -198,11 +203,11 @@ function CompTierListPage() {
           )}
         </div>
         <TabsContent value="stats">
-          {stats && <StatsMeta stats={stats} />}
+          {stats && <StatsMeta stats={stats} rank={rankChoice} />}
           {detected.length === 0 ? (
             <EmptyState>No comps have enough games to be detected for Set {set} yet.</EmptyState>
           ) : (
-            <StatRows comps={detected} filters={search} />
+            <StatRows comps={detected} filters={search} rank={search.rank} />
           )}
         </TabsContent>
         <TabsContent value="guides">
