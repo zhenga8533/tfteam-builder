@@ -117,15 +117,17 @@ function EmblemFinder() {
             <button
               type="button"
               onClick={() => equip(option.hex, option.item.apiName)}
-              className="flex w-full items-center gap-2 rounded-sm p-1 text-left text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+              // A grid keeps every row's trait badge in the same column, whatever the trait's name.
+              className="grid w-full grid-cols-[auto_auto_auto_minmax(0,1fr)] items-center gap-2 rounded-sm p-1 text-left text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
               title={`Give ${option.item.name} to ${champion?.name ?? option.unit}`}
             >
               <ItemIcon item={option.item} className="size-6" />
               <span className="text-muted-foreground">on</span>
-              {champion && <ChampionIcon champion={champion} className="size-6" />}
-              <span className="ml-auto flex items-center gap-1 font-semibold tabular-nums">
+              {champion ? <ChampionIcon champion={champion} className="size-6" /> : <span />}
+              <span className="flex min-w-0 items-center gap-1 pl-1 font-semibold">
                 <TraitIcon trait={option.after.trait} style={option.after.style} className="size-5" />
-                {option.after.count} {option.after.trait.name}
+                <span className="tabular-nums">{option.after.count}</span>
+                <span className="truncate">{option.after.trait.name}</span>
               </span>
             </button>
           </li>
