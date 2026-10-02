@@ -55,9 +55,7 @@ function LittleLegendsPage() {
       {!stats || stats.status !== "ready" ? (
         <NoStats />
       ) : !legends ? (
-        <EmptyState>
-          Little Legends are recorded from newly crawled games, so they'll show up after the next crawl.
-        </EmptyState>
+        <NoStats subject="Little Legends" />
       ) : (
         <>
           <StatsMeta stats={stats} />
