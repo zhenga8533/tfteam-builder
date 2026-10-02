@@ -20,18 +20,28 @@ interface EntityPickerProps {
   placeholder: string;
   /** Accessible name of the control, e.g. "Filter by trait". */
   label: string;
+  /** Lists the placeholder as an option that clears the choice; off for pickers that add to a list. */
+  clearable?: boolean;
   className?: string;
 }
 
 /** A searchable dropdown of icons and names (champions, traits…) that filters by one entry or none. */
-export function EntityPicker({ options, value, onChange, placeholder, label, className }: EntityPickerProps) {
+export function EntityPicker({
+  options,
+  value,
+  onChange,
+  placeholder,
+  label,
+  clearable = true,
+  className,
+}: EntityPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const selected = options.find((option) => option.key === value);
   // The clear option leads the list while nothing is being searched for.
   const shown: (EntityOption | null)[] = [
-    ...(query ? [] : [null]),
+    ...(query || !clearable ? [] : [null]),
     ...options.filter((option) => matches(option.label, query)),
   ];
   const highlighted = Math.min(active, shown.length - 1);
