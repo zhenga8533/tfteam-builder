@@ -80,7 +80,7 @@ function TraitsPage() {
         />
       </div>
       {sections.length === 0 ? (
-        <EmptyState>No traits match "{q}".</EmptyState>
+        <EmptyState>No traits match these filters.</EmptyState>
       ) : (
         <div className="space-y-8">
           {sections.map((section) => (

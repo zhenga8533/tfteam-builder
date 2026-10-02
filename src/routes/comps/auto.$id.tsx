@@ -16,6 +16,7 @@ import { useOpenInBuilder } from "@/features/comps/use-open-in-builder";
 import { PlacementChart } from "@/features/stats/components/placement-chart";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { StatSummary } from "@/features/stats/components/stat-summary";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { percent } from "@/features/stats/format";
 import { stageRound } from "@/lib/game/rounds";
@@ -80,6 +81,7 @@ function AutoCompPage() {
   const comp = useAutoComps(rank)?.find((entry) => entry.id === id);
   const openInBuilder = useOpenInBuilder();
 
+  if (!stats) return <NoStats subject="this comp" />;
   if (!comp)
     return <EmptyState>This comp isn't in the current stats. It may have dropped below the thresholds.</EmptyState>;
   const units = autoCompUnits(comp, championsByApi);

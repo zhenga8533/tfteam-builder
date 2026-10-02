@@ -11,6 +11,7 @@ import { compsForSet } from "@/content";
 import { type Comp, type Playstyle, PLAYSTYLES, type Tier } from "@/content/types";
 import { AutoCompCard, CompCard } from "@/features/comps/components/comp-card";
 import { TierRows } from "@/features/comps/components/tier-rows";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useRankChoice } from "@/features/stats/use-rank-choice";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
@@ -204,7 +205,9 @@ function CompTierListPage() {
         </div>
         <TabsContent value="stats">
           {stats && <StatsMeta stats={stats} rank={rankChoice} />}
-          {detected.length === 0 ? (
+          {!stats ? (
+            <NoStats />
+          ) : detected.length === 0 ? (
             <EmptyState>No comps have enough games to be detected for Set {set} yet.</EmptyState>
           ) : (
             <StatRows comps={detected} filters={search} rank={search.rank} />

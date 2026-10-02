@@ -54,6 +54,7 @@ function ItemTierListPage() {
   return (
     <StatTierList
       title="Item Tier List"
+      entries="items"
       description={`Set ${set} items ranked by the average placement of the units holding them.`}
       lines={lines}
       overrides={tierListForSet(set)?.items}

@@ -8,6 +8,7 @@ import { ItemCard } from "@/components/game/cards";
 import { ItemIcon } from "@/components/game/icons";
 import { ItemLink } from "@/components/game/links";
 import { EmptyState } from "@/components/layout/empty-state";
+import { NoStats } from "@/features/stats/components/no-stats";
 import { PageHeader } from "@/components/layout/page-header";
 import { Section } from "@/components/layout/section";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -110,9 +111,9 @@ function ItemRow({ item, line }: { item: Item; line?: StatLine }) {
 
 /** For a chosen carry: the best builds the components allow, then every item ranked for that carry. */
 function CarryPlan({ carry, counts, buildable }: { carry: string; counts: ComponentCounts; buildable: Item[] }) {
-  const { itemsByApi } = useGameData();
+  const { itemsByApi, championsByApi } = useGameData();
   const stats = useChampionStats(carry);
-  if (!stats) return <EmptyState>No item stats for this champion yet.</EmptyState>;
+  if (!stats) return <NoStats subject={championsByApi.get(carry)?.name} />;
   const builds = stats.builds.toSorted((a, b) => a.score - b.score);
   const totalComponents = Object.values(counts).reduce((total, count) => total + count, 0);
   const best = [MAX_ITEMS, 2]
