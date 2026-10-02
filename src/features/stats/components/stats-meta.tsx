@@ -1,12 +1,55 @@
-import { Activity, Info } from "lucide-react";
+import { Activity, ChevronDown, Info } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RANK_FLOORS } from "@/lib/data/constants";
-import type { SetStats } from "@/lib/data/schema";
+import type { RankFloor, SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
 import { count, RANK_FLOOR_LABEL, timeAgo } from "../format";
 
+export interface RankChoice {
+  /** Floors with stats, highest first. */
+  floors: RankFloor[];
+  /** The default floor; choosing it clears the choice. */
+  base: RankFloor;
+  onChange: (rank: RankFloor | undefined) => void;
+}
+
+/** The rank floor in the stats sentence, as a menu when other floors have stats (tier lists only). */
+function RankLabel({ floor, choice }: { floor: RankFloor; choice?: RankChoice }) {
+  if (!choice || choice.floors.length < 2) return <>{RANK_FLOOR_LABEL[floor]}</>;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="inline-flex items-center gap-0.5 rounded font-medium text-foreground underline decoration-dotted underline-offset-4 outline-none hover:decoration-solid focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={`Rank: ${RANK_FLOOR_LABEL[floor]}`}
+      >
+        {RANK_FLOOR_LABEL[floor]}
+        <ChevronDown className="size-3.5 opacity-60" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuRadioGroup
+          value={floor}
+          onValueChange={(value) => choice.onChange(value === choice.base ? undefined : (value as RankFloor))}
+        >
+          {choice.floors.map((option) => (
+            <DropdownMenuRadioItem key={option} value={option}>
+              {RANK_FLOOR_LABEL[option]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 /** Where the numbers come from, plus notes when the data is thinner than usual. */
-export function StatsMeta({ stats }: { stats: SetStats }) {
+export function StatsMeta({ stats, rank }: { stats: SetStats; rank?: RankChoice }) {
   if (stats.status === "collecting") {
     return (
       <p className="mb-6 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
@@ -45,7 +88,7 @@ export function StatsMeta({ stats }: { stats: SetStats }) {
         </Tooltip>
         <span>
           Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
-          {RANK_FLOOR_LABEL[stats.rankFloor]} ranked games on patch {stats.patch} ·{" "}
+          <RankLabel floor={stats.rankFloor} choice={rank} /> ranked games on patch {stats.patch} ·{" "}
           <time dateTime={stats.updatedAt} title={new Date(stats.updatedAt).toLocaleString()}>
             Updated {timeAgo(stats.updatedAt)}
           </time>

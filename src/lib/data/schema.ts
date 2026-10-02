@@ -103,6 +103,15 @@ export const setDataSchema = z.object({
   /** Same-name clones of a champion (as they appear in match data) → the champion's apiName. */
   championAliases: z.record(z.string(), z.string()),
   augments: z.array(augmentSchema),
+  /** Shop odds and champion pool, from Riot's map data; absent for sets without it. */
+  shop: z
+    .object({
+      /** Per player level (index 0 is level 1): the chance of each cost (1–5) in a shop slot. */
+      odds: z.array(z.array(z.number())),
+      /** Per cost: the champions in the pool and the copies of each. */
+      pool: z.array(z.object({ cost: z.number().int(), champions: z.array(z.string()), copies: z.number().int() })),
+    })
+    .optional(),
 });
 export type SetData = z.infer<typeof setDataSchema>;
 

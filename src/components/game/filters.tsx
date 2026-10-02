@@ -51,24 +51,34 @@ export function TraitFilter({ value, onChange }: { value?: string; onChange: (tr
 export function ChampionFilter({
   value,
   onChange,
+  only,
+  placeholder = "All champions",
+  className,
 }: {
   value?: string;
   onChange: (champion: string | undefined) => void;
+  /** Limits the choices to these apiNames, e.g. champions in the shop pool. */
+  only?: string[];
+  placeholder?: string;
+  className?: string;
 }) {
   const { champions } = useGameData();
-  const options = champions.map((champion) => ({
-    key: champion.apiName,
-    label: champion.name,
-    icon: <ChampionIcon champion={champion} />,
-    hint: `${champion.cost}`,
-  }));
+  const options = champions
+    .filter((champion) => !only || only.includes(champion.apiName))
+    .map((champion) => ({
+      key: champion.apiName,
+      label: champion.name,
+      icon: <ChampionIcon champion={champion} />,
+      hint: `${champion.cost}`,
+    }));
   return (
     <EntityPicker
       options={options}
       value={value}
       onChange={onChange}
-      placeholder="All champions"
+      placeholder={placeholder}
       label="Filter by champion"
+      className={className}
     />
   );
 }

@@ -65,7 +65,8 @@ TFTeam Builder was created to simplify planning team compositions in Teamfight T
 - **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters and a rank selector (Master+, Diamond+, …). Open any comp in the Team Builder with one click.
 - **Stats pages** – every champion, item and trait has a page: item builds and a best-next-item finder, best holders and partners, breakpoints and the comps that use it.
 - **Explorer** – filter a sample of recent ranked boards by champions, items, traits and level, and see what else does well with them.
-- **Patch Changes and Compare** – what got better or worse since the last patch, and any two champions, items or comps side by side.
+- **Patch Changes** – what got better or worse since the last patch.
+- **Tools** – Explorer, Compare (two champions, items or comps side by side), Roll Odds (your chance to hit a 2★ or 3★, from the set's shop odds and pool) and a Component Planner (what your components build into, ranked for your carry).
 - **Database** – searchable champions, traits, items (with a crafting table) and augments, with filters kept in the URL so views can be shared.
 - **Live and PBE data** – switch between the live patch and PBE, and between every set CommunityDragon has. Light, dark or system theme.
 
@@ -153,7 +154,7 @@ src/
 
 The full CommunityDragon TFT export is ~24 MB per patch. `scripts/build-data.ts` downloads it for the live and PBE patches and
 splits it into one file per mainline set. It filters out placeholder and duplicate entries, classifies items (components,
-completed, emblems, radiants, artifacts), reads augment tiers and champion roles, and adds team planner codes. The result is small per-set JSON
+completed, emblems, radiants, artifacts), reads augment tiers and champion roles, adds team planner codes, and reads each set's shop odds and champion pool from Riot's map data. The result is small per-set JSON
 files validated with Zod. The app loads only the set being viewed.
 
 ### Match Stats

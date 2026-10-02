@@ -4,10 +4,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import type { TierRows } from "@/content/types";
 import { TierRows as TierRowsView } from "@/features/comps/components/tier-rows";
 import { useStats } from "@/lib/data/hooks";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RANK_OPTIONS } from "@/lib/data/constants";
 import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
-import { RANK_FLOOR_LABEL } from "../format";
 import { mergeTiers } from "../tiers";
 import { NoStats } from "./no-stats";
 import { StatsMeta } from "./stats-meta";
@@ -25,7 +23,7 @@ interface StatTierListProps {
   visible?: (key: string) => boolean;
   /** The stats `lines` come from, when they're for a chosen rank floor. */
   stats?: SetStats | null;
-  /** The chosen rank floor and how to change it; the selector shows when other floors have stats. */
+  /** The chosen rank floor and how to change it; the stats line offers floors that have their own stats. */
   rank?: { value?: RankFloor; onChange: (rank: RankFloor | undefined) => void };
 }
 
@@ -78,29 +76,21 @@ export function StatTierList({
   return (
     <>
       <PageHeader title={title} description={description} />
-      {stats && <StatsMeta stats={stats} />}
-      {(toolbar || (rank && floors.length > 0)) && (
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          {toolbar}
-          {rank && floors.length > 0 && base && (
-            <Select
-              value={stats?.rankFloor ?? base.rankFloor}
-              onValueChange={(value) => rank.onChange(value === base.rankFloor ? undefined : (value as RankFloor))}
-            >
-              <SelectTrigger className="w-36" aria-label="Rank">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {RANK_OPTIONS.filter((floor) => floors.includes(floor)).map((floor) => (
-                  <SelectItem key={floor} value={floor}>
-                    {RANK_FLOOR_LABEL[floor]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+      {stats && (
+        <StatsMeta
+          stats={stats}
+          rank={
+            rank && base && floors.length > 1
+              ? {
+                  floors: RANK_OPTIONS.filter((floor) => floors.includes(floor)),
+                  base: base.rankFloor,
+                  onChange: rank.onChange,
+                }
+              : undefined
+          }
+        />
       )}
+      {toolbar && <div className="mb-6 flex flex-wrap items-center gap-2">{toolbar}</div>}
       {!hasStats ? (
         <NoStats />
       ) : Object.keys(rows).length === 0 && lowSample.length === 0 ? (

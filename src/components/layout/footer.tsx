@@ -21,8 +21,9 @@ function DataStatus() {
 }
 
 export function Footer() {
-  const groups = NAV.filter(isNavGroup);
-  const tools = NAV.flatMap((entry) => (isNavGroup(entry) ? [] : [entry]));
+  // The nav's Tools menu joins the top-level links (Team Builder) in the footer's own Tools column.
+  const groups = NAV.filter(isNavGroup).filter((group) => group.label !== "Tools");
+  const tools = NAV.flatMap((entry) => (isNavGroup(entry) ? (entry.label === "Tools" ? entry.links : []) : [entry]));
 
   return (
     <footer className="border-t text-sm">

@@ -83,6 +83,12 @@ export const patchLabel = (version: string) => version.split(".").slice(0, 2).jo
 
 export const fetchTftData = (patch: string) => fetchJson<RawTftData>(`${CDRAGON_BASE}/${patch}/cdragon/tft/en_us.json`);
 
+/** Riot's TFT map data (~70 MB): shop odds and pools, among much else. */
+export const fetchMapData = (patch: string) =>
+  fetchJson<Record<string, Record<string, unknown> | undefined>>(
+    `${CDRAGON_BASE}/${patch}/game/data/maps/shipping/map22/map22.bin.json`,
+  );
+
 export const fetchTeamPlanner = (patch: string) =>
   fetchJson<RawTeamPlanner>(
     `${CDRAGON_BASE}/${patch}/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json`,

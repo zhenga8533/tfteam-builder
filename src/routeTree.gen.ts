@@ -26,6 +26,8 @@ import { Route as TierlistChangesRouteImport } from './routes/tierlist/changes'
 import { Route as TierlistCompsRouteImport } from './routes/tierlist/comps'
 import { Route as TierlistItemsRouteImport } from './routes/tierlist/items'
 import { Route as TierlistTraitsRouteImport } from './routes/tierlist/traits'
+import { Route as ToolsComponentsRouteImport } from './routes/tools/components'
+import { Route as ToolsRollingRouteImport } from './routes/tools/rolling'
 import { Route as TraitsApiNameRouteImport } from './routes/traits_.$apiName'
 import { Route as CompsAutoIdRouteImport } from './routes/comps/auto.$id'
 
@@ -114,6 +116,16 @@ const TierlistTraitsRoute = TierlistTraitsRouteImport.update({
   path: '/tierlist/traits',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToolsComponentsRoute = ToolsComponentsRouteImport.update({
+  id: '/tools/components',
+  path: '/tools/components',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsRollingRoute = ToolsRollingRouteImport.update({
+  id: '/tools/rolling',
+  path: '/tools/rolling',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TraitsApiNameRoute = TraitsApiNameRouteImport.update({
   id: '/traits_/$apiName',
   path: '/traits/$apiName',
@@ -143,6 +155,8 @@ export interface FileRoutesByFullPath {
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/tools/components': typeof ToolsComponentsRoute
+  '/tools/rolling': typeof ToolsRollingRoute
   '/traits/$apiName': typeof TraitsApiNameRoute
   '/comps/auto/$id': typeof CompsAutoIdRoute
 }
@@ -164,6 +178,8 @@ export interface FileRoutesByTo {
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/tools/components': typeof ToolsComponentsRoute
+  '/tools/rolling': typeof ToolsRollingRoute
   '/traits/$apiName': typeof TraitsApiNameRoute
   '/comps/auto/$id': typeof CompsAutoIdRoute
 }
@@ -186,6 +202,8 @@ export interface FileRoutesById {
   '/tierlist/comps': typeof TierlistCompsRoute
   '/tierlist/items': typeof TierlistItemsRoute
   '/tierlist/traits': typeof TierlistTraitsRoute
+  '/tools/components': typeof ToolsComponentsRoute
+  '/tools/rolling': typeof ToolsRollingRoute
   '/traits_/$apiName': typeof TraitsApiNameRoute
   '/comps/auto/$id': typeof CompsAutoIdRoute
 }
@@ -209,6 +227,8 @@ export interface FileRouteTypes {
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/tools/components'
+    | '/tools/rolling'
     | '/traits/$apiName'
     | '/comps/auto/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -230,6 +250,8 @@ export interface FileRouteTypes {
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/tools/components'
+    | '/tools/rolling'
     | '/traits/$apiName'
     | '/comps/auto/$id'
   id:
@@ -251,6 +273,8 @@ export interface FileRouteTypes {
     | '/tierlist/comps'
     | '/tierlist/items'
     | '/tierlist/traits'
+    | '/tools/components'
+    | '/tools/rolling'
     | '/traits_/$apiName'
     | '/comps/auto/$id'
   fileRoutesById: FileRoutesById
@@ -273,6 +297,8 @@ export interface RootRouteChildren {
   TierlistCompsRoute: typeof TierlistCompsRoute
   TierlistItemsRoute: typeof TierlistItemsRoute
   TierlistTraitsRoute: typeof TierlistTraitsRoute
+  ToolsComponentsRoute: typeof ToolsComponentsRoute
+  ToolsRollingRoute: typeof ToolsRollingRoute
   TraitsApiNameRoute: typeof TraitsApiNameRoute
   CompsAutoIdRoute: typeof CompsAutoIdRoute
 }
@@ -398,6 +424,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TierlistTraitsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools/components': {
+      id: '/tools/components'
+      path: '/tools/components'
+      fullPath: '/tools/components'
+      preLoaderRoute: typeof ToolsComponentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/rolling': {
+      id: '/tools/rolling'
+      path: '/tools/rolling'
+      fullPath: '/tools/rolling'
+      preLoaderRoute: typeof ToolsRollingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/traits_/$apiName': {
       id: '/traits_/$apiName'
       path: '/traits/$apiName'
@@ -433,6 +473,8 @@ const rootRouteChildren: RootRouteChildren = {
   TierlistCompsRoute: TierlistCompsRoute,
   TierlistItemsRoute: TierlistItemsRoute,
   TierlistTraitsRoute: TierlistTraitsRoute,
+  ToolsComponentsRoute: ToolsComponentsRoute,
+  ToolsRollingRoute: ToolsRollingRoute,
   TraitsApiNameRoute: TraitsApiNameRoute,
   CompsAutoIdRoute: CompsAutoIdRoute,
 }

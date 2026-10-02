@@ -31,8 +31,15 @@ export const NAV: (NavLink | NavGroup)[] = [
       { label: "Traits", to: "/traits", description: "Breakpoints and bonuses" },
       { label: "Items", to: "/items", description: "Recipes and effects" },
       { label: "Augments", to: "/augments", description: "Silver, gold and prismatic" },
+    ],
+  },
+  {
+    label: "Tools",
+    links: [
       { label: "Explorer", to: "/explorer", description: "Filter ranked boards and see what wins" },
       { label: "Compare", to: "/compare", description: "Two champions, items or comps side by side" },
+      { label: "Roll Odds", to: "/tools/rolling", description: "Your chance to hit a 2★ or 3★" },
+      { label: "Component Planner", to: "/tools/components", description: "What your components build into" },
     ],
   },
 ];

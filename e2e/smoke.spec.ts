@@ -25,6 +25,8 @@ const PAGES = [
   ["explorer", "explorer", "Explorer"],
   ["patch changes", "tierlist/changes", "Patch Changes"],
   ["compare", "compare", "Compare"],
+  ["roll odds", "tools/rolling", "Roll Odds"],
+  ["component planner", "tools/components", "Component Planner"],
 ] as const;
 
 for (const [name, path, heading] of PAGES) {
