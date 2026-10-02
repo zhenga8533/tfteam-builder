@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import type { Item, StatLine } from "@/lib/data/schema";
-import { bestBuildable, buildableItems, type ComponentCounts } from "@/lib/game/components";
+import { bestBuildable, buildableItems, type ComponentCounts, componentValues } from "@/lib/game/components";
+import { avgPlacementClass } from "@/features/stats/format";
+import { cn } from "@/lib/utils";
 import { stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 
@@ -148,6 +150,42 @@ function CarryPlan({ carry, counts, buildable }: { carry: string; counts: Compon
   );
 }
 
+/** Components ranked by how well the items they build into place, for carousel picks. */
+function CarouselPriority() {
+  const { items } = useGameData();
+  const stats = useStats();
+  if (!stats) return null;
+  const values = componentValues(items, stats.items);
+  if (values.length === 0) return null;
+  return (
+    <Section title="Carousel priority">
+      <ol className="space-y-2">
+        {values.map(({ component, avg, builds, strong }, index) => (
+          <li key={component.apiName} className="flex items-center gap-3 text-sm">
+            <span className="w-4 text-right text-xs text-muted-foreground tabular-nums">{index + 1}</span>
+            <ItemLink item={component} className="min-w-0 flex-1" />
+            <span
+              className="flex gap-0.5"
+              title={`${strong.length} of ${builds.length} items it builds are S or A tier`}
+            >
+              {strong.map((item) => (
+                <ItemIcon key={item.apiName} item={item} className="size-5" />
+              ))}
+            </span>
+            <span className={cn("w-10 text-right font-semibold tabular-nums", avgPlacementClass(avg))}>
+              {avg.toFixed(2)}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Average placement of the items each component builds into, weighted by how often each is built; icons are its S
+        and A tier items.
+      </p>
+    </Section>
+  );
+}
+
 function ComponentPlannerPage() {
   const { items } = useGameData();
   const stats = useStats();
@@ -186,6 +224,7 @@ function ComponentPlannerPage() {
               Pick the champion you're itemizing to rank items by how they do on them.
             </p>
           </Section>
+          <CarouselPriority />
         </div>
         <div className="space-y-6">
           {buildable.length === 0 ? (

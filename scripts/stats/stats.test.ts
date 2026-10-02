@@ -43,7 +43,14 @@ const match = (overrides: Partial<Match["info"]> = {}): Match => ({
           { character_id: "TFT18_Ahri", tier: 1 },
         ],
       },
-      { placement: 6, level: 8, traits: [], units: [{ character_id: "TFT18_Ahri", tier: 1 }] },
+      {
+        placement: 6,
+        level: 8,
+        last_round: 27,
+        total_damage_to_players: 40,
+        traits: [],
+        units: [{ character_id: "TFT18_Ahri", tier: 1 }],
+      },
     ],
     ...overrides,
   },
@@ -176,7 +183,7 @@ describe("aggregation", () => {
         ],
         [["TFT18_Blossom", 2, 5]],
       ],
-      ["NA1_1", 1_790_000_000, "diamond", 6, 8, [["TFT18_Ahri", 1, []]], []],
+      ["NA1_1", 1_790_000_000, "diamond", 6, 8, [["TFT18_Ahri", 1, []]], [], 27, 40],
     ]);
   });
 

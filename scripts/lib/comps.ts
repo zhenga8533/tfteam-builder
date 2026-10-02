@@ -29,11 +29,11 @@ export const COMP_THRESHOLDS = {
   maxFlex: 6,
 } as const;
 
-const increment = (map: Map<string, number>, key: string) => map.set(key, (map.get(key) ?? 0) + 1);
+const increment = <K>(map: Map<K, number>, key: K) => map.set(key, (map.get(key) ?? 0) + 1);
 
 const mostCommon = (map: Map<string, number>) => [...map].sort((a, b) => b[1] - a[1])[0]?.[0];
 
-const mergeCounts = (target: Map<string, number>, source: Map<string, number>) => {
+const mergeCounts = <K>(target: Map<K, number>, source: Map<K, number>) => {
   for (const [key, count] of source) target.set(key, (target.get(key) ?? 0) + count);
 };
 
@@ -47,6 +47,22 @@ interface CompDetail {
   traitBreakpoints: Map<string, number>;
   /** Placements by the player's final level. */
   byLevel: Map<number, Counter>;
+  /** Boards by the round they were knocked out on (winners left out). */
+  knockouts: Map<number, number>;
+  /** Total damage to other players, and how many boards reported it. */
+  damage: [total: number, boards: number];
+}
+
+/** Median knockout round and average damage, once enough boards report them (older boards don't). */
+function lateGame(detail: CompDetail): { knockoutRound?: number; damage?: number } {
+  const rounds = [...detail.knockouts]
+    .flatMap(([round, count]) => Array<number>(count).fill(round))
+    .sort((a, b) => a - b);
+  const [damage, boards] = detail.damage;
+  return {
+    ...(rounds.length >= COMP_THRESHOLDS.minLevelGames && { knockoutRound: rounds[Math.floor(rounds.length / 2)] }),
+    ...(boards >= COMP_THRESHOLDS.minLevelGames && { damage: Math.round(damage / boards) }),
+  };
 }
 
 /**
@@ -140,11 +156,18 @@ export class CompDetector {
         traits: new Map(),
         traitBreakpoints: new Map(),
         byLevel: new Map(),
+        knockouts: new Map(),
+        damage: [0, 0],
       };
       this.details.set(target, detail);
     }
     bump(detail.counter, board.placement);
     bump(counterFor(detail.byLevel, board.level), board.placement);
+    if (board.lastRound !== undefined && board.placement > 1) increment(detail.knockouts, board.lastRound);
+    if (board.damage !== undefined) {
+      detail.damage[0] += board.damage;
+      detail.damage[1] += 1;
+    }
     for (const apiName of new Set(board.units.map((unit) => unit.apiName))) increment(detail.units, apiName);
     for (const unit of board.units) {
       increment(detail.instances, unit.apiName);
@@ -190,6 +213,8 @@ export class CompDetector {
         traits: new Map(first.traits),
         traitBreakpoints: new Map(first.traitBreakpoints),
         byLevel: new Map([...first.byLevel].map(([level, counter]) => [level, [...counter] as Counter])),
+        knockouts: new Map(first.knockouts),
+        damage: [...first.damage],
       };
       for (const [, other] of rest) {
         addCounter(detail.counter, other.counter);
@@ -200,6 +225,9 @@ export class CompDetector {
         mergeCounts(detail.traits, other.traits);
         mergeCounts(detail.traitBreakpoints, other.traitBreakpoints);
         for (const [level, counter] of other.byLevel) addCounter(counterFor(detail.byLevel, level), counter);
+        mergeCounts(detail.knockouts, other.knockouts);
+        detail.damage[0] += other.damage[0];
+        detail.damage[1] += other.damage[1];
       }
       return { signature, variants: rest.map(([variant]) => variant), detail };
     });
@@ -282,6 +310,7 @@ export class CompDetector {
         flex,
         level: levels[Math.floor(levels.length / 2)] ?? 8,
         byLevel,
+        ...lateGame(detail),
         ...statLine(detail.counter, this.boards, { places: true }),
       });
     }
