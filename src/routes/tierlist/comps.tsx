@@ -155,7 +155,7 @@ function CompTierListPage() {
           <SearchInput
             value={search.q ?? ""}
             onChange={(q) => update({ q: q || undefined })}
-            placeholder="Search comps or champions"
+            placeholder="Search comps"
           />
           <ChampionFilter
             value={search.champion}
