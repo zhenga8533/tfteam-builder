@@ -110,14 +110,13 @@ export function Header() {
         <MobileNav />
         <Logo />
         <DesktopNav />
-        <div className="ml-auto flex items-center gap-1">
+        {/* Search, then what the site is showing (set and patch), then display preferences at the edge. */}
+        <div className="ml-auto flex items-center gap-2">
           <Suspense>
             <CommandSearch />
-          </Suspense>
-          <ThemeToggle />
-          <Suspense>
             <PatchSwitcher />
           </Suspense>
+          <ThemeToggle />
         </div>
       </div>
     </header>

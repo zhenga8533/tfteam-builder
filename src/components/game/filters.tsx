@@ -1,11 +1,11 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
+import { traitStyle } from "@/lib/game/traits";
 import type { ItemKind } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
+import { EntityPicker } from "./entity-picker";
+import { ChampionIcon, TraitIcon } from "./icons";
 import { COST_TEXT, COSTS, ITEM_KIND_LABELS } from "./styles";
-
-const ALL = "all";
 
 /** Shop cost toggles; pressing the selected cost again clears the filter. */
 export function CostFilter({ value, onChange }: { value?: number; onChange: (cost: number | undefined) => void }) {
@@ -26,25 +26,50 @@ export function CostFilter({ value, onChange }: { value?: number; onChange: (cos
   );
 }
 
-/** A select of the set's champion traits, with "All traits" for no filter. */
+/** A searchable picker of the set's champion traits, with their badges; "All traits" for no filter. */
 export function TraitFilter({ value, onChange }: { value?: string; onChange: (trait: string | undefined) => void }) {
   const { traits } = useGameData();
+  const options = traits
+    .filter((trait) => trait.source === "champion")
+    .map((trait) => ({
+      key: trait.apiName,
+      label: trait.name,
+      icon: <TraitIcon trait={trait} style={traitStyle(trait.breakpoints[0]?.style ?? 1)} />,
+    }));
   return (
-    <Select value={value ?? ALL} onValueChange={(next) => onChange(next === ALL ? undefined : next)}>
-      <SelectTrigger className="w-44" aria-label="Filter by trait">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>All traits</SelectItem>
-        {traits
-          .filter((trait) => trait.source === "champion")
-          .map((trait) => (
-            <SelectItem key={trait.apiName} value={trait.apiName}>
-              {trait.name}
-            </SelectItem>
-          ))}
-      </SelectContent>
-    </Select>
+    <EntityPicker
+      options={options}
+      value={value}
+      onChange={onChange}
+      placeholder="All traits"
+      label="Filter by trait"
+    />
+  );
+}
+
+/** A searchable picker of the set's champions, with their portraits; "All champions" for no filter. */
+export function ChampionFilter({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (champion: string | undefined) => void;
+}) {
+  const { champions } = useGameData();
+  const options = champions.map((champion) => ({
+    key: champion.apiName,
+    label: champion.name,
+    icon: <ChampionIcon champion={champion} />,
+    hint: `${champion.cost}`,
+  }));
+  return (
+    <EntityPicker
+      options={options}
+      value={value}
+      onChange={onChange}
+      placeholder="All champions"
+      label="Filter by champion"
+    />
   );
 }
 
