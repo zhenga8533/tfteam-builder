@@ -16,6 +16,7 @@ import { Route as ChampionsRouteImport } from './routes/champions'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as LittleLegendsRouteImport } from './routes/little-legends'
 import { Route as TraitsRouteImport } from './routes/traits'
 import { Route as ChampionsApiNameRouteImport } from './routes/champions_.$apiName'
 import { Route as CompsSlugRouteImport } from './routes/comps/$slug'
@@ -64,6 +65,11 @@ const ExplorerRoute = ExplorerRouteImport.update({
 const ItemsRoute = ItemsRouteImport.update({
   id: '/items',
   path: '/items',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LittleLegendsRoute = LittleLegendsRouteImport.update({
+  id: '/little-legends',
+  path: '/little-legends',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TraitsRoute = TraitsRouteImport.update({
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/compare': typeof CompareRoute
   '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
+  '/little-legends': typeof LittleLegendsRoute
   '/traits': typeof TraitsRoute
   '/champions/$apiName': typeof ChampionsApiNameRoute
   '/comps/$slug': typeof CompsSlugRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/compare': typeof CompareRoute
   '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
+  '/little-legends': typeof LittleLegendsRoute
   '/traits': typeof TraitsRoute
   '/champions/$apiName': typeof ChampionsApiNameRoute
   '/comps/$slug': typeof CompsSlugRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/compare': typeof CompareRoute
   '/explorer': typeof ExplorerRoute
   '/items': typeof ItemsRoute
+  '/little-legends': typeof LittleLegendsRoute
   '/traits': typeof TraitsRoute
   '/champions_/$apiName': typeof ChampionsApiNameRoute
   '/comps/$slug': typeof CompsSlugRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/compare'
     | '/explorer'
     | '/items'
+    | '/little-legends'
     | '/traits'
     | '/champions/$apiName'
     | '/comps/$slug'
@@ -240,6 +250,7 @@ export interface FileRouteTypes {
     | '/compare'
     | '/explorer'
     | '/items'
+    | '/little-legends'
     | '/traits'
     | '/champions/$apiName'
     | '/comps/$slug'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/compare'
     | '/explorer'
     | '/items'
+    | '/little-legends'
     | '/traits'
     | '/champions_/$apiName'
     | '/comps/$slug'
@@ -287,6 +299,7 @@ export interface RootRouteChildren {
   CompareRoute: typeof CompareRoute
   ExplorerRoute: typeof ExplorerRoute
   ItemsRoute: typeof ItemsRoute
+  LittleLegendsRoute: typeof LittleLegendsRoute
   TraitsRoute: typeof TraitsRoute
   ChampionsApiNameRoute: typeof ChampionsApiNameRoute
   CompsSlugRoute: typeof CompsSlugRoute
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/items'
       fullPath: '/items'
       preLoaderRoute: typeof ItemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/little-legends': {
+      id: '/little-legends'
+      path: '/little-legends'
+      fullPath: '/little-legends'
+      preLoaderRoute: typeof LittleLegendsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/traits': {
@@ -463,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompareRoute: CompareRoute,
   ExplorerRoute: ExplorerRoute,
   ItemsRoute: ItemsRoute,
+  LittleLegendsRoute: LittleLegendsRoute,
   TraitsRoute: TraitsRoute,
   ChampionsApiNameRoute: ChampionsApiNameRoute,
   CompsSlugRoute: CompsSlugRoute,

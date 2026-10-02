@@ -5,6 +5,7 @@ import {
   autoCompsQuery,
   championStatsQuery,
   itemStatsQuery,
+  littleLegendsQuery,
   manifestQuery,
   patchHistoryQuery,
   rankStatsQuery,
@@ -105,6 +106,12 @@ export function usePatchHistory() {
 }
 
 /** Comps detected from match data (at `rank` when it has its own), best first; null when not published (or on PBE). */
+/** Little Legends on the published stats' boards; null until boards record them. */
+export function useLittleLegends() {
+  const { patch, set } = useActiveSet();
+  return useSuspenseQuery(littleLegendsQuery(patch, set)).data?.legends ?? null;
+}
+
 export function useAutoComps(rank?: RankFloor) {
   const { patch, set } = useActiveSet();
   const base = useStats();

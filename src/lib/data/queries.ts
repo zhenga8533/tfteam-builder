@@ -4,6 +4,7 @@ import type {
   AutoComps,
   ChampionStats,
   ItemStats,
+  LittleLegends,
   Manifest,
   Patch,
   PatchHistory,
@@ -86,6 +87,12 @@ export const patchHistoryQuery = (patch: Patch, set: number) =>
   queryOptions({
     queryKey: ["stats", patch, set, "history"],
     queryFn: () => fetchStats<PatchHistory>(patch, `set${set}/history.json`),
+  });
+
+export const littleLegendsQuery = (patch: Patch, set: number) =>
+  queryOptions({
+    queryKey: ["stats", patch, set, "little-legends"],
+    queryFn: () => fetchStats<LittleLegends>(patch, `set${set}/little-legends.json`),
   });
 
 /** Detected comps, at a rank floor with its own comps or (`null`) the default floor. */
