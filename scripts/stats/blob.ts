@@ -53,3 +53,38 @@ export class FileBlobStore implements BlobStore {
     await rm(join(this.root, key), { force: true });
   }
 }
+
+/**
+ * Keeps the bytes of keys under `prefix` after the first read, so a job that reads the same objects in
+ * several passes (the stats build) downloads each once. Writes go straight through and drop the copy.
+ */
+export class CachingBlobStore implements BlobStore {
+  private readonly inner: BlobStore;
+  private readonly prefix: string;
+  private readonly cache = new Map<string, Uint8Array | null>();
+
+  constructor(inner: BlobStore, prefix: string) {
+    this.inner = inner;
+    this.prefix = prefix;
+  }
+
+  async get(key: string) {
+    if (!key.startsWith(this.prefix)) return this.inner.get(key);
+    if (!this.cache.has(key)) this.cache.set(key, await this.inner.get(key));
+    return this.cache.get(key) ?? null;
+  }
+
+  put(key: string, data: Uint8Array | string) {
+    this.cache.delete(key);
+    return this.inner.put(key, data);
+  }
+
+  list(prefix: string) {
+    return this.inner.list(prefix);
+  }
+
+  delete(key: string) {
+    this.cache.delete(key);
+    return this.inner.delete(key);
+  }
+}

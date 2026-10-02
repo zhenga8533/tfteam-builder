@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ChampionCard } from "@/components/game/cards";
 import { CostFilter, TraitFilter } from "@/components/game/filters";
 import { ChampionIcon } from "@/components/game/icons";
@@ -8,6 +8,7 @@ import { StatTierList } from "@/features/stats/components/stat-tier-list";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, numberParam, stringParam } from "@/lib/search";
 
 interface ChampionTierSearch {
@@ -32,9 +33,7 @@ function ChampionTierListPage() {
   const stats = useStats();
   const lines = Object.entries(stats?.units ?? {}).filter(([apiName]) => championsByApi.has(apiName));
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
-  const update = (patch: Partial<ChampionTierSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<ChampionTierSearch>();
   const visible = (apiName: string) => {
     const champion = championsByApi.get(apiName);
     return (

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AugmentCard } from "@/components/game/cards";
 import { AugmentTierFilter } from "@/components/game/filters";
 import { isAugmentTier } from "@/components/game/styles";
@@ -12,6 +12,7 @@ import { TierRows } from "@/features/comps/components/tier-rows";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import type { AugmentTier } from "@/lib/data/schema";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, numberParam, stringParam } from "@/lib/search";
 
 interface AugmentTierSearch {
@@ -33,9 +34,7 @@ function AugmentTierListPage() {
   const { augmentsByApi } = useGameData();
   const tierList = tierListForSet(set);
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
-  const update = (patch: Partial<AugmentTierSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<AugmentTierSearch>();
 
   const visible = (apiName: string) => {
     const augment = augmentsByApi.get(apiName);
