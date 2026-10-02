@@ -32,19 +32,40 @@ const traitScore = (states: TraitState[]) => states.reduce((total, state) => tot
 /**
  * What autofill aims for. "most" activates as many different traits as possible (deeper breakpoints only
  * break ties); "levels" adds up breakpoint tiers, so one gold trait is worth three bronze ones. `around`
- * first takes that trait as far as the slots allow, then fills by `mode`.
+ * first builds those traits up as far as the slots allow, then fills by `mode`.
  */
 export interface AutofillGoal {
   mode: "most" | "levels";
-  around?: string;
+  /** Traits to build around (up to `MAX_AROUND`). */
+  around?: string[];
+  /** Champions never to add; a shop champion also rules out its forms. */
+  avoidChampions?: string[];
+  /** Traits whose champions are never added. */
+  avoidTraits?: string[];
   /** Most expensive champion to add; by level when unset (see `defaultMaxCost`). */
   maxCost?: number;
 }
 
 /** Breakpoint depth only decides between boards with the same number of active traits. */
 const LEVEL_TIEBREAK = 0.2;
-/** Any extra unit of the chosen trait outweighs every other consideration. */
+/** Building up the chosen traits outweighs every other consideration. */
 const AROUND_WEIGHT = 100;
+/** At most this many traits can be built around at once. */
+export const MAX_AROUND = 3;
+
+/**
+ * Progress on the chosen traits. Each breakpoint reached is worth 10, and reaching a trait's first one 5
+ * more, so autofill gets every chosen trait going before taking one deeper; unit counts carry it between
+ * breakpoints.
+ */
+function aroundProgress(states: TraitState[], around: string[]) {
+  return around.reduce((total, apiName) => {
+    const state = states.find((entry) => entry.trait.apiName === apiName);
+    if (!state) return total;
+    const reached = state.activeIndex + 1;
+    return total + 10 * reached + (reached > 0 ? 5 : 0) + state.count;
+  }, 0);
+}
 
 const activeCount = (states: TraitState[]) =>
   states.reduce(
@@ -54,8 +75,7 @@ const activeCount = (states: TraitState[]) =>
 
 function goalScore(states: TraitState[], goal: AutofillGoal) {
   const base = goal.mode === "levels" ? traitScore(states) : activeCount(states) + LEVEL_TIEBREAK * traitScore(states);
-  const around = goal.around ? (states.find((state) => state.trait.apiName === goal.around)?.count ?? 0) : 0;
-  return AROUND_WEIGHT * around + base;
+  return AROUND_WEIGHT * aroundProgress(states, goal.around ?? []) + base;
 }
 
 /** A champion and its forms are one shop unit, so only one of them can be fielded. */
@@ -68,6 +88,17 @@ function boardScore(units: UnitLike[], data: PlannerData, goal: AutofillGoal = {
 function candidatesFor(units: UnitLike[], data: PlannerData) {
   const fielded = new Set(units.flatMap((unit) => data.championsByApi.get(unit.apiName) ?? []).map(unitGroup));
   return data.champions.filter((champion) => !fielded.has(unitGroup(champion)));
+}
+
+/** Whether the goal rules a champion out, directly, through its shop champion, or through a trait. */
+function avoided(champion: Champion, goal: AutofillGoal) {
+  const champions = goal.avoidChampions ?? [];
+  const traits = goal.avoidTraits ?? [];
+  return (
+    champions.includes(champion.apiName) ||
+    (champion.formOf !== undefined && champions.includes(champion.formOf)) ||
+    champion.traits.some((trait) => traits.includes(trait))
+  );
 }
 
 export interface LadderStep {
@@ -131,13 +162,16 @@ export function autofillOptions(
   { maxCost = 5, strength = (champion) => champion.cost / 5, count = 1 }: AutofillOptions = {},
 ): Champion[][] {
   type State = { added: Champion[]; value: number };
-  const affordable = { ...data, champions: data.champions.filter((champion) => champion.cost <= maxCost) };
+  const allowed = {
+    ...data,
+    champions: data.champions.filter((champion) => champion.cost <= maxCost && !avoided(champion, goal)),
+  };
   let beam: State[] = [{ added: [], value: 0 }];
   for (let step = 0; step < slots; step++) {
     const next = new Map<string, State>();
     for (const state of beam) {
       const board = [...units, ...state.added.map((champion) => ({ apiName: champion.apiName, items: [] }))];
-      for (const champion of candidatesFor(board, affordable)) {
+      for (const champion of candidatesFor(board, allowed)) {
         const added = [...state.added, champion];
         const key = added
           .map((entry) => entry.apiName)

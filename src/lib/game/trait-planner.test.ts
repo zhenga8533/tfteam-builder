@@ -83,7 +83,7 @@ describe("trait planner", () => {
     // …but gold (3) beats two bronzes (2) on levels.
     expect(names({ mode: "levels" })).toEqual(new Set(["D1", "D2", "D3", "D4"]));
     // Building around WideA keeps both of its units even in levels mode.
-    const around = names({ mode: "levels", around: "WideA" });
+    const around = names({ mode: "levels", around: ["WideA"] });
     expect(around.has("A1") && around.has("A2")).toBe(true);
   });
 
@@ -102,6 +102,28 @@ describe("trait planner", () => {
         expect(b.filter((entry) => !names.has(entry.apiName)).length).toBeGreaterThanOrEqual(2);
       }
     }
+  });
+
+  it("gets every chosen trait to a breakpoint before taking one deeper", () => {
+    const picks = autofill(units(), 3, data, { mode: "most", around: ["Mage", "Guard"] });
+    const states = computeTraits(
+      picks.map((entry) => ({ apiName: entry.apiName, items: [] })),
+      data.championsByApi,
+      data.traitsByApi,
+      data.itemsByApi,
+    );
+    // Three slots can't take Mage to 4, but they can reach 2 in both, which beats three Mages.
+    const reached = (apiName: string) => states.find((state) => state.trait.apiName === apiName)?.activeIndex ?? -1;
+    expect([reached("Mage"), reached("Guard")]).toEqual([0, 0]);
+  });
+
+  it("never adds avoided champions, their forms, or champions with avoided traits", () => {
+    const picks = autofill(units(), 4, data, { mode: "most", avoidChampions: ["Lux", "A2"], avoidTraits: ["Guard"] });
+    const names = picks.map((entry) => entry.apiName);
+    expect(names).not.toContain("Lux");
+    expect(names).not.toContain("LuxMage");
+    expect(names).not.toContain("A2");
+    expect(names).not.toContain("B1");
   });
 
   it("stops when no champion is left to add", () => {

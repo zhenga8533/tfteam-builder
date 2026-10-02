@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { type Board, createBoard, type LevelBoard } from "@/lib/game/board";
+import { createBoard, type LevelBoard } from "@/lib/game/board";
 import type { AutofillGoal } from "@/lib/game/trait-planner";
 
 /** A team being built: one board per player level, e.g. a level 6 early board and a level 8 final board. */
@@ -19,7 +19,7 @@ export interface SavedTeam {
   savedAt: string;
 }
 
-/** Most boards are planned around level 8, so a fresh team (and a v1 single board) is a level 8 board. */
+/** Most boards are planned around level 8, so a fresh team starts there. */
 export const DEFAULT_LEVEL = 8;
 /** The level a comp guide's early board is loaded at. */
 export const EARLY_LEVEL = 6;
@@ -47,22 +47,6 @@ interface BuilderState {
   setAutofillGoal: (goal: AutofillGoal) => void;
 }
 
-type PersistedState = Pick<BuilderState, "teams" | "saved">;
-
-interface PersistedV1 {
-  boards?: Record<number, Board>;
-  saved?: { id: string; name: string; set: number; board: Board; savedAt: string }[];
-}
-
-export function migrateV1({ boards = {}, saved = [] }: PersistedV1): PersistedState {
-  return {
-    teams: Object.fromEntries(
-      Object.entries(boards).map(([set, board]) => [set, teamOf([{ level: DEFAULT_LEVEL, board }])]),
-    ),
-    saved: saved.map(({ board, ...team }) => ({ ...team, boards: [{ level: DEFAULT_LEVEL, board }] })),
-  };
-}
-
 export const useBuilderStore = create<BuilderState>()(
   persist(
     (set) => ({
@@ -88,10 +72,7 @@ export const useBuilderStore = create<BuilderState>()(
     }),
     {
       name: "tfteam-builder",
-      version: 2,
       partialize: ({ teams, saved, autofillGoal }) => ({ teams, saved, autofillGoal }),
-      migrate: (persisted, version) =>
-        version < 2 ? migrateV1(persisted as PersistedV1) : (persisted as PersistedState),
     },
   ),
 );

@@ -1,5 +1,5 @@
-import { ChevronDown, WandSparkles } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, WandSparkles, X } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { EntityPicker } from "@/components/game/entity-picker";
 import { ChampionIcon, TraitIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
-import type { Champion } from "@/lib/data/schema";
-import { type AutofillGoal, defaultMaxCost } from "@/lib/game/trait-planner";
+import type { Champion, Trait } from "@/lib/data/schema";
+import { type AutofillGoal, defaultMaxCost, MAX_AROUND } from "@/lib/game/trait-planner";
 import { computeTraits, traitStyle } from "@/lib/game/traits";
 import { cn } from "@/lib/utils";
 import { useAutofill } from "../use-autofill";
@@ -64,9 +64,47 @@ function Suggestion({ index, champions, onAdd }: { index: number; champions: Cha
   );
 }
 
+const traitIcon = (trait: Trait) => (
+  <TraitIcon trait={trait} style={traitStyle(trait.breakpoints.at(-1)?.style ?? 1)} />
+);
+
+/** Picked champions or traits as removable chips. */
+function Chips({
+  items,
+  onRemove,
+}: {
+  items: { key: string; label: string; icon: ReactNode }[];
+  onRemove: (key: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <ul className="flex flex-wrap gap-1.5">
+      {items.map((item) => (
+        <li key={item.key} className="flex items-center gap-1 rounded-md border bg-muted/50 py-0.5 pr-0.5 pl-1 text-xs">
+          <span className="[&>*]:size-4">{item.icon}</span>
+          {item.label}
+          <button
+            type="button"
+            onClick={() => onRemove(item.key)}
+            aria-label={`Remove ${item.label}`}
+            className="rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function AutofillPanel({ onDone }: { onDone: () => void }) {
-  const { traits, traitsByApi } = useGameData();
+  const { champions, championsByApi, traits, traitsByApi } = useGameData();
   const { goal, setGoal, level, openSlots, maxCost, suggestions, apply } = useAutofill(true);
+  const around = goal.around ?? [];
+  const avoidChampions = goal.avoidChampions ?? [];
+  const avoidTraits = goal.avoidTraits ?? [];
+  // Single-breakpoint traits are unique ones: there's nothing to build up.
+  const buildable = traits.filter((trait) => trait.source === "champion" && trait.breakpoints.length > 1);
 
   if (openSlots === 0) {
     return (
@@ -98,20 +136,85 @@ function AutofillPanel({ onDone }: { onDone: () => void }) {
           ))}
         </ToggleGroup>
       </div>
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">Build around</p>
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">
+          Build around{" "}
+          {around.length > 0 && (
+            <span>
+              ({around.length}/{MAX_AROUND})
+            </span>
+          )}
+        </p>
+        <Chips
+          items={around.flatMap((apiName) => {
+            const trait = traitsByApi.get(apiName);
+            return trait ? [{ key: apiName, label: trait.name, icon: traitIcon(trait) }] : [];
+          })}
+          onRemove={(apiName) => setGoal({ ...goal, around: around.filter((entry) => entry !== apiName) })}
+        />
+        {around.length < MAX_AROUND && (
+          <EntityPicker
+            options={buildable
+              .filter((trait) => !around.includes(trait.apiName))
+              .map((trait) => ({ key: trait.apiName, label: trait.name, icon: traitIcon(trait) }))}
+            onChange={(apiName) => apiName && setGoal({ ...goal, around: [...around, apiName] })}
+            placeholder={around.length ? "Add another trait" : "Any trait"}
+            label="Build around a trait"
+            clearable={false}
+            className="w-full"
+          />
+        )}
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">Avoid</p>
+        <Chips
+          items={[
+            ...avoidChampions.flatMap((apiName) => {
+              const champion = championsByApi.get(apiName);
+              return champion
+                ? [{ key: `champion:${apiName}`, label: champion.name, icon: <ChampionIcon champion={champion} /> }]
+                : [];
+            }),
+            ...avoidTraits.flatMap((apiName) => {
+              const trait = traitsByApi.get(apiName);
+              return trait ? [{ key: `trait:${apiName}`, label: trait.name, icon: traitIcon(trait) }] : [];
+            }),
+          ]}
+          onRemove={(key) => {
+            const [kind, apiName] = key.split(":");
+            if (kind === "champion") {
+              setGoal({ ...goal, avoidChampions: avoidChampions.filter((entry) => entry !== apiName) });
+            } else setGoal({ ...goal, avoidTraits: avoidTraits.filter((entry) => entry !== apiName) });
+          }}
+        />
         <EntityPicker
-          options={traits
-            .filter((trait) => trait.source === "champion" && trait.breakpoints.length > 1)
-            .map((trait) => ({
-              key: trait.apiName,
-              label: trait.name,
-              icon: <TraitIcon trait={trait} style={traitStyle(trait.breakpoints.at(-1)?.style ?? 1)} />,
-            }))}
-          value={goal.around && traitsByApi.has(goal.around) ? goal.around : undefined}
-          onChange={(around) => setGoal({ ...goal, around })}
-          placeholder="Any trait"
-          label="Build around a trait"
+          options={[
+            ...champions
+              .filter((champion) => !avoidChampions.includes(champion.apiName))
+              .map((champion) => ({
+                key: `champion:${champion.apiName}`,
+                label: champion.name,
+                icon: <ChampionIcon champion={champion} />,
+                hint: "Champion",
+              })),
+            ...buildable
+              .filter((trait) => !avoidTraits.includes(trait.apiName))
+              .map((trait) => ({
+                key: `trait:${trait.apiName}`,
+                label: trait.name,
+                icon: traitIcon(trait),
+                hint: "Trait",
+              })),
+          ]}
+          onChange={(key) => {
+            const [kind, apiName] = (key ?? "").split(":");
+            if (!apiName) return;
+            if (kind === "champion") setGoal({ ...goal, avoidChampions: [...avoidChampions, apiName] });
+            else setGoal({ ...goal, avoidTraits: [...avoidTraits, apiName] });
+          }}
+          placeholder="Champions or traits"
+          label="Avoid a champion or trait"
+          clearable={false}
           className="w-full"
         />
       </div>
@@ -175,7 +278,7 @@ export function AutofillButton() {
   const [open, setOpen] = useState(false);
   const { traitsByApi } = useGameData();
   const { goal, level, openSlots, best, apply } = useAutofill(false);
-  const around = goal.around ? traitsByApi.get(goal.around) : undefined;
+  const around = (goal.around ?? []).flatMap((apiName) => traitsByApi.get(apiName)?.name ?? []);
 
   return (
     <div className="flex">
@@ -189,7 +292,7 @@ export function AutofillButton() {
       >
         <WandSparkles /> Autofill
         <span className="text-xs text-muted-foreground max-sm:hidden">
-          · {around ? around.name : MODES[goal.mode].title}
+          · {around.length ? around.join(" + ") : MODES[goal.mode].title}
         </span>
       </Button>
       <Popover open={open} onOpenChange={setOpen}>

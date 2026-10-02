@@ -14,7 +14,6 @@ import {
   teamCost,
   toggleFlex,
 } from "@/lib/game/board";
-import { DEFAULT_LEVEL, migrateV1 } from "./store";
 import { decodeTeamCode, encodeTeamCode } from "./team-code";
 
 const champion = (apiName: string, cost: number, traits: string[], plannerCode?: number): Champion => ({
@@ -172,17 +171,5 @@ describe("flex and alternatives", () => {
     next = swapAlternative(next, 0, "Ashe");
     expect([next[0]?.apiName, next[0]?.alternatives]).toEqual(["Ashe", ["Ahri"]]);
     expect(removeAlternative(next, 0, "Ahri")[0]?.alternatives).toBeUndefined();
-  });
-});
-
-describe("builder store migration", () => {
-  it("turns v1 single boards into level 8 teams", () => {
-    const board = placeChampion(createBoard(), 2, "Ahri");
-    const saved = { id: "a", name: "Team", set: 18, board, savedAt: "2026-10-01T00:00:00.000Z" };
-    const migrated = migrateV1({ boards: { 18: board }, saved: [saved] });
-    expect(migrated.teams[18]).toEqual({ boards: [{ level: DEFAULT_LEVEL, board }], active: 0 });
-    expect(migrated.saved).toEqual([
-      { id: "a", name: "Team", set: 18, boards: [{ level: DEFAULT_LEVEL, board }], savedAt: saved.savedAt },
-    ]);
   });
 });
