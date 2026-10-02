@@ -1,11 +1,11 @@
 import { useDraggable } from "@dnd-kit/core";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
+import { TraitFilter } from "@/components/game/filters";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ChampionIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
 import { SearchInput } from "@/components/layout/search-input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
@@ -13,8 +13,6 @@ import { matches } from "@/lib/search";
 import { cn } from "@/lib/utils";
 import type { DragPayload } from "../dnd";
 import { useBoardSummary, useBuilder } from "../use-builder";
-
-const ALL_TRAITS = "all";
 
 function PoolChampion({ champion, onBoard }: { champion: Champion; onBoard: boolean }) {
   const { add } = useBuilder();
@@ -45,11 +43,11 @@ function PoolChampion({ champion, onBoard }: { champion: Champion; onBoard: bool
 }
 
 export function ChampionPool() {
-  const { champions, traits } = useGameData();
+  const { champions } = useGameData();
   const { units } = useBoardSummary();
   const [query, setQuery] = useState("");
   const [costs, setCosts] = useState<string[]>([]);
-  const [trait, setTrait] = useState(ALL_TRAITS);
+  const [trait, setTrait] = useState<string>();
 
   const onBoard = useMemo(() => new Set(units.map((unit) => unit.apiName)), [units]);
   const filtered = useMemo(() => {
@@ -57,7 +55,7 @@ export function ChampionPool() {
       (champion) =>
         matches(champion.name, query) &&
         (costs.length === 0 || costs.includes(String(champion.cost))) &&
-        (trait === ALL_TRAITS || champion.traits.includes(trait)),
+        (!trait || champion.traits.includes(trait)),
     );
   }, [champions, query, costs, trait]);
 
@@ -78,21 +76,7 @@ export function ChampionPool() {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        <Select value={trait} onValueChange={setTrait}>
-          <SelectTrigger className="w-40" aria-label="Filter by trait">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_TRAITS}>All traits</SelectItem>
-            {traits
-              .filter((option) => option.source === "champion")
-              .map((option) => (
-                <SelectItem key={option.apiName} value={option.apiName}>
-                  {option.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
+        <TraitFilter value={trait} onChange={setTrait} />
       </div>
       {filtered.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">No champions match these filters.</p>
