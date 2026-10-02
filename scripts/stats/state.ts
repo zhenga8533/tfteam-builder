@@ -1,7 +1,7 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import { type BlobStore, FileBlobStore } from "./blob.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
-import type { SetStats } from "../../src/lib/data/schema.ts";
+import type { RankFloor, SetStats } from "../../src/lib/data/schema.ts";
 import type { TftPatch } from "../lib/tft-patches.ts";
 import type { BoardRow, PlatformState } from "./types.ts";
 
@@ -22,6 +22,7 @@ const BOARD_KEY = /^boards\/set(\d+)\/([^/]+)\/([^/]+)\.jsonl\.gz$/;
  *   patches.json                                   TFT patches (18.3, 18.3b) and when each went live
  *   boards/set{N}/{patch}/{runStart}-{region}.jsonl.gz   one gzipped JSON row per board
  *   summaries/set{N}/{patch}.json                  built stats per patch, kept permanently
+ *   summaries/set{N}/ranks/{floor}/{patch}.json    the same for other rank floors
  */
 export class StatsStore {
   readonly blobs: BlobStore;
@@ -106,20 +107,27 @@ export class StatsStore {
     }
   }
 
-  putSummary(set: number, patch: string, json: string) {
-    return this.blobs.put(`summaries/set${set}/${patch}.json`, json);
+  /** Saves a patch's stats; `floor` stats (for the tier lists' rank choice) are kept apart. */
+  putSummary(set: number, patch: string, json: string, floor?: RankFloor) {
+    return this.blobs.put(`${summaryPrefix(set, floor)}${patch}.json`, json);
   }
 
-  /** Every saved patch summary of a set, oldest patch first. */
-  async summaries(set: number): Promise<SetStats[]> {
-    const prefix = `summaries/set${set}/`;
+  /** Every saved patch summary of a set (at `floor`, or the default stats), oldest patch first. */
+  async summaries(set: number, floor?: RankFloor): Promise<SetStats[]> {
+    const prefix = summaryPrefix(set, floor);
     const patches = (await this.blobs.list(prefix))
-      .map((key) => key.slice(prefix.length).replace(/\.json$/, ""))
+      .map((key) => key.slice(prefix.length))
+      // Rank floors' summaries live in a folder below the default ones.
+      .filter((name) => !name.includes("/"))
+      .map((name) => name.replace(/\.json$/, ""))
       .sort(comparePatches);
     const summaries = await Promise.all(patches.map((patch) => this.readJson<SetStats>(`${prefix}${patch}.json`)));
     return summaries.filter((summary): summary is SetStats => summary !== null);
   }
 }
+
+const summaryPrefix = (set: number, floor?: RankFloor) =>
+  floor ? `summaries/set${set}/ranks/${floor}/` : `summaries/set${set}/`;
 
 /** R2 when the `R2_*` environment variables are set, otherwise the local directory `dir`. */
 export function createStatsStore(dir: string | undefined): StatsStore | null {

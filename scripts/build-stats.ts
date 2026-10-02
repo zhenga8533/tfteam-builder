@@ -66,6 +66,28 @@ async function loadPatch(read: ReadBoards, set: number, patch: string, chunks: B
  * Second pass over the boards behind the published stats (chosen patch and rank floor), for the
  * per-champion detail files.
  */
+type EachBoard = (visit: (board: ResolvedBoard) => void) => Promise<void>;
+
+/** Visits the boards behind `stats` (its patch and rank floor), re-reading chunks for each pass. */
+function boardsOf(read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]): EachBoard {
+  const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
+  const resolver = new BoardResolver(data);
+  const sample = chunks.filter((chunk) => chunk.patch === stats.patch);
+  return async (visit) => {
+    for (const chunk of sample) {
+      for (const row of await read(chunk)) if (buckets.has(row[2])) visit(resolver.board(row));
+    }
+  };
+}
+
+/** Comps detected on another rank floor's boards, for the comp tier list's rank choice. */
+async function detectComps(eachBoard: EachBoard, data: SetData) {
+  const comps = new CompDetector(data);
+  await eachBoard((board) => comps.count(board));
+  await eachBoard((board) => comps.add(board));
+  return comps.results();
+}
+
 async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const dir = join(OUT_DIR, `set${data.number}`);
   await rm(dir, { recursive: true, force: true });
@@ -74,12 +96,7 @@ async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, ch
   const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
   const resolver = new BoardResolver(data);
   const sample = chunks.filter((chunk) => chunk.patch === stats.patch);
-  /** Re-reads the sample instead of holding every board in memory between passes. */
-  const eachBoard = async (visit: (board: ResolvedBoard) => void) => {
-    for (const chunk of sample) {
-      for (const row of await read(chunk)) if (buckets.has(row[2])) visit(resolver.board(row));
-    }
-  };
+  const eachBoard = boardsOf(read, data, stats, chunks);
 
   const champions = new ChampionAccumulator();
   const database = new DatabaseAccumulator();
@@ -190,6 +207,14 @@ async function main() {
       }
     }
     if (floorStats.length) stats.ranks = floorStats.map((entry) => entry.rankFloor);
+    for (const entry of floorStats) {
+      const floorTrend = patchTrend(
+        entry,
+        (await store.summaries(set, entry.rankFloor)).filter((summary) => summary.patch !== entry.patch),
+      );
+      if (floorTrend) entry.trend = floorTrend;
+      await store.putSummary(set, entry.patch, JSON.stringify(setStatsSchema.parse(entry)), entry.rankFloor);
+    }
     const json = JSON.stringify(setStatsSchema.parse(stats));
     await writeFile(join(OUT_DIR, `set${set}.json`), json);
     if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
@@ -201,11 +226,18 @@ async function main() {
     );
     if (floorStats.length) {
       await mkdir(join(OUT_DIR, `set${set}`, "ranks"), { recursive: true });
+      const setChunks = chunks.filter((chunk) => chunk.set === set);
       for (const entry of floorStats) {
         await writeFile(
           join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.json`),
           JSON.stringify(setStatsSchema.parse(entry)),
         );
+        const floorComps = await detectComps(boardsOf(read, data, entry, setChunks), data);
+        await writeFile(
+          join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.comps.json`),
+          JSON.stringify(autoCompsSchema.parse({ comps: floorComps })),
+        );
+        console.log(`  ${entry.rankFloor}+: ${floorComps.length} comps`);
       }
     }
     if (stats.status === "ready") {
