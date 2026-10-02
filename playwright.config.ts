@@ -7,6 +7,8 @@ export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
+  // Many parallel browsers each load a set's game data cold, so a page can take a few seconds to render.
+  expect: { timeout: 15_000 },
   use: {
     baseURL: `http://localhost:${PORT}/tfteam-builder/`,
     // CI installs Playwright's Chromium; locally the installed Chrome is enough.
