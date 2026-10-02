@@ -50,7 +50,7 @@ export function PatchSwitcher() {
         <DropdownMenuRadioGroup value={patch} onValueChange={(value) => setPatch(value as Patch)}>
           {PATCHES.map((value) => (
             <DropdownMenuRadioItem key={value} value={value} className="flex-col items-start gap-0">
-              <span className="flex w-full justify-between gap-3">
+              <span className="flex w-full items-baseline justify-between gap-3">
                 <span className="font-medium">{PATCH_NAMES[value].name}</span>
                 <span className="text-muted-foreground tabular-nums">{manifest.patches[value].label}</span>
               </span>
@@ -68,7 +68,7 @@ export function PatchSwitcher() {
           <div className="max-h-64 overflow-y-auto">
             {sets.map((value) => (
               <DropdownMenuRadioItem key={value} value={String(value)}>
-                <span className="flex w-full justify-between gap-3">
+                <span className="flex w-full items-baseline justify-between gap-3">
                   <span>Set {value}</span>
                   {value === newest && <span className="text-xs text-primary">Current</span>}
                 </span>
