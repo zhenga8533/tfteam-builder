@@ -1,19 +1,13 @@
 import type { AutoComp, ChampionStats, ItemStats, StatLine, TraitStats } from "../../src/lib/data/schema.ts";
-import { round, statLine } from "../../src/lib/game/stat-line.ts";
+import { bump as bumpCounter, counterFor, round, statLine } from "../../src/lib/game/stat-line.ts";
 import type { Counter } from "../stats/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
 
 /** Minimum games before an item pairing or a unit in a trait is listed. */
 export const MIN_DATABASE_GAMES = { pair: 50, traitUnit: 50 } as const;
 
-function bump(map: Map<string, Counter>, key: string, placement: number) {
-  let counter = map.get(key);
-  if (!counter) map.set(key, (counter = [0, 0, 0, 0]));
-  counter[0] += 1;
-  counter[1] += placement;
-  if (placement <= 4) counter[2] += 1;
-  if (placement === 1) counter[3] += 1;
-}
+const bump = (map: Map<string, Counter>, key: string, placement: number) =>
+  bumpCounter(counterFor(map, key), placement);
 
 const withDelta = (line: StatLine, baseline: StatLine) => ({ ...line, delta: round(line.avg - baseline.avg, 2) });
 const byScore = (a: StatLine, b: StatLine) => a.score - b.score;

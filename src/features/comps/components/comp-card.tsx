@@ -2,9 +2,10 @@ import { Link, type LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ChampionLink, ItemLink, TraitLink } from "@/components/game/links";
 import type { Comp, CompUnit } from "@/content/types";
+import { TrendBadge as PatchTrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent } from "@/features/stats/format";
-import { useGameData } from "@/lib/data/hooks";
+import { useCompTrendPatch, useGameData } from "@/lib/data/hooks";
 import type { AutoComp, RankFloor, StatLine } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
 import { autoCompUnits } from "../auto-place";
@@ -24,7 +25,7 @@ interface CompCardViewProps {
 }
 
 /** Placement stats in a fixed column, so they line up from card to card. */
-function CompStats({ line }: { line: StatLine }) {
+function CompStats({ line, trend }: { line: StatLine; trend?: ReactNode }) {
   const rows = [
     ["Top 4", percent(line.top4)],
     ["Win", percent(line.win)],
@@ -35,6 +36,7 @@ function CompStats({ line }: { line: StatLine }) {
       <div className="flex items-baseline gap-1.5 sm:flex-col sm:items-center sm:gap-0.5">
         <AvgPlacement line={line} className="font-display text-2xl leading-none" />
         <span className="text-[11px] text-muted-foreground">avg place</span>
+        {trend}
       </div>
       <dl className="flex gap-3 text-xs sm:flex-col sm:gap-0.5 sm:border-t sm:pt-2">
         {rows.map(([label, value]) => (
@@ -148,13 +150,14 @@ export function CompCard({ comp }: { comp: Comp }) {
 
 /** A comp detected from match data, with its placement stats. */
 export function AutoCompCard({ comp, rank }: { comp: AutoComp; rank?: RankFloor }) {
+  const trendPatch = useCompTrendPatch(rank);
   const { championsByApi } = useGameData();
   return (
     <CompCardView
       title={comp.name}
       link={{ to: "/comps/auto/$id", params: { id: comp.id }, search: rank ? { rank } : {} }}
       units={autoCompUnits(comp, championsByApi)}
-      aside={<CompStats line={comp} />}
+      aside={<CompStats line={comp} trend={<PatchTrendBadge delta={comp.trend} patch={trendPatch} />} />}
     />
   );
 }

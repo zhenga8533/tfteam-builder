@@ -1,7 +1,7 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import { type BlobStore, FileBlobStore } from "./blob.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
-import type { RankFloor, SetStats } from "../../src/lib/data/schema.ts";
+import type { AutoComp, RankFloor, SetStats } from "../../src/lib/data/schema.ts";
 import type { TftPatch } from "../lib/tft-patches.ts";
 import type { BoardRow, PlatformState } from "./types.ts";
 
@@ -23,6 +23,7 @@ const BOARD_KEY = /^boards\/set(\d+)\/([^/]+)\/([^/]+)\.jsonl\.gz$/;
  *   boards/set{N}/{patch}/{runStart}-{region}.jsonl.gz   one gzipped JSON row per board
  *   summaries/set{N}/{patch}.json                  built stats per patch, kept permanently
  *   summaries/set{N}/ranks/{floor}/{patch}.json    the same for other rank floors
+ *   comps/set{N}/[ranks/{floor}/]{patch}.json       detected comps per patch, for comp trends
  */
 export class StatsStore {
   readonly blobs: BlobStore;
@@ -112,6 +113,30 @@ export class StatsStore {
     return this.blobs.put(`${summaryPrefix(set, floor)}${patch}.json`, json);
   }
 
+  /** Saves a patch's detected comps, so the next patch can compare with them. */
+  putComps(set: number, patch: string, json: string, floor?: RankFloor) {
+    return this.blobs.put(`${compsPrefix(set, floor)}${patch}.json`, json);
+  }
+
+  /** The comps of the newest saved patch before `patch`, with that patch; null when there's none. */
+  async previousComps(
+    set: number,
+    patch: string,
+    floor?: RankFloor,
+  ): Promise<{ patch: string; comps: AutoComp[] } | null> {
+    const prefix = compsPrefix(set, floor);
+    const previous = (await this.blobs.list(prefix))
+      .map((key) => key.slice(prefix.length))
+      .filter((name) => !name.includes("/"))
+      .map((name) => name.replace(/\.json$/, ""))
+      .filter((name) => comparePatches(name, patch) < 0)
+      .sort(comparePatches)
+      .at(-1);
+    if (!previous) return null;
+    const saved = await this.readJson<{ comps: AutoComp[] }>(`${prefix}${previous}.json`);
+    return saved ? { patch: previous, comps: saved.comps } : null;
+  }
+
   /** Every saved patch summary of a set (at `floor`, or the default stats), oldest patch first. */
   async summaries(set: number, floor?: RankFloor): Promise<SetStats[]> {
     const prefix = summaryPrefix(set, floor);
@@ -125,6 +150,9 @@ export class StatsStore {
     return summaries.filter((summary): summary is SetStats => summary !== null);
   }
 }
+
+const compsPrefix = (set: number, floor?: RankFloor) =>
+  floor ? `comps/set${set}/ranks/${floor}/` : `comps/set${set}/`;
 
 const summaryPrefix = (set: number, floor?: RankFloor) =>
   floor ? `summaries/set${set}/ranks/${floor}/` : `summaries/set${set}/`;

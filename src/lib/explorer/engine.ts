@@ -1,5 +1,5 @@
 import type { DeltaStat, StatLine } from "@/lib/data/schema";
-import { bump, type Counter, round, statLine } from "@/lib/game/stat-line";
+import { addCounter, bump, type Counter, counterFor, emptyCounter, round, statLine } from "@/lib/game/stat-line";
 import { type ExplorerData, ITEM_SLOTS } from "./format";
 
 export type ExplorerFilter =
@@ -77,12 +77,6 @@ function holds(data: ExplorerData, row: number, wanted: number[]) {
   });
 }
 
-const counterFor = (map: Map<string, Counter>, key: string) => {
-  let counter = map.get(key);
-  if (!counter) map.set(key, (counter = [0, 0, 0, 0]));
-  return counter;
-};
-
 function rows(counters: Map<string, Counter>, baseline: number, total: number, minGames: number): ExplorerRow[] {
   return [...counters]
     .filter(([, counter]) => counter[0] >= minGames)
@@ -98,7 +92,7 @@ export function runQuery(data: ExplorerData, filters: ExplorerFilter[], minGames
   const compiled = compile(data, filters);
   if (!compiled) return empty;
 
-  const summary: Counter = [0, 0, 0, 0];
+  const summary = emptyCounter();
   const unitCounters = new Map<string, Counter>();
   const traitCounters = new Map<string, Counter>();
   const itemCounters = new Map(compiled.units.map((filter) => [filter.filter, new Map<string, Counter>()]));
@@ -189,7 +183,7 @@ export function similarBoards(data: ExplorerData, units: string[], minGames = MI
   if (wanted.size < MIN_SHARED) return null;
 
   // byOverlap[k] counts boards sharing exactly k of the wanted units.
-  const byOverlap = Array.from({ length: wanted.size + 1 }, (): Counter => [0, 0, 0, 0]);
+  const byOverlap = Array.from({ length: wanted.size + 1 }, emptyCounter);
   for (let board = 0; board < data.boards; board++) {
     const seen = new Set<number>();
     for (let row = data.unitStart[board]!; row < data.unitStart[board + 1]!; row++) {
@@ -200,9 +194,9 @@ export function similarBoards(data: ExplorerData, units: string[], minGames = MI
   }
 
   // Walk down from a full match, adding boards with one fewer shared unit until there are enough.
-  const total: Counter = [0, 0, 0, 0];
+  const total = emptyCounter();
   for (let shared = wanted.size; shared >= MIN_SHARED; shared--) {
-    byOverlap[shared]!.forEach((value, i) => (total[i]! += value));
+    addCounter(total, byOverlap[shared]!);
     if (total[0] >= minGames) return { shared, total: wanted.size, line: statLine(total, data.boards) };
   }
   return null;

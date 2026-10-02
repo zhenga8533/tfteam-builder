@@ -3,11 +3,13 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { gzipSync } from "node:zlib";
 import {
+  type AutoComp,
   autoCompsSchema,
   championStatsSchema,
   itemStatsSchema,
   patchHistorySchema,
   type Manifest,
+  type RankFloor,
   type SetData,
   type SetStats,
   setStatsSchema,
@@ -18,10 +20,10 @@ import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
-import { patchHistory, patchTrend } from "./lib/trends.ts";
+import { compTrends, patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
-import { RANK_OPTIONS } from "../src/lib/data/constants.ts";
-import { buildFloorStats, buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
+import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
+import { buildFloorStats, buildRegionStats, buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
@@ -88,7 +90,21 @@ async function detectComps(eachBoard: EachBoard, data: SetData) {
   return comps.results();
 }
 
-async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
+/**
+ * Adds each comp's change since the previous patch's saved comps and saves these for the next patch.
+ * Returns what `comps.json` holds.
+ */
+async function withCompTrends(store: StatsStore, stats: SetStats, comps: AutoComp[], floor?: RankFloor) {
+  const previous = await store.previousComps(stats.set, stats.patch, floor);
+  const file = autoCompsSchema.parse({
+    comps: previous ? compTrends(comps, previous.comps) : comps,
+    ...(previous && { trendPatch: previous.patch }),
+  });
+  await store.putComps(stats.set, stats.patch, JSON.stringify({ comps }), floor);
+  return file;
+}
+
+async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const dir = join(OUT_DIR, `set${data.number}`);
   await rm(dir, { recursive: true, force: true });
   if (stats.status !== "ready") return;
@@ -125,7 +141,7 @@ async function writeDetails(read: ReadBoards, data: SetData, stats: SetStats, ch
   await writeAll("champions", championStats, (entry) => championStatsSchema.parse(entry));
   await writeAll("items", items, (entry) => itemStatsSchema.parse(entry));
   await writeAll("traits", traits, (entry) => traitStatsSchema.parse(entry));
-  await writeFile(join(dir, "comps.json"), JSON.stringify(autoCompsSchema.parse({ comps: detected })));
+  await writeFile(join(dir, "comps.json"), JSON.stringify(await withCompTrends(store, stats, detected)));
 
   const explorer: ExplorerBoard[] = [];
   for (const chunk of [...sample].sort((a, b) => b.name.localeCompare(a.name))) {
@@ -207,6 +223,19 @@ async function main() {
       }
     }
     if (floorStats.length) stats.ranks = floorStats.map((entry) => entry.rankFloor);
+    // Tier lists can also narrow to one region, at the same patch and rank floor.
+    const regionStats: SetStats[] = [];
+    if (stats.status === "ready") {
+      const patchChunks = byPatch.get(stats.patch) ?? [];
+      for (const region of REGIONS) {
+        const regionChunks = patchChunks.filter((chunk) => chunk.name.endsWith(`-${region}`));
+        if (regionChunks.length === 0) continue;
+        const regional = await loadPatch(read, set, stats.patch, regionChunks);
+        const entry = buildRegionStats(data, regional, stats, region);
+        if (entry) regionStats.push(entry);
+      }
+    }
+    if (regionStats.length) stats.regions = regionStats.map((entry) => entry.region!);
     for (const entry of floorStats) {
       const floorTrend = patchTrend(
         entry,
@@ -219,11 +248,21 @@ async function main() {
     await writeFile(join(OUT_DIR, `set${set}.json`), json);
     if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
     await writeDetails(
+      store,
       read,
       data,
       stats,
       chunks.filter((chunk) => chunk.set === set),
     );
+    if (regionStats.length) {
+      await mkdir(join(OUT_DIR, `set${set}`, "regions"), { recursive: true });
+      for (const entry of regionStats) {
+        await writeFile(
+          join(OUT_DIR, `set${set}`, "regions", `${entry.region}.json`),
+          JSON.stringify(setStatsSchema.parse(entry)),
+        );
+      }
+    }
     if (floorStats.length) {
       await mkdir(join(OUT_DIR, `set${set}`, "ranks"), { recursive: true });
       const setChunks = chunks.filter((chunk) => chunk.set === set);
@@ -235,7 +274,7 @@ async function main() {
         const floorComps = await detectComps(boardsOf(read, data, entry, setChunks), data);
         await writeFile(
           join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.comps.json`),
-          JSON.stringify(autoCompsSchema.parse({ comps: floorComps })),
+          JSON.stringify(await withCompTrends(store, entry, floorComps, entry.rankFloor)),
         );
         console.log(`  ${entry.rankFloor}+: ${floorComps.length} comps`);
       }

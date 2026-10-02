@@ -1,4 +1,6 @@
-export type RegionalHost = "americas" | "europe" | "asia" | "sea";
+import { type Region, REGIONS } from "../../src/lib/data/constants.ts";
+
+export type RegionalHost = Region;
 
 export interface Platform {
   /** Platform routing value, also the lowercase prefix of its match IDs (e.g. `na1` → `NA1_…`). */
@@ -27,7 +29,7 @@ export const PLATFORMS: Platform[] = [
   { id: "vn2", region: "sea", poolSize: 500 },
 ];
 
-export const REGIONAL_HOSTS: RegionalHost[] = ["americas", "europe", "asia", "sea"];
+export const REGIONAL_HOSTS: RegionalHost[] = [...REGIONS];
 
 export function selectPlatforms(ids: string[] | undefined): Platform[] {
   if (!ids?.length) return PLATFORMS;

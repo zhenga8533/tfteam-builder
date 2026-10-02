@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
+import { PlacementChart } from "@/features/stats/components/placement-chart";
 import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
@@ -149,6 +150,11 @@ function ItemPage() {
             <ItemCard item={item} />
           </Section>
           {item.kind === "component" && <BuildsInto item={item} />}
+          {setStats?.items[item.apiName]?.places && (
+            <Section title="Placements">
+              <PlacementChart places={setStats.items[item.apiName]!.places!} />
+            </Section>
+          )}
           {stats && (
             <Section title="Patch history">
               <PatchHistoryChart kind="items" entry={item.apiName} />

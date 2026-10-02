@@ -9,12 +9,13 @@ import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { isRankFloor } from "@/lib/data/constants";
+import { isRankFloor, isRegion, type Region } from "@/lib/data/constants";
 import type { RankFloor } from "@/lib/data/schema";
 import { matches, numberParam, stringParam } from "@/lib/search";
 
 interface ChampionTierSearch {
   rank?: RankFloor;
+  region?: Region;
   q?: string;
   cost?: number;
   trait?: string;
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/tierlist/champions")({
   head: () => ({ meta: [{ title: "Champion Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionTierSearch => ({
     rank: isRankFloor(search.rank) ? search.rank : undefined,
+    region: isRegion(search.region) ? search.region : undefined,
     q: stringParam(search.q),
     cost: numberParam(search.cost),
     trait: stringParam(search.trait),
@@ -35,7 +37,7 @@ function ChampionTierListPage() {
   const { set } = useActiveSet();
   const { championsByApi } = useGameData();
   const search = Route.useSearch();
-  const stats = useTierStats(search.rank);
+  const stats = useTierStats(search.rank, search.region);
   const lines = Object.entries(stats?.units ?? {}).filter(([apiName]) => championsByApi.has(apiName));
   const update = useUpdateSearch<ChampionTierSearch>();
   const visible = (apiName: string) => {
@@ -56,7 +58,8 @@ function ChampionTierListPage() {
       overrides={tierListForSet(set)?.champions}
       visible={visible}
       stats={stats}
-      rank={{ value: search.rank, onChange: (rank) => update({ rank }) }}
+      rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}
+      region={{ value: search.region, onChange: (region) => update({ region, rank: undefined }) }}
       toolbar={
         <>
           <SearchInput

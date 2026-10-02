@@ -6,7 +6,8 @@ import { TierRows as TierRowsView } from "@/features/comps/components/tier-rows"
 import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { mergeTiers } from "../tiers";
-import { useRankChoice } from "../use-rank-choice";
+import type { Region } from "@/lib/data/constants";
+import { useRankChoice, useRegionChoice } from "../use-rank-choice";
 import { NoStats } from "./no-stats";
 import { StatsMeta } from "./stats-meta";
 
@@ -25,6 +26,8 @@ interface StatTierListProps {
   stats?: SetStats | null;
   /** The chosen rank floor and how to change it; the stats line offers floors that have their own stats. */
   rank?: { value?: RankFloor; onChange: (rank: RankFloor | undefined) => void };
+  /** The chosen region and how to change it; regions have stats at the default floor only. */
+  region?: { value?: Region; onChange: (region: Region | undefined) => void };
 }
 
 interface EntryListProps extends Pick<StatTierListProps, "renderEntry"> {
@@ -56,10 +59,12 @@ export function StatTierList({
   visible = () => true,
   stats: shownStats,
   rank,
+  region,
 }: StatTierListProps) {
   const base = useStats();
   const stats = shownStats === undefined ? base : shownStats;
   const rankChoice = useRankChoice((value) => rank?.onChange(value));
+  const regionChoice = useRegionChoice(region?.value, (value) => region?.onChange(value));
   const shown = lines.filter(([key]) => visible(key));
   const byKey = new Map(shown);
   const overridden = new Set(Object.values(overrides).flat());
@@ -76,7 +81,9 @@ export function StatTierList({
   return (
     <>
       <PageHeader title={title} description={description} />
-      {stats && <StatsMeta stats={stats} rank={rank ? rankChoice : undefined} />}
+      {stats && (
+        <StatsMeta stats={stats} rank={rank ? rankChoice : undefined} region={region ? regionChoice : undefined} />
+      )}
       {toolbar && <div className="mb-6 flex flex-wrap items-center gap-2">{toolbar}</div>}
       {!hasStats ? (
         <NoStats />

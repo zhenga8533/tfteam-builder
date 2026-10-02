@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { SetStats, StatLine } from "../../src/lib/data/schema.ts";
+import type { AutoComp, SetStats, StatLine } from "../../src/lib/data/schema.ts";
 import { MIN_GAMES } from "./stats.ts";
-import { patchHistory, patchTrend } from "./trends.ts";
+import { compTrends, patchHistory, patchTrend } from "./trends.ts";
 
 const line = (avg: number, games: number = MIN_GAMES.unit): StatLine => ({
   games,
@@ -49,5 +49,16 @@ describe("patch trends", () => {
     expect(history.patches).toEqual(["18.3", "18.3b"]);
     expect(history.units["Ahri"]).toEqual([4.6, 4.35]);
     expect(history.units["Rare"]).toEqual([null, null]);
+  });
+});
+
+describe("comp trends", () => {
+  it("compares each comp with the same comp on the previous patch", () => {
+    const comp = (id: string, avg: number) => ({ id, avg }) as AutoComp;
+    const result = compTrends([comp("a", 3.5), comp("new", 4)], [comp("a", 3.9), comp("gone", 4.2)]);
+    expect(result.map((entry) => [entry.id, entry.trend])).toEqual([
+      ["a", -0.4],
+      ["new", undefined],
+    ]);
   });
 });

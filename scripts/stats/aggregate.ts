@@ -1,3 +1,4 @@
+import { addCounter, bump as bumpCounter, emptyCounter } from "../../src/lib/game/stat-line.ts";
 import type { BoardRow, Counter, Counters, Match, PatchCounters, RankBucket } from "./types.ts";
 
 export const RANKED_QUEUE_ID = 1100;
@@ -17,11 +18,7 @@ export const emptyCounters = (): Counters => ({
 });
 
 function bump(record: Record<string, Counter>, key: string, placement: number) {
-  const counter = (record[key] ??= [0, 0, 0, 0]);
-  counter[0] += 1;
-  counter[1] += placement;
-  if (placement <= 4) counter[2] += 1;
-  if (placement === 1) counter[3] += 1;
+  bumpCounter((record[key] ??= emptyCounter()), placement);
 }
 
 /** Splits a ranked match into one stored row per player, keeping only active traits. */
@@ -63,10 +60,7 @@ export function addBoardToPatch(patchCounters: PatchCounters, row: BoardRow) {
 }
 
 function mergeRecord(target: Record<string, Counter>, source: Record<string, Counter>) {
-  for (const [key, counter] of Object.entries(source)) {
-    const [games, placementSum, top4, wins] = target[key] ?? [0, 0, 0, 0];
-    target[key] = [games + counter[0], placementSum + counter[1], top4 + counter[2], wins + counter[3]];
-  }
+  for (const [key, counter] of Object.entries(source)) addCounter((target[key] ??= emptyCounter()), counter);
 }
 
 /** Sums counters in place into `target`; used to combine rank buckets and runs. */
