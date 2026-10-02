@@ -68,6 +68,18 @@ test("the team builder adds, counts and autofills units", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("the team builder saves the board as an image", async ({ page }, testInfo) => {
+  await page.goto("builder");
+  const pool = page.locator('[aria-roledescription="draggable"][aria-label^="Add "]');
+  await pool.nth(0).click();
+  await page.getByRole("button", { name: /^Autofill ·/ }).click();
+  await page.getByRole("button", { name: "Share" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: /Save as image/ }).click();
+  expect((await download).suggestedFilename()).toMatch(/\.png$/);
+  await (await download).saveAs(testInfo.outputPath("board.png"));
+});
+
 test("site search opens a page", async ({ page }) => {
   await page.goto("");
   await expect(page.getByRole("button", { name: "Search" })).toBeVisible();

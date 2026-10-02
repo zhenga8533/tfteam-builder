@@ -66,7 +66,9 @@ export class FormInference {
       const form = chosen.get(names[index] ?? "");
       return form ? ([form, unit[1], unit[2]] as const) : unit;
     });
-    return [row[0], row[1], row[2], row[3], row[4], units as BoardRow[5], rawTraits];
+    const rewritten = [...row] as BoardRow;
+    rewritten[5] = units as BoardRow[5];
+    return rewritten;
   }
 
   /** Trait counts from every unit except the champions whose form is in question, plus emblems. */

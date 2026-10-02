@@ -24,17 +24,23 @@ function bump(record: Record<string, Counter>, key: string, placement: number) {
 /** Splits a ranked match into one stored row per player, keeping only active traits. */
 export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
   const gameTime = Math.floor(match.info.game_datetime / 1000);
-  return match.info.participants.map((participant) => [
-    match.metadata.match_id,
-    gameTime,
-    bucket,
-    participant.placement,
-    participant.level,
-    participant.units.map((unit) => [unit.character_id, unit.tier, unit.itemNames ?? []]),
-    participant.traits
-      .filter((trait) => trait.tier_current > 0)
-      .map((trait) => [trait.name, trait.tier_current, trait.num_units]),
-  ]);
+  return match.info.participants.map((participant) => {
+    const row: BoardRow = [
+      match.metadata.match_id,
+      gameTime,
+      bucket,
+      participant.placement,
+      participant.level,
+      participant.units.map((unit) => [unit.character_id, unit.tier, unit.itemNames ?? []]),
+      participant.traits
+        .filter((trait) => trait.tier_current > 0)
+        .map((trait) => [trait.name, trait.tier_current, trait.num_units]),
+    ];
+    // Appended only when present: JSON would store trailing undefineds as nulls.
+    if (participant.last_round !== undefined)
+      row.push(participant.last_round, participant.total_damage_to_players ?? 0);
+    return row;
+  });
 }
 
 /** Adds one stored board; unit and trait rates are per board (boards can field duplicates), items per instance. */

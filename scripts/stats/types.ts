@@ -27,6 +27,9 @@ export interface MatchTrait {
 export interface MatchParticipant {
   placement: number;
   level: number;
+  /** The last round played: when the player was eliminated, or the game's final round for the winner. */
+  last_round?: number;
+  total_damage_to_players?: number;
   traits: MatchTrait[];
   units: MatchUnit[];
 }
@@ -65,6 +68,9 @@ export type BoardRow = [
   level: number,
   units: BoardUnitRow[],
   traits: BoardTraitRow[],
+  // Added later, so boards stored before then don't have them.
+  lastRound?: number,
+  damage?: number,
 ];
 
 export type { Counter } from "../../src/lib/game/stat-line.ts";

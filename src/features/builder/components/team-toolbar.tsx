@@ -5,6 +5,7 @@ import {
   Eraser,
   FileCode,
   FolderOpen,
+  ImageDown,
   Link2,
   Save,
   Share2,
@@ -24,6 +25,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGameData } from "@/lib/data/hooks";
 import { cn } from "@/lib/utils";
+import { imageFileName, renderBoardImage } from "../board-image";
 import { encodeShareCode } from "../share-link";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
@@ -43,9 +45,9 @@ function MenuText({ title, hint }: { title: string; hint: string }) {
 type Panel = "import" | "save" | "saved" | "export" | null;
 
 export function TeamToolbar() {
-  const { champions } = useGameData();
+  const { champions, championsByApi, itemsByApi } = useGameData();
   const { set, board, boards, level, clear, setBoard } = useBuilder();
-  const { units, cost } = useBoardSummary();
+  const { units, traits, cost } = useBoardSummary();
   const [panel, setPanel] = useState<Panel>(null);
   const codesSupported = supportsTeamCodes(champions);
   const flexUnits = units.filter((unit) => unit.flex).length;
@@ -73,6 +75,27 @@ export function TeamToolbar() {
       toast.success("Team code copied. Paste it into the in-game Team Planner.");
     } catch {
       toast.error("Couldn't access the clipboard.", { description: code });
+    }
+  };
+
+  const saveImage = async () => {
+    const title = `Set ${set} · Level ${level}`;
+    try {
+      const blob = await renderBoardImage({
+        title,
+        subtitle: `${coreUnits} units${flexUnits ? ` + ${flexUnits} flex` : ""} · ${cost} gold`,
+        board,
+        traits,
+        championsByApi,
+        itemsByApi,
+      });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = imageFileName(title);
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      toast.error("Couldn't create the image.", { description: error instanceof Error ? error.message : undefined });
     }
   };
 
@@ -119,6 +142,10 @@ export function TeamToolbar() {
           <DropdownMenuItem onSelect={copyLink} disabled={units.length === 0}>
             <Link2 />
             <MenuText title="Copy link" hint="Opens this team, every level included, in the Team Builder" />
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={saveImage} disabled={units.length === 0}>
+            <ImageDown />
+            <MenuText title="Save as image" hint="A PNG of this board and its traits, for sharing anywhere" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs text-muted-foreground">In-game Team Planner</DropdownMenuLabel>

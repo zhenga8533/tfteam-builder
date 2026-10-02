@@ -18,6 +18,7 @@ import { StatTable } from "@/features/stats/components/stat-table";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { percent } from "@/features/stats/format";
+import { stageRound } from "@/lib/game/rounds";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 
 export const Route = createFileRoute("/comps/auto/$id")({
@@ -26,6 +27,27 @@ export const Route = createFileRoute("/comps/auto/$id")({
     isRankFloor(search.rank) ? { rank: search.rank } : {},
   component: AutoCompPage,
 });
+
+/** When the comp tends to bow out and how hard it hits on the way: early-game strength versus a late spike. */
+function GameLength({ knockoutRound, damage }: { knockoutRound?: number; damage?: number }) {
+  if (knockoutRound === undefined && damage === undefined) return null;
+  return (
+    <dl className="mt-3 grid grid-cols-2 gap-2 border-t pt-3 text-xs">
+      {knockoutRound !== undefined && (
+        <div title="Median round it's knocked out on, in games it doesn't win">
+          <dt className="text-muted-foreground">Out around</dt>
+          <dd className="font-display text-base font-semibold tabular-nums">{stageRound(knockoutRound)}</dd>
+        </div>
+      )}
+      {damage !== undefined && (
+        <div title="Average damage dealt to other players per game">
+          <dt className="text-muted-foreground">Damage per game</dt>
+          <dd className="font-display text-base font-semibold tabular-nums">{damage}</dd>
+        </div>
+      )}
+    </dl>
+  );
+}
 
 function UnitFrequencies({ units }: { units: { apiName: string; frequency: number }[] }) {
   const { championsByApi } = useGameData();
@@ -105,6 +127,7 @@ function AutoCompPage() {
           {comp.places && (
             <Section title="Placements">
               <PlacementChart places={comp.places} />
+              <GameLength knockoutRound={comp.knockoutRound} damage={comp.damage} />
             </Section>
           )}
           {comp.byLevel.length > 1 && (
