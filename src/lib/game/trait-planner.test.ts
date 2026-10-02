@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Champion, Trait } from "@/lib/data/schema";
-import { autofill, traitLadder, type PlannerData } from "./trait-planner";
+import { autofill, autofillOptions, defaultMaxCost, traitLadder, type PlannerData } from "./trait-planner";
 import { computeTraits } from "./traits";
 
 const champion = (apiName: string, traits: string[], cost = 1, formOf?: string) =>
@@ -85,6 +85,23 @@ describe("trait planner", () => {
     // Building around WideA keeps both of its units even in levels mode.
     const around = names({ mode: "levels", around: "WideA" });
     expect(around.has("A1") && around.has("A2")).toBe(true);
+  });
+
+  it("skips champions above the cost limit, which defaults by level", () => {
+    const picks = autofill(units(), 3, data, { mode: "levels" }, { maxCost: 1 });
+    expect(picks.every((entry) => entry.cost <= 1)).toBe(true);
+    expect([defaultMaxCost(4), defaultMaxCost(7), defaultMaxCost(9)]).toEqual([3, 4, 5]);
+  });
+
+  it("offers distinct suggestions, each at least two champions apart", () => {
+    const options = autofillOptions(units(), 3, data, { mode: "most" }, { count: 3 });
+    expect(options.length).toBeGreaterThan(1);
+    for (const [i, a] of options.entries()) {
+      for (const b of options.slice(i + 1)) {
+        const names = new Set(a.map((entry) => entry.apiName));
+        expect(b.filter((entry) => !names.has(entry.apiName)).length).toBeGreaterThanOrEqual(2);
+      }
+    }
   });
 
   it("stops when no champion is left to add", () => {

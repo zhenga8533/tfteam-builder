@@ -4,7 +4,6 @@ import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { placementOrder } from "@/features/comps/auto-place";
 import type { Champion } from "@/lib/data/schema";
 import * as B from "@/lib/game/board";
-import { autofill, type AutofillGoal } from "@/lib/game/trait-planner";
 import { computeTraits } from "@/lib/game/traits";
 import { DEFAULT_LEVEL, EMPTY_TEAM, teamOf, useBuilderStore } from "./store";
 
@@ -85,21 +84,10 @@ export function useBuilder() {
       if (!board.includes(null)) toast.error("The board is full.");
       else commit(placeAll(board, [champion]));
     },
-    /**
-     * Fills the open slots up to the board's level with the champions that activate the most traits.
-     * Flex units don't take a slot. Returns the champions added.
-     */
-    autofill: (goal: AutofillGoal, strength?: (champion: Champion) => number): Champion[] => {
-      const core = B.boardUnits(board).filter((unit) => !unit.flex);
-      const slots = Math.min(level - core.length, board.filter((unit) => unit === null).length);
-      if (slots <= 0) {
-        toast(`Level ${level} already fields ${core.length} units.`);
-        return [];
-      }
-      const picks = autofill(core, slots, data, goal, strength);
-      commit(placeAll(board, picks));
+    /** Places several champions where they'd usually stand, e.g. an autofill suggestion. */
+    addChampions: (champions: Champion[]) => {
+      commit(placeAll(board, champions));
       select(null);
-      return picks;
     },
     move: (from: number, to: number) => {
       commit(B.moveUnit(board, from, to));
@@ -140,7 +128,11 @@ export function useBuilder() {
     unequip: (index: number, itemIndex: number) => commit(B.unequipItem(board, index, itemIndex)),
   };
 
-  return { set, board, level, boards: team.boards, active: team.active, selected, ...actions };
+  // Flex units are optional, so they don't take one of the level's slots.
+  const coreCount = B.boardUnits(board).filter((unit) => !unit.flex).length;
+  const openSlots = Math.max(0, Math.min(level - coreCount, board.filter((unit) => unit === null).length));
+
+  return { set, board, level, boards: team.boards, active: team.active, selected, openSlots, ...actions };
 }
 
 /** Derived board stats; kept separate so per-hex components don't recompute them. */
