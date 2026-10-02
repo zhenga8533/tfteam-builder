@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Champion, Trait } from "@/lib/data/schema";
 import { autofill, traitLadder, type PlannerData } from "./trait-planner";
+import { computeTraits } from "./traits";
 
 const champion = (apiName: string, traits: string[], cost = 1, formOf?: string) =>
   ({ apiName, name: apiName, cost, traits, ...(formOf && { formOf }) }) as Champion;
@@ -43,6 +44,47 @@ describe("trait planner", () => {
     expect(picks).not.toContain("LuxMage");
     // 2 Mage + 2 Guard; A3 ties A1 on traits and wins on cost, the default strength.
     expect(new Set(picks)).toEqual(new Set(["A2", "A3", "B1"]));
+  });
+
+  it("spreads traits for most traits, goes deep for levels, and builds around a chosen trait", () => {
+    const pool = [
+      ...["D1", "D2", "D3", "D4"].map((name) => champion(name, ["Deep"])),
+      champion("A1", ["WideA"]),
+      champion("A2", ["WideA"]),
+      champion("B1", ["WideB"]),
+      champion("B2", ["WideB"]),
+    ];
+    const deep: PlannerData = {
+      champions: pool,
+      championsByApi: new Map(pool.map((entry) => [entry.apiName, entry])),
+      traitsByApi: new Map(
+        [
+          {
+            ...trait("Deep", [2, 4]),
+            breakpoints: [
+              { minUnits: 2, style: 1 },
+              { minUnits: 4, style: 5 },
+            ],
+          },
+          trait("WideA", [2]),
+          trait("WideB", [2]),
+        ].map((entry) => [entry.apiName, entry as Trait]),
+      ),
+      itemsByApi: new Map(),
+    };
+    const names = (goal: Parameters<typeof autofill>[3]) =>
+      new Set(autofill([], 4, deep, goal).map((entry) => entry.apiName));
+    // Two bronze traits beat one gold trait on count (any two pairs will do)…
+    const most = autofill([], 4, deep, { mode: "most" }).map((entry) => ({ apiName: entry.apiName, items: [] }));
+    const active = computeTraits(most, deep.championsByApi, deep.traitsByApi, deep.itemsByApi).filter(
+      (state) => state.activeIndex >= 0,
+    );
+    expect(active.map((state) => state.style)).toEqual(["bronze", "bronze"]);
+    // …but gold (3) beats two bronzes (2) on levels.
+    expect(names({ mode: "levels" })).toEqual(new Set(["D1", "D2", "D3", "D4"]));
+    // Building around WideA keeps both of its units even in levels mode.
+    const around = names({ mode: "levels", around: "WideA" });
+    expect(around.has("A1") && around.has("A2")).toBe(true);
   });
 
   it("stops when no champion is left to add", () => {
