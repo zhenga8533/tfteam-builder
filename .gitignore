@@ -27,3 +27,7 @@ dist-ssr
 public/data
 /.stats-local
 /stats
+
+# Playwright
+/test-results
+/playwright-report

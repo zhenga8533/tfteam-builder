@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { TraitCard } from "@/components/game/cards";
 import { TraitIcon } from "@/components/game/icons";
 import { TRAIT_TEXT } from "@/components/game/styles";
@@ -10,6 +10,7 @@ import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
 import { type TraitStyle, traitStyle } from "@/lib/game/traits";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, stringParam } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -41,9 +42,7 @@ function TraitTierListPage() {
     .filter((line) => traitsByApi.has(line.trait))
     .map((line) => [traitKey(line.trait, line.minUnits), line] as [string, typeof line]);
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
-  const update = (patch: Partial<TraitTierSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<TraitTierSearch>();
   const visible = (key: string) => {
     const [apiName = "", minUnits = ""] = key.split(":");
     const trait = traitsByApi.get(apiName);

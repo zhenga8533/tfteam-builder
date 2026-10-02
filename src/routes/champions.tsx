@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
@@ -15,6 +15,7 @@ import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, numberParam, stringParam } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -80,11 +81,9 @@ function SplashBanner({ champion }: { champion: Champion }) {
 function ChampionsPage() {
   const { champions } = useGameData();
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
   const [selected, setSelected] = useState<Champion | null>(null);
 
-  const update = (patch: Partial<ChampionSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<ChampionSearch>();
 
   const stats = useStats();
   const groups = useMemo(() => {

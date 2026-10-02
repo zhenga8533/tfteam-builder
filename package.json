@@ -20,7 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "crawl": "tsx scripts/stats/crawl.ts",
-    "stats": "tsx scripts/build-stats.ts"
+    "stats": "tsx scripts/build-stats.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.42",
     "@types/node": "^26.6.3",

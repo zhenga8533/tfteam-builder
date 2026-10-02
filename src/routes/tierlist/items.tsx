@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ItemCard } from "@/components/game/cards";
 import { ItemKindFilter } from "@/components/game/filters";
 import { ItemIcon } from "@/components/game/icons";
@@ -10,6 +10,7 @@ import { TierEntry } from "@/features/stats/components/tier-entry";
 import { ITEM_KINDS } from "@/lib/data/constants";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
 import type { ItemKind } from "@/lib/data/schema";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, stringParam } from "@/lib/search";
 
 interface ItemTierSearch {
@@ -37,9 +38,7 @@ function ItemTierListPage() {
     ([apiName]) => itemsByApi.has(apiName) && itemsByApi.get(apiName)?.kind !== "component",
   );
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
-  const update = (patch: Partial<ItemTierSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<ItemTierSearch>();
   const kinds = RANKED_KINDS.filter((kind) => lines.some(([apiName]) => itemsByApi.get(apiName)?.kind === kind));
   const visible = (apiName: string) => {
     const item = itemsByApi.get(apiName);

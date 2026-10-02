@@ -22,7 +22,8 @@ import { patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
-import { type BoardChunk, comparePatches, createStatsStore, type StatsStore } from "./stats/state.ts";
+import { CachingBlobStore } from "./stats/blob.ts";
+import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
 import type { BoardRow, PatchCounters } from "./stats/types.ts";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
@@ -143,11 +144,13 @@ async function publishSavedSummary(store: StatsStore, set: number) {
 }
 
 async function main() {
-  const store = createStatsStore(args.stats);
-  if (!store) {
+  const source = createStatsStore(args.stats);
+  if (!source) {
     console.log("No R2 credentials or --stats directory; skipping stats.");
     return;
   }
+  // Each set's boards are read in several passes (counters, champion and comp details, the Explorer sample).
+  const store = new StatsStore(new CachingBlobStore(source.blobs, "boards/"));
   const chunks = await store.listBoardChunks();
 
   // Stats describe live ranked games, so they're built against live-patch game data only.

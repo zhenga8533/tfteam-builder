@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AugmentCard } from "@/components/game/cards";
 import { AugmentTierFilter } from "@/components/game/filters";
 import { isAugmentTier } from "@/components/game/styles";
@@ -8,6 +8,7 @@ import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGameData } from "@/lib/data/hooks";
 import type { AugmentTier } from "@/lib/data/schema";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, numberParam, stringParam } from "@/lib/search";
 
 interface AugmentSearch {
@@ -27,13 +28,11 @@ export const Route = createFileRoute("/augments")({
 function AugmentsPage() {
   const { augments } = useGameData();
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
   const filtered = augments.filter(
     (augment) => matches(augment.name, search.q) && (search.tier === undefined || augment.tier === search.tier),
   );
 
-  const update = (patch: Partial<AugmentSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<AugmentSearch>();
 
   return (
     <>

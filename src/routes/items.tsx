@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ItemCard } from "@/components/game/cards";
 import { ItemKindFilter } from "@/components/game/filters";
@@ -11,6 +11,7 @@ import { ITEM_KINDS } from "@/lib/data/constants";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Item, ItemKind } from "@/lib/data/schema";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, stringParam } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -169,13 +170,11 @@ function ItemsPage() {
   const { items } = useGameData();
   const stats = useStats();
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
   const kind = search.kind ?? "completed";
   const kinds = ITEM_KINDS.filter((option) => items.some((item) => item.kind === option));
   const filtered = items.filter((item) => item.kind === kind && matches(item.name, search.q));
 
-  const update = (patch: Partial<ItemSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<ItemSearch>();
 
   return (
     <>

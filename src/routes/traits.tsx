@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { TraitCard } from "@/components/game/cards";
 import { ChampionLink } from "@/components/game/links";
@@ -11,6 +11,7 @@ import { percent } from "@/features/stats/format";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { TraitStat } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/traits")({
@@ -39,7 +40,7 @@ function TraitsPage() {
   const { traits, champions } = useGameData();
   const stats = useStats();
   const { q } = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const update = useUpdateSearch<{ q?: string }>();
 
   const sections = useMemo(() => {
     const withChampions = traits
@@ -74,7 +75,7 @@ function TraitsPage() {
       <div className="mb-6 flex">
         <SearchInput
           value={q ?? ""}
-          onChange={(value) => navigate({ search: { q: value || undefined }, replace: true })}
+          onChange={(value) => update({ q: value || undefined })}
           placeholder="Search traits"
         />
       </div>

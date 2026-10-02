@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ChampionFilter, TraitFilter } from "@/components/game/filters";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
@@ -15,6 +15,7 @@ import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useActiveSet, useAutoComps, useGameData, useStats } from "@/lib/data/hooks";
 import type { AutoComp } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
+import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, stringParam } from "@/lib/search";
 
 type View = "stats" | "guides";
@@ -134,11 +135,9 @@ function CompTierListPage() {
   const detected = useAutoComps() ?? [];
   const guides = compsForSet(set);
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
   const view: View = search.view ?? (detected.length > 0 ? "stats" : "guides");
 
-  const update = (patch: Partial<CompSearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const update = useUpdateSearch<CompSearch>();
 
   return (
     <>
