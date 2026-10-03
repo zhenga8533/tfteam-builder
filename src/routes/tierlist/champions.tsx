@@ -53,6 +53,7 @@ function ChampionTierListPage() {
   return (
     <StatTierList
       title="Champion Tier List"
+      entries="champions"
       description={`Set ${set} champions ranked by average placement in ranked games.`}
       lines={lines}
       overrides={tierListForSet(set)?.champions}

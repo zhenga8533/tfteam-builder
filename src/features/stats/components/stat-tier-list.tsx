@@ -13,6 +13,8 @@ import { StatsMeta } from "./stats-meta";
 
 interface StatTierListProps {
   title: string;
+  /** What the list ranks, plural, for the no-matches message ("champions"). */
+  entries: string;
   description: string;
   /** Entries from the stats file, keyed the same way as `overrides`. */
   lines: [key: string, line: StatLine][];
@@ -51,6 +53,7 @@ function EntryList({ keys, renderEntry, lines }: EntryListProps) {
  */
 export function StatTierList({
   title,
+  entries,
   description,
   lines,
   overrides = {},
@@ -88,7 +91,7 @@ export function StatTierList({
       {!hasStats ? (
         <NoStats />
       ) : Object.keys(rows).length === 0 && lowSample.length === 0 ? (
-        <EmptyState>Nothing matches these filters.</EmptyState>
+        <EmptyState>No {entries} match these filters.</EmptyState>
       ) : (
         <div className="space-y-3">
           <TierRowsView

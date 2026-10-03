@@ -7,6 +7,7 @@ import {
   autoCompsSchema,
   championStatsSchema,
   itemStatsSchema,
+  littleLegendsSchema,
   patchHistorySchema,
   type Manifest,
   type RankFloor,
@@ -22,6 +23,7 @@ import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { compTrends, patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
+import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
 import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
 import { buildFloorStats, buildRegionStats, buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
@@ -117,10 +119,12 @@ async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, 
   const champions = new ChampionAccumulator();
   const database = new DatabaseAccumulator();
   const comps = new CompDetector(data);
+  const legends = new LittleLegendAccumulator();
   await eachBoard((board) => {
     champions.add(board);
     database.add(board);
     comps.count(board);
+    legends.add(board);
   });
   await eachBoard((board) => comps.add(board));
   const detected = comps.results();
@@ -142,6 +146,18 @@ async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, 
   await writeAll("items", items, (entry) => itemStatsSchema.parse(entry));
   await writeAll("traits", traits, (entry) => traitStatsSchema.parse(entry));
   await writeFile(join(dir, "comps.json"), JSON.stringify(await withCompTrends(store, stats, detected)));
+
+  // Only boards crawled since rows recorded companions have them; the page explains when there are none yet.
+  if (legends.size) {
+    try {
+      const file = littleLegendsSchema.parse({ legends: legends.results(await fetchCompanions()) });
+      await writeFile(join(dir, "little-legends.json"), JSON.stringify(file));
+      console.log(`  ${file.legends.length} Little Legends`);
+    } catch (error) {
+      // Cosmetic stats shouldn't hold back the rest of the site's data.
+      console.warn(`  Skipped Little Legends: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   const explorer: ExplorerBoard[] = [];
   for (const chunk of [...sample].sort((a, b) => b.name.localeCompare(a.name))) {

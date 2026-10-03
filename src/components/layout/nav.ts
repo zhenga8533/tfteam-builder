@@ -31,6 +31,7 @@ export const NAV: (NavLink | NavGroup)[] = [
       { label: "Traits", to: "/traits", description: "Breakpoints and bonuses" },
       { label: "Items", to: "/items", description: "Recipes and effects" },
       { label: "Augments", to: "/augments", description: "Silver, gold and prismatic" },
+      { label: "Little Legends", to: "/little-legends", description: "Most popular in ranked" },
     ],
   },
   {

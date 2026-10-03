@@ -69,7 +69,7 @@ function AugmentTierListPage() {
             <AugmentTierFilter value={search.tier} onChange={(tier) => update({ tier })} />
           </div>
           {Object.keys(rows).length === 0 ? (
-            <EmptyState>Nothing matches these filters.</EmptyState>
+            <EmptyState>No augments match these filters.</EmptyState>
           ) : (
             <TierRows
               rows={rows}

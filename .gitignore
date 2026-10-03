@@ -31,3 +31,5 @@ public/data
 # Playwright
 /test-results
 /playwright-report
+
+.tanstack/

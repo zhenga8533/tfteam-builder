@@ -64,6 +64,7 @@ function TraitTierListPage() {
   return (
     <StatTierList
       title="Trait Tier List"
+      entries="traits"
       description={`Set ${set} trait breakpoints ranked by average placement.`}
       lines={lines}
       overrides={tierListForSet(set)?.traits}

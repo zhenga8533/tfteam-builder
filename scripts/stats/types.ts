@@ -30,6 +30,8 @@ export interface MatchParticipant {
   /** The last round played: when the player was eliminated, or the game's final round for the winner. */
   last_round?: number;
   total_damage_to_players?: number;
+  /** The player's Little Legend (or Chibi); `content_ID` matches CDragon's companions.json. */
+  companion?: { content_ID: string };
   traits: MatchTrait[];
   units: MatchUnit[];
 }
@@ -71,6 +73,8 @@ export type BoardRow = [
   // Added later, so boards stored before then don't have them.
   lastRound?: number,
   damage?: number,
+  /** The Little Legend's content ID, or "" when the match didn't say. */
+  companion?: string,
 ];
 
 export type { Counter } from "../../src/lib/game/stat-line.ts";

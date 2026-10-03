@@ -274,3 +274,15 @@ export const autoCompsSchema = z.object({
   trendPatch: z.string().optional(),
 });
 export type AutoComps = z.infer<typeof autoCompsSchema>;
+
+export const littleLegendSchema = statLineSchema.extend({
+  name: z.string(),
+  species: z.string(),
+  icon: z.string(),
+  kind: z.enum(["legend", "chibi"]),
+});
+export type LittleLegend = z.infer<typeof littleLegendSchema>;
+
+/** Little Legends on the published stats' boards, most played first; `play` is the share of players. */
+export const littleLegendsSchema = z.object({ legends: z.array(littleLegendSchema) });
+export type LittleLegends = z.infer<typeof littleLegendsSchema>;

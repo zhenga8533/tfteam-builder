@@ -25,6 +25,7 @@ export interface ResolvedBoard {
   /** Round the player was knocked out (or the final round, for the winner); missing on older boards. */
   lastRound?: number;
   damage?: number;
+  companion?: string;
 }
 
 /** Maps stored rows (Riot's names) onto the site's data: forms, item variants and trait breakpoints. */
@@ -40,7 +41,7 @@ export class BoardResolver {
   }
 
   board(row: BoardRow): ResolvedBoard {
-    const [, , , placement, level, rawUnits, rawTraits, lastRound, damage] = row;
+    const [, , , placement, level, rawUnits, rawTraits, lastRound, damage, companion] = row;
     const units = rawUnits.flatMap(([rawUnit, star, rawItems]) => {
       const apiName = this.resolve.units.resolve(rawUnit, 0);
       if (!apiName) return [];
@@ -56,6 +57,6 @@ export class BoardResolver {
       const breakpoint = apiName ? this.breakpoints.get(apiName)?.[tier - 1] : undefined;
       return apiName && breakpoint ? [{ apiName, minUnits: breakpoint.minUnits, style: breakpoint.style, count }] : [];
     });
-    return { placement, level, units, traits, lastRound, damage };
+    return { placement, level, units, traits, lastRound, damage, companion: companion || undefined };
   }
 }

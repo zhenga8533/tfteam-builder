@@ -26,7 +26,7 @@ export function avgPlacementClass(avg: number) {
   return "text-destructive";
 }
 
-export const percent = (value: number) => `${Math.round(value * 100)}%`;
+export const percent = (value: number, digits = 0) => `${Math.round(value * 10 ** (digits + 2)) / 10 ** digits}%`;
 
 export const count = (value: number) => value.toLocaleString("en-US");
 

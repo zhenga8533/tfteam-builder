@@ -37,8 +37,13 @@ export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
         .map((trait) => [trait.name, trait.tier_current, trait.num_units]),
     ];
     // Appended only when present: JSON would store trailing undefineds as nulls.
-    if (participant.last_round !== undefined)
-      row.push(participant.last_round, participant.total_damage_to_players ?? 0);
+    if (participant.last_round !== undefined) {
+      row.push(
+        participant.last_round,
+        participant.total_damage_to_players ?? 0,
+        participant.companion?.content_ID ?? "",
+      );
+    }
     return row;
   });
 }

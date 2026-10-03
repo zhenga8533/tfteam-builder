@@ -22,6 +22,7 @@ const PAGES = [
   ["items", "items", "Items"],
   ["traits", "traits", "Traits"],
   ["augments", "augments", "Augments"],
+  ["little legends", "little-legends", "Little Legends"],
   ["explorer", "explorer", "Explorer"],
   ["patch changes", "tierlist/changes", "Patch Changes"],
   ["compare", "compare", "Compare"],
