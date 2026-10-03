@@ -96,8 +96,21 @@ test("the guide editor turns the board into a comp file", async ({ page }) => {
   await page.getByLabel("Comp name").fill("Smoke Test");
   await page.getByLabel("Summary").fill("A summary.");
   await expect(submit).toBeEnabled();
+
+  // Enter starts the next tip; Backspace in an empty one removes it.
+  await page.getByRole("textbox", { name: "Tip 1", exact: true }).fill("First tip.");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Second tip.");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("textbox", { name: "Tip 3", exact: true })).toBeFocused();
+  await page.keyboard.press("Backspace");
+  await expect(page.getByRole("textbox", { name: "Tip 3", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Tip 2", exact: true })).toBeFocused();
+
   await page.getByText(/^File:/).click();
-  await expect(page.getByRole("dialog").locator("pre")).toContainText('slug: "set');
+  const file = page.getByRole("dialog").locator("pre");
+  await expect(file).toContainText('slug: "set');
+  await expect(file).toContainText('tips: ["First tip.", "Second tip."]');
 });
 
 test("site search opens a page", async ({ page }) => {

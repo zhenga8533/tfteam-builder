@@ -32,6 +32,7 @@ import { boardUnits } from "@/lib/game/board";
 import { pickCarries } from "@/lib/game/comp-signature";
 import { REPOSITORY } from "@/lib/site";
 import { useBuilder } from "../use-builder";
+import { TipsInput } from "./tips-input";
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
 /** GitHub rejects longer URLs; past this the file is copied and pasted into an empty new-file page instead. */
@@ -286,13 +287,8 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
                 clearable={false}
               />
             </Field>
-            <Field label="Tips, one per line">
-              <Textarea
-                value={guide.tips.join("\n")}
-                onChange={(event) => update({ tips: event.target.value.split("\n") })}
-                placeholder="Slam Blue Buff early; it goes on Ahri later."
-                aria-label="Tips"
-              />
+            <Field label="Tips">
+              <TipsInput tips={guide.tips} onChange={(tips) => update({ tips })} />
             </Field>
           </div>
 
