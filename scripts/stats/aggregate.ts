@@ -1,5 +1,5 @@
 import { addCounter, bump as bumpCounter, emptyCounter } from "../../src/lib/game/stat-line.ts";
-import type { BoardRow, Counter, Counters, Match, PatchCounters, RankBucket } from "./types.ts";
+import type { BoardExtras, BoardRow, Counter, Counters, Match, PatchCounters, RankBucket } from "./types.ts";
 
 export const RANKED_QUEUE_ID = 1100;
 
@@ -36,14 +36,13 @@ export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
         .filter((trait) => trait.tier_current > 0)
         .map((trait) => [trait.name, trait.tier_current, trait.num_units]),
     ];
-    // Appended only when present: JSON would store trailing undefineds as nulls.
-    if (participant.last_round !== undefined) {
-      row.push(
-        participant.last_round,
-        participant.total_damage_to_players ?? 0,
-        participant.companion?.content_ID ?? "",
-      );
-    }
+    const extras: BoardExtras = {
+      lastRound: participant.last_round,
+      damage: participant.total_damage_to_players,
+      companion: participant.companion?.content_ID,
+    };
+    // JSON drops the undefined fields, so only what the match reported is stored.
+    if (Object.values(extras).some((value) => value !== undefined)) row.push(extras);
     return row;
   });
 }

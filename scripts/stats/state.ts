@@ -3,7 +3,7 @@ import { type BlobStore, FileBlobStore } from "./blob.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
 import type { AutoComp, RankFloor, SetStats } from "../../src/lib/data/schema.ts";
 import type { TftPatch } from "../lib/tft-patches.ts";
-import type { BoardRow, PlatformState } from "./types.ts";
+import type { BoardExtras, BoardRow, PlatformState } from "./types.ts";
 
 export interface BoardChunk {
   key: string;
@@ -25,6 +25,17 @@ const BOARD_KEY = /^boards\/set(\d+)\/([^/]+)\/([^/]+)\.jsonl\.gz$/;
  *   summaries/set{N}/ranks/{floor}/{patch}.json    the same for other rank floors
  *   comps/set{N}/[ranks/{floor}/]{patch}.json       detected comps per patch, for comp trends
  */
+/**
+ * Reads a stored row. Rows crawled briefly before `BoardExtras` kept its fields positionally after the traits
+ * (`lastRound, damage, companion`, with "" for no companion); they're read into the named form.
+ */
+export function namedExtras(row: unknown[]): BoardRow {
+  if (typeof row[7] !== "number") return row as BoardRow;
+  const [lastRound, damage, companion] = row.slice(7) as [number, number, string?];
+  const extras: BoardExtras = { lastRound, damage, ...(companion && { companion }) };
+  return [...row.slice(0, 7), extras] as unknown[] as BoardRow;
+}
+
 export class StatsStore {
   readonly blobs: BlobStore;
 
@@ -95,7 +106,7 @@ export class StatsStore {
       .decode(gunzipSync(data))
       .split("\n")
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as BoardRow);
+      .map((line) => namedExtras(JSON.parse(line) as unknown[]));
   }
 
   /** Keeps boards for the newest `keep` patches of each set; summaries are never pruned. */

@@ -17,6 +17,7 @@ export default defineConfig({
   webServer: {
     command: `npx vite preview --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}/tfteam-builder/`,
-    reuseExistingServer: !process.env.CI,
+    // Always a fresh server: a leftover preview would serve whatever build it started with.
+    reuseExistingServer: false,
   },
 });

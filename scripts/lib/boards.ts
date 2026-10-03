@@ -41,7 +41,7 @@ export class BoardResolver {
   }
 
   board(row: BoardRow): ResolvedBoard {
-    const [, , , placement, level, rawUnits, rawTraits, lastRound, damage, companion] = row;
+    const [, , , placement, level, rawUnits, rawTraits, extras = {}] = row;
     const units = rawUnits.flatMap(([rawUnit, star, rawItems]) => {
       const apiName = this.resolve.units.resolve(rawUnit, 0);
       if (!apiName) return [];
@@ -57,6 +57,7 @@ export class BoardResolver {
       const breakpoint = apiName ? this.breakpoints.get(apiName)?.[tier - 1] : undefined;
       return apiName && breakpoint ? [{ apiName, minUnits: breakpoint.minUnits, style: breakpoint.style, count }] : [];
     });
-    return { placement, level, units, traits, lastRound, damage, companion: companion || undefined };
+    const { lastRound, damage, companion } = extras;
+    return { placement, level, units, traits, lastRound, damage, companion };
   }
 }

@@ -79,6 +79,11 @@ test("the team builder saves the board as an image", async ({ page }, testInfo) 
   await page.getByRole("menuitem", { name: /Save as image/ }).click();
   expect((await download).suggestedFilename()).toMatch(/\.png$/);
   await (await download).saveAs(testInfo.outputPath("board.png"));
+
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByRole("button", { name: "Share" }).click();
+  await page.getByRole("menuitem", { name: /Copy image/ }).click();
+  await expect(page.getByText("Board image copied.")).toBeVisible();
 });
 
 test("site search opens a page", async ({ page }) => {

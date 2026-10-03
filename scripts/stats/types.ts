@@ -70,12 +70,19 @@ export type BoardRow = [
   level: number,
   units: BoardUnitRow[],
   traits: BoardTraitRow[],
-  // Added later, so boards stored before then don't have them.
-  lastRound?: number,
-  damage?: number,
-  /** The Little Legend's content ID, or "" when the match didn't say. */
-  companion?: string,
+  // Added later, so boards stored before then don't have it.
+  extras?: BoardExtras,
 ];
+
+/** Board details beyond the original fields, by name so more can be added without tracking positions. */
+export interface BoardExtras {
+  /** The last round played: when the player was knocked out, or the game's final round for the winner. */
+  lastRound?: number;
+  /** Damage dealt to other players. */
+  damage?: number;
+  /** The Little Legend's content ID (CDragon's companions.json). */
+  companion?: string;
+}
 
 export type { Counter } from "../../src/lib/game/stat-line.ts";
 import type { Counter } from "../../src/lib/game/stat-line.ts";
