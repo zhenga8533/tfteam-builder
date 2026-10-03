@@ -58,6 +58,7 @@ function ItemTierListPage() {
       description={`Set ${set} items ranked by the average placement of the units holding them.`}
       lines={lines}
       overrides={tierListForSet(set)?.items}
+      fallback={tierListForSet(set)?.fallback?.items}
       visible={visible}
       stats={stats}
       rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}

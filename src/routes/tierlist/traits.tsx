@@ -68,6 +68,7 @@ function TraitTierListPage() {
       description={`Set ${set} trait breakpoints ranked by average placement.`}
       lines={lines}
       overrides={tierListForSet(set)?.traits}
+      fallback={tierListForSet(set)?.fallback?.traits}
       visible={visible}
       stats={stats}
       rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}

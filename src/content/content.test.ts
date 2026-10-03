@@ -72,9 +72,11 @@ describe("tier lists", () => {
     const unknown = (rows: TierRows | undefined, valid: Set<string>) =>
       Object.values(rows ?? {}).flatMap((row) => row.filter((entry) => !valid.has(entry)));
     const problems = [
-      ...unknown(list.champions, champions),
-      ...unknown(list.items, items),
-      ...unknown(list.traits, traits),
+      ...[list, list.fallback ?? {}].flatMap((rows) => [
+        ...unknown(rows.champions, champions),
+        ...unknown(rows.items, items),
+        ...unknown(rows.traits, traits),
+      ]),
       ...unknown(list.augments, augments),
     ].map((entry) => `unknown ${entry}`);
     expect(problems).toEqual([]);

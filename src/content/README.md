@@ -11,7 +11,7 @@ tierlists/set{N}.ts      tier overrides and the augment tier list for a set (`sa
 
 Champion, item and trait tiers are generated from match stats (see the README's Match Stats section). The rows in
 `tierlists/set{N}.ts` override individual tiers. A listed entry moves to that tier, and everything else keeps its
-generated tier:
+generated tier. Overridden entries carry a pin on the tier list, so visitors can tell them from stats-based tiers:
 
 ```ts
 champions: { S: ["DA_18_Ahri"] },
@@ -19,7 +19,13 @@ items: { A: ["TFT_Item_BlueBuff"], X: ["TFT_Item_ThiefsGloves"] },
 traits: { S: ["DA_18_Blossom:5"] }, // trait apiName and breakpoint (minimum units)
 ```
 
-When no stats are published (for example before crawling is enabled), the item rows are the whole item tier list.
+`fallback` holds whole hand-written champion, item or trait tier lists for when there are no match stats (before
+crawling starts, or on PBE). Once stats exist it's ignored, so a stopgap list can't keep overriding real data:
+
+```ts
+fallback: { items: { S: ["TFT_Item_JeweledGauntlet"], A: ["TFT_Item_BlueBuff"] } },
+```
+
 Augments aren't in Riot's match data, so `augments` is always the complete, hand-written augment tier list.
 
 ## Adding a comp
