@@ -86,6 +86,20 @@ test("the team builder saves the board as an image", async ({ page }, testInfo) 
   await expect(page.getByText("Board image copied.")).toBeVisible();
 });
 
+test("the guide editor turns the board into a comp file", async ({ page }) => {
+  await page.goto("builder");
+  await page.locator('[aria-roledescription="draggable"][aria-label^="Add "]').nth(0).click();
+  await page.getByRole("button", { name: "Share" }).click();
+  await page.getByRole("menuitem", { name: /Write a comp guide/ }).click();
+  const submit = page.getByRole("button", { name: "Submit on GitHub" });
+  await expect(submit).toBeDisabled();
+  await page.getByLabel("Comp name").fill("Smoke Test");
+  await page.getByLabel("Summary").fill("A summary.");
+  await expect(submit).toBeEnabled();
+  await page.getByText(/^File:/).click();
+  await expect(page.getByRole("dialog").locator("pre")).toContainText('slug: "set');
+});
+
 test("site search opens a page", async ({ page }) => {
   await page.goto("");
   await expect(page.getByRole("button", { name: "Search" })).toBeVisible();

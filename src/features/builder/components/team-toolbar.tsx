@@ -4,13 +4,15 @@ import {
   ClipboardCopy,
   ClipboardPaste,
   Eraser,
-  FileCode,
+  NotebookPen,
   FolderOpen,
   ImageDown,
   Link2,
   Save,
   Share2,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatIcon } from "@/components/game/stat-icon";
@@ -24,13 +26,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useGameData } from "@/lib/data/hooks";
+import type { GuideDetails } from "@/content/serialize";
+import { guideFromComp } from "@/features/comps/guide-from-comp";
+import { useActiveSet, useGameData } from "@/lib/data/hooks";
+import { autoCompsQuery } from "@/lib/data/queries";
 import { cn } from "@/lib/utils";
 import { boardTitle, imageFileName, renderBoardImage } from "../board-image";
 import { encodeShareCode } from "../share-link";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
-import { ExportCompDialog } from "./export-comp-dialog";
+import { GuideEditorDialog } from "./guide-editor-dialog";
 import { SavedTeamsSheet, SaveTeamDialog } from "./saved-teams";
 import { ImportTeamCodeDialog } from "./team-code-dialog";
 
@@ -47,13 +52,32 @@ function MenuHeading({ children }: { children: string }) {
   return <DropdownMenuLabel className="text-xs text-muted-foreground">{children}</DropdownMenuLabel>;
 }
 
-type Panel = "import" | "save" | "saved" | "export" | null;
+type Panel = "import" | "save" | "saved" | "guide" | null;
+
+interface GuideStart {
+  /** Remounts the editor when a different comp seeds it. */
+  key: string;
+  initial?: Partial<GuideDetails>;
+}
+
+/** The detected comp a "Write a guide" link names in the URL, once its comps have loaded. */
+function useGuideFromSearch(): GuideStart | undefined {
+  const { patch } = useActiveSet();
+  const { guide } = useSearch({ from: "/builder" });
+  const { set } = useBuilder();
+  const comps = useQuery({ ...autoCompsQuery(patch, set), enabled: Boolean(guide) }).data?.comps;
+  const comp = guide ? comps?.find((entry) => entry.id === guide) : undefined;
+  return comp && { key: comp.id, initial: guideFromComp(comp) };
+}
 
 export function TeamToolbar() {
   const { champions, championsByApi, itemsByApi } = useGameData();
   const { set, board, boards, level, clear, setBoard } = useBuilder();
   const { units, traits, cost } = useBoardSummary();
   const [panel, setPanel] = useState<Panel>(null);
+  const navigate = useNavigate({ from: "/builder" });
+  const fromSearch = useGuideFromSearch();
+  const [guideStart, setGuideStart] = useState<GuideStart>({ key: "blank" });
   const codesSupported = supportsTeamCodes(champions);
   const flexUnits = units.filter((unit) => unit.flex).length;
   const coreUnits = units.length - flexUnits;
@@ -128,6 +152,19 @@ export function TeamToolbar() {
     onOpenChange: (open: boolean) => setPanel(open ? name : null),
   });
 
+  // A guide link opens the editor once; closing it keeps that comp's draft and drops the link's parameter.
+  const guideProps = {
+    open: panel === "guide" || Boolean(fromSearch),
+    onOpenChange: (open: boolean) => {
+      if (fromSearch) {
+        setGuideStart(fromSearch);
+        void navigate({ search: (previous) => ({ ...previous, guide: undefined }), replace: true });
+      }
+      setPanel(open ? "guide" : null);
+    },
+  };
+  const editorStart = fromSearch ?? guideStart;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="mr-auto flex items-center gap-4 text-sm">
@@ -185,9 +222,9 @@ export function TeamToolbar() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <MenuHeading>Comp guide</MenuHeading>
-          <DropdownMenuItem onSelect={() => setPanel("export")} disabled={units.length === 0}>
-            <FileCode />
-            <MenuText title="Export as comp file" hint="A file for the tier list's Guides tab" />
+          <DropdownMenuItem onSelect={() => setPanel("guide")} disabled={units.length === 0}>
+            <NotebookPen />
+            <MenuText title="Write a comp guide" hint="Fill in the details, then submit it on GitHub" />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -212,7 +249,7 @@ export function TeamToolbar() {
       <ImportTeamCodeDialog {...panelProps("import")} />
       <SaveTeamDialog {...panelProps("save")} />
       <SavedTeamsSheet {...panelProps("saved")} />
-      <ExportCompDialog {...panelProps("export")} />
+      <GuideEditorDialog key={editorStart.key} initial={editorStart.initial} {...guideProps} />
     </div>
   );
 }

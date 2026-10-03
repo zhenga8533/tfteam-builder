@@ -17,7 +17,8 @@ const MAX_TRAITS = 8;
 
 interface CompCardViewProps {
   title: string;
-  link: Pick<LinkProps, "to" | "params" | "search">;
+  /** Where the card leads; a preview (e.g. in the guide editor) has none. */
+  link?: Pick<LinkProps, "to" | "params" | "search">;
   units: CompUnit[];
   badge?: ReactNode;
   /** The right-hand column: placement stats, or a guide's playstyle and difficulty. */
@@ -67,13 +68,22 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
     .sort((a, b) => Number(Boolean(b.unit.carry)) - Number(Boolean(a.unit.carry)) || a.champion.cost - b.champion.cost);
 
   return (
-    <article className="relative flex flex-col gap-3 rounded-lg border bg-card p-3 transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-primary/50 sm:flex-row sm:gap-4">
+    <article
+      className={cn(
+        "relative flex flex-col gap-3 rounded-lg border bg-card p-3 transition-colors focus-within:ring-2 focus-within:ring-ring sm:flex-row sm:gap-4",
+        link && "hover:border-primary/50",
+      )}
+    >
       <div className="min-w-0 flex-1 space-y-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-display font-semibold">
-            <Link {...link} className="outline-none after:absolute after:inset-0 after:content-['']">
-              {title}
-            </Link>
+            {link ? (
+              <Link {...link} className="outline-none after:absolute after:inset-0 after:content-['']">
+                {title}
+              </Link>
+            ) : (
+              title
+            )}
           </h3>
           {badge}
         </div>
@@ -131,11 +141,11 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
 }
 
 /** A hand-written comp guide. */
-export function CompCard({ comp }: { comp: Comp }) {
+export function CompCard({ comp, preview = false }: { comp: Comp; preview?: boolean }) {
   return (
     <CompCardView
       title={comp.name}
-      link={{ to: "/comps/$slug", params: { slug: comp.slug } }}
+      link={preview ? undefined : { to: "/comps/$slug", params: { slug: comp.slug } }}
       units={comp.board}
       badge={comp.trend && <TrendBadge trend={comp.trend} />}
       aside={

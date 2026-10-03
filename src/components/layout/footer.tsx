@@ -3,9 +3,8 @@ import { Bug } from "lucide-react";
 import { Suspense } from "react";
 import { timeAgo } from "@/features/stats/format";
 import { useManifest } from "@/lib/data/hooks";
+import { REPOSITORY } from "@/lib/site";
 import { isNavGroup, NAV } from "./nav";
-
-const REPOSITORY = "https://github.com/zhenga8533/tfteam-builder";
 
 const linkClass = "text-muted-foreground transition-colors hover:text-foreground";
 const iconLinkClass = `inline-flex items-center gap-1.5 ${linkClass}`;
