@@ -1,43 +1,68 @@
 import type { Champion, Item } from "@/lib/data/schema";
-import { BOARD_COLS, type Board, boardUnits } from "@/lib/game/board";
-import type { TraitState, TraitStyle } from "@/lib/game/traits";
+import { BOARD_COLS, type Board, type BoardUnit, boardUnits } from "@/lib/game/board";
+import { isUniqueTrait, pickCarries } from "@/lib/game/comp-signature";
+import { STYLE_RANK, type TraitState, type TraitStyle } from "@/lib/game/traits";
 
-// The image always uses the dark theme's colours (styles.css) so shared screenshots look the same whatever
-// theme the sharer had on.
-const COLORS = {
-  background: "oklch(0.16 0.02 265)",
-  card: "oklch(0.2 0.025 265)",
-  border: "oklch(0.3 0.03 265)",
-  foreground: "oklch(0.95 0.01 265)",
-  muted: "oklch(0.7 0.02 265)",
-  star: "oklch(0.83 0.14 85)",
-  cost: [
-    "",
-    "oklch(0.7 0.01 265)",
-    "oklch(0.72 0.17 150)",
-    "oklch(0.68 0.16 250)",
-    "oklch(0.65 0.22 310)",
-    "oklch(0.82 0.15 80)",
-  ],
-};
+const TRAIT_STYLES: TraitStyle[] = ["inactive", "bronze", "silver", "gold", "prismatic", "unique"];
 
-const TRAIT_FRAME: Record<TraitStyle, [string, string]> = {
-  inactive: ["oklch(0.42 0.015 265)", "oklch(0.27 0.015 265)"],
-  bronze: ["oklch(0.8 0.08 60)", "oklch(0.48 0.08 45)"],
-  silver: ["oklch(0.93 0.015 240)", "oklch(0.58 0.025 245)"],
-  gold: ["oklch(0.94 0.1 95)", "oklch(0.62 0.12 75)"],
-  prismatic: ["oklch(0.95 0.06 200)", "oklch(0.75 0.14 320)"],
-  unique: ["oklch(0.88 0.11 55)", "oklch(0.55 0.16 35)"],
-};
+interface Theme {
+  background: string;
+  card: string;
+  border: string;
+  foreground: string;
+  muted: string;
+  /** By star level, as the board shows them. */
+  stars: Record<number, string>;
+  /** By champion cost, 1–5. */
+  cost: Record<number, string>;
+  /** Each trait badge's frame and face gradient stops. */
+  traitFrame: Record<TraitStyle, string[]>;
+  traitFace: Record<TraitStyle, string[]>;
+}
 
-const TRAIT_FACE: Record<TraitStyle, [string, string]> = {
-  inactive: ["oklch(0.27 0.015 265)", "oklch(0.2 0.015 265)"],
-  bronze: ["oklch(0.67 0.1 55)", "oklch(0.52 0.09 45)"],
-  silver: ["oklch(0.8 0.02 240)", "oklch(0.63 0.025 245)"],
-  gold: ["oklch(0.84 0.14 88)", "oklch(0.68 0.13 75)"],
-  prismatic: ["oklch(0.88 0.1 330)", "oklch(0.9 0.1 95)"],
-  unique: ["oklch(0.74 0.16 45)", "oklch(0.6 0.17 35)"],
-};
+/** The colours in a CSS gradient, in order: `linear-gradient(170deg, oklch(…), oklch(…) 50%)` → the two oklch(…). */
+export function colorStops(gradient: string): string[] {
+  return gradient.match(/(?:oklch|oklab|lch|lab|rgba?|hsla?|color)\([^()]*\)/g) ?? [];
+}
+
+/**
+ * The dark theme's colours, read from styles.css so the image follows the site's palette. The image always
+ * uses the dark theme so shared screenshots look the same whatever theme the sharer had on.
+ */
+function readDarkTheme(): Theme {
+  const probe = document.createElement("div");
+  probe.className = "dark";
+  probe.hidden = true;
+  document.body.append(probe);
+  try {
+    const style = getComputedStyle(probe);
+    const token = (name: string) => style.getPropertyValue(`--${name}`).trim();
+    const stops = (className: string) => {
+      const element = document.createElement("span");
+      element.className = className;
+      probe.append(element);
+      return colorStops(getComputedStyle(element).backgroundImage);
+    };
+    const byStyle = (prefix: string) =>
+      Object.fromEntries(TRAIT_STYLES.map((name) => [name, stops(`${prefix}-${name}`)])) as Record<
+        TraitStyle,
+        string[]
+      >;
+    return {
+      background: token("background"),
+      card: token("card"),
+      border: token("border"),
+      foreground: token("foreground"),
+      muted: token("muted-foreground"),
+      stars: { 2: token("trait-silver"), 3: token("trait-gold") },
+      cost: Object.fromEntries([1, 2, 3, 4, 5].map((cost) => [cost, token(`cost-${cost}`)])),
+      traitFrame: byStyle("trait-frame"),
+      traitFace: byStyle("trait-face"),
+    };
+  } finally {
+    probe.remove();
+  }
+}
 
 const SCALE = 2;
 const PADDING = 40;
@@ -63,6 +88,30 @@ export function hexCenter(index: number): { x: number; y: number } {
 
 const BOARD_WIDTH = BOARD_COLS * (HEX_W + HEX_GAP) + (HEX_W + HEX_GAP) / 2;
 const BOARD_HEIGHT = hexCenter(BOARD_COLS * 3).y + HEX_H / 2;
+
+/** Names a board like a detected comp, by its main trait and carries ("Blossom Ahri"); null when it has neither. */
+export function boardTitle(
+  units: BoardUnit[],
+  traits: TraitState[],
+  championsByApi: Map<string, Champion>,
+): string | null {
+  const carries = pickCarries(
+    units
+      .filter((unit) => !unit.flex)
+      .map((unit) => ({
+        apiName: unit.apiName,
+        items: unit.items.length,
+        cost: championsByApi.get(unit.apiName)?.cost ?? 0,
+      })),
+  ).map((apiName) => championsByApi.get(apiName)?.name ?? apiName);
+  const rank = (state: TraitState) => STYLE_RANK[state.style] * 100 + state.count;
+  const [first, second] = traits
+    .filter((state) => state.count > 0 && state.activeIndex >= 0 && !isUniqueTrait(state.trait))
+    .sort((a, b) => rank(b) - rank(a));
+  // A tie (say, a spread of 2-unit traits) has no main trait; picking one would be arbitrary.
+  const main = first && (!second || rank(first) > rank(second)) ? first.trait.name : undefined;
+  return [main, carries.join(" & ")].filter(Boolean).join(" ") || null;
+}
 
 /** A file name for the image from its title: "Set 18 · Level 8" → "set-18-level-8.png". */
 export function imageFileName(title: string): string {
@@ -96,6 +145,7 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
   ctx.scale(SCALE, SCALE);
   await document.fonts.ready;
   const font = getComputedStyle(document.body).fontFamily;
+  const theme = readDarkTheme();
 
   const images = await loadImages([
     ...boardUnits(input.board).flatMap((unit) => [
@@ -105,14 +155,14 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
     ...traits.map((state) => state.trait.icon),
   ]);
 
-  ctx.fillStyle = COLORS.background;
+  ctx.fillStyle = theme.background;
   ctx.fillRect(0, 0, width, height);
 
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = COLORS.foreground;
+  ctx.fillStyle = theme.foreground;
   ctx.font = `700 30px ${font}`;
   ctx.fillText(input.title, PADDING, PADDING + 30);
-  ctx.fillStyle = COLORS.muted;
+  ctx.fillStyle = theme.muted;
   ctx.font = `500 16px ${font}`;
   ctx.fillText(input.subtitle, PADDING, PADDING + 58);
 
@@ -123,10 +173,10 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
     const y = boardTop + center.y;
     const champion = unit && input.championsByApi.get(unit.apiName);
     hexPath(ctx, x, y, HEX_W, HEX_H);
-    ctx.fillStyle = COLORS.card;
+    ctx.fillStyle = theme.card;
     ctx.fill();
     if (!unit || !champion) {
-      ctx.strokeStyle = COLORS.border;
+      ctx.strokeStyle = theme.border;
       ctx.lineWidth = 1.5;
       ctx.stroke();
       return;
@@ -142,18 +192,18 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
       ctx.restore();
     }
     hexPath(ctx, x, y, HEX_W - 3, HEX_H - 3);
-    ctx.strokeStyle = COLORS.cost[champion.cost] ?? COLORS.border;
+    ctx.strokeStyle = theme.cost[champion.cost] ?? theme.border;
     ctx.lineWidth = 4;
     ctx.stroke();
     if (unit.flex) {
       ctx.globalAlpha = 0.35;
       hexPath(ctx, x, y, HEX_W, HEX_H);
-      ctx.fillStyle = COLORS.background;
+      ctx.fillStyle = theme.background;
       ctx.fill();
       ctx.globalAlpha = 1;
     }
 
-    if (unit.star > 1) drawStars(ctx, x, y - HEX_H / 2 + 14, unit.star);
+    if (unit.star > 1) drawStars(ctx, theme, x, y - HEX_H / 2 + 14, unit.star);
     const items = unit.items.flatMap((apiName) => {
       const image = images.get(input.itemsByApi.get(apiName)?.icon ?? "");
       return image ? [image] : [];
@@ -163,7 +213,7 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
       const left = itemsLeft + i * (ITEM_SIZE + 2);
       const top = y + HEX_H / 2 - ITEM_SIZE - 14;
       ctx.drawImage(image, left, top, ITEM_SIZE, ITEM_SIZE);
-      ctx.strokeStyle = COLORS.background;
+      ctx.strokeStyle = theme.background;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(left, top, ITEM_SIZE, ITEM_SIZE);
     });
@@ -172,9 +222,9 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
   const traitsLeft = PADDING * 2 + BOARD_WIDTH;
   traits.forEach((state, i) => {
     const top = boardTop + i * TRAIT_ROW;
-    drawTraitBadge(ctx, traitsLeft + 15, top + 16, state.style, images.get(state.trait.icon));
+    drawTraitBadge(ctx, theme, traitsLeft + 15, top + 16, state.style, images.get(state.trait.icon));
     ctx.textBaseline = "middle";
-    ctx.fillStyle = COLORS.foreground;
+    ctx.fillStyle = theme.foreground;
     ctx.font = `600 16px ${font}`;
     const count = String(state.count);
     ctx.fillText(count, traitsLeft + 40, top + 17);
@@ -183,7 +233,7 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
   });
 
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = COLORS.muted;
+  ctx.fillStyle = theme.muted;
   ctx.font = `500 13px ${font}`;
   ctx.fillText(`${location.host}${import.meta.env.BASE_URL}`.replace(/\/$/, ""), PADDING, height - PADDING / 2 - 4);
 
@@ -225,7 +275,7 @@ function hexPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
   ctx.closePath();
 }
 
-function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, stars: number) {
+function drawStars(ctx: CanvasRenderingContext2D, theme: Theme, x: number, y: number, stars: number) {
   const size = 9;
   const left = x - ((stars - 1) * size * 2) / 2;
   for (let i = 0; i < stars; i++) {
@@ -237,9 +287,9 @@ function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, stars: n
       ctx.lineTo(cx + radius * Math.cos(angle), y + radius * Math.sin(angle));
     }
     ctx.closePath();
-    ctx.fillStyle = COLORS.star;
+    ctx.fillStyle = theme.stars[stars] ?? theme.foreground;
     ctx.fill();
-    ctx.strokeStyle = COLORS.background;
+    ctx.strokeStyle = theme.background;
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
@@ -248,6 +298,7 @@ function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, stars: n
 /** The in-game trait badge, as `TraitIcon` draws it: a metal frame and face with the icon in black. */
 function drawTraitBadge(
   ctx: CanvasRenderingContext2D,
+  theme: Theme,
   x: number,
   y: number,
   style: TraitStyle,
@@ -255,17 +306,16 @@ function drawTraitBadge(
 ) {
   const w = 28;
   const h = w / 0.88;
-  const gradient = ([from, to]: [string, string]) => {
+  const gradient = (colors: string[]) => {
     const fill = ctx.createLinearGradient(x, y - h / 2, x, y + h / 2);
-    fill.addColorStop(0, from);
-    fill.addColorStop(1, to);
+    colors.forEach((color, index) => fill.addColorStop(index / Math.max(colors.length - 1, 1), color));
     return fill;
   };
   hexPath(ctx, x, y, w, h);
-  ctx.fillStyle = gradient(TRAIT_FRAME[style]);
+  ctx.fillStyle = gradient(theme.traitFrame[style]);
   ctx.fill();
   hexPath(ctx, x, y, w * 0.82, h * 0.82);
-  ctx.fillStyle = gradient(TRAIT_FACE[style]);
+  ctx.fillStyle = gradient(theme.traitFace[style]);
   ctx.fill();
   if (icon) {
     const size = w * 0.55;

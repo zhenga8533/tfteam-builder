@@ -66,10 +66,7 @@ async function loadPatch(read: ReadBoards, set: number, patch: string, chunks: B
   return counters;
 }
 
-/**
- * Second pass over the boards behind the published stats (chosen patch and rank floor), for the
- * per-champion detail files.
- */
+/** A pass over the boards behind the published stats (chosen patch and rank floor). */
 type EachBoard = (visit: (board: ResolvedBoard) => void) => Promise<void>;
 
 /** Visits the boards behind `stats` (its patch and rank floor), re-reading chunks for each pass. */
@@ -106,16 +103,59 @@ async function withCompTrends(store: StatsStore, stats: SetStats, comps: AutoCom
   return file;
 }
 
+/** One JSON file per entry, named by its apiName, for the detail pages. */
+async function writeEntryFiles<T extends { apiName: string }>(dir: string, entries: T[], parse: (entry: T) => T) {
+  await mkdir(dir, { recursive: true });
+  for (const entry of entries) await writeFile(join(dir, `${entry.apiName}.json`), JSON.stringify(parse(entry)));
+}
+
+/** Only boards crawled since rows recorded companions have them; the page explains when there are none yet. */
+async function writeLittleLegends(dir: string, legends: LittleLegendAccumulator) {
+  if (!legends.size) return;
+  try {
+    const file = littleLegendsSchema.parse({ legends: legends.results(await fetchCompanions()) });
+    await writeFile(join(dir, "little-legends.json"), JSON.stringify(file));
+    console.log(`  ${file.legends.length} Little Legends`);
+  } catch (error) {
+    // Cosmetic stats shouldn't hold back the rest of the site's data.
+    console.warn(`  Skipped Little Legends: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/** The newest boards behind `stats`, packed for the Explorer. */
+async function writeExplorerSample(
+  dir: string,
+  read: ReadBoards,
+  data: SetData,
+  stats: SetStats,
+  chunks: BoardChunk[],
+) {
+  const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
+  const resolver = new BoardResolver(data);
+  const newestFirst = chunks
+    .filter((chunk) => chunk.patch === stats.patch)
+    .sort((a, b) => b.name.localeCompare(a.name));
+  const explorer: ExplorerBoard[] = [];
+  for (const chunk of newestFirst) {
+    for (const row of await read(chunk)) {
+      if (explorer.length >= EXPLORER_SAMPLE) break;
+      if (buckets.has(row[2])) explorer.push(resolver.board(row));
+    }
+    if (explorer.length >= EXPLORER_SAMPLE) break;
+  }
+  const encoded = gzipSync(encodeExplorer(explorer), { level: 9 });
+  await writeFile(join(dir, "explorer.bin.gz"), encoded);
+  console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
+}
+
+/** Everything beyond the tier list stats: detail pages, comps, Little Legends and the Explorer sample. */
 async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const dir = join(OUT_DIR, `set${data.number}`);
   await rm(dir, { recursive: true, force: true });
   if (stats.status !== "ready") return;
 
-  const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
-  const resolver = new BoardResolver(data);
-  const sample = chunks.filter((chunk) => chunk.patch === stats.patch);
+  // One pass feeds every accumulator; comps need a second to collect details for the signatures that qualify.
   const eachBoard = boardsOf(read, data, stats, chunks);
-
   const champions = new ChampionAccumulator();
   const database = new DatabaseAccumulator();
   const comps = new CompDetector(data);
@@ -134,45 +174,17 @@ async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, 
   for (const comp of detected) {
     for (const unit of comp.units) byChampion.get(unit.apiName)?.comps.push(comp.id);
   }
-
-  const writeAll = async <T extends { apiName: string }>(folder: string, entries: T[], parse: (entry: T) => T) => {
-    await mkdir(join(dir, folder), { recursive: true });
-    for (const entry of entries) {
-      await writeFile(join(dir, folder, `${entry.apiName}.json`), JSON.stringify(parse(entry)));
-    }
-  };
   const { items, traits } = database.results(championStats, detected);
-  await writeAll("champions", championStats, (entry) => championStatsSchema.parse(entry));
-  await writeAll("items", items, (entry) => itemStatsSchema.parse(entry));
-  await writeAll("traits", traits, (entry) => traitStatsSchema.parse(entry));
+  await writeEntryFiles(join(dir, "champions"), championStats, (entry) => championStatsSchema.parse(entry));
+  await writeEntryFiles(join(dir, "items"), items, (entry) => itemStatsSchema.parse(entry));
+  await writeEntryFiles(join(dir, "traits"), traits, (entry) => traitStatsSchema.parse(entry));
   await writeFile(join(dir, "comps.json"), JSON.stringify(await withCompTrends(store, stats, detected)));
-
-  // Only boards crawled since rows recorded companions have them; the page explains when there are none yet.
-  if (legends.size) {
-    try {
-      const file = littleLegendsSchema.parse({ legends: legends.results(await fetchCompanions()) });
-      await writeFile(join(dir, "little-legends.json"), JSON.stringify(file));
-      console.log(`  ${file.legends.length} Little Legends`);
-    } catch (error) {
-      // Cosmetic stats shouldn't hold back the rest of the site's data.
-      console.warn(`  Skipped Little Legends: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  const explorer: ExplorerBoard[] = [];
-  for (const chunk of [...sample].sort((a, b) => b.name.localeCompare(a.name))) {
-    for (const row of await read(chunk)) {
-      if (explorer.length >= EXPLORER_SAMPLE) break;
-      if (buckets.has(row[2])) explorer.push(resolver.board(row));
-    }
-    if (explorer.length >= EXPLORER_SAMPLE) break;
-  }
-  const encoded = gzipSync(encodeExplorer(explorer), { level: 9 });
-  await writeFile(join(dir, "explorer.bin.gz"), encoded);
-  console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
   console.log(
     `  ${championStats.length} champion, ${items.length} item and ${traits.length} trait files, ${detected.length} comps`,
   );
+
+  await writeLittleLegends(dir, legends);
+  await writeExplorerSample(dir, read, data, stats, chunks);
 }
 
 /**

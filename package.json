@@ -21,7 +21,7 @@
     "test:watch": "vitest",
     "crawl": "tsx scripts/stats/crawl.ts",
     "stats": "tsx scripts/build-stats.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "vite build && playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

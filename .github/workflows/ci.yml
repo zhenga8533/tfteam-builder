@@ -21,4 +21,5 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      # The build above is what the smoke tests serve; test:e2e would rebuild it.
+      - run: npx playwright test

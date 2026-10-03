@@ -1,5 +1,6 @@
 import {
   ChevronDown,
+  Copy,
   ClipboardCopy,
   ClipboardPaste,
   Eraser,
@@ -25,7 +26,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGameData } from "@/lib/data/hooks";
 import { cn } from "@/lib/utils";
-import { imageFileName, renderBoardImage } from "../board-image";
+import { boardTitle, imageFileName, renderBoardImage } from "../board-image";
 import { encodeShareCode } from "../share-link";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
@@ -40,6 +41,10 @@ function MenuText({ title, hint }: { title: string; hint: string }) {
       <span className="text-xs text-muted-foreground">{hint}</span>
     </span>
   );
+}
+
+function MenuHeading({ children }: { children: string }) {
+  return <DropdownMenuLabel className="text-xs text-muted-foreground">{children}</DropdownMenuLabel>;
 }
 
 type Panel = "import" | "save" | "saved" | "export" | null;
@@ -78,20 +83,33 @@ export function TeamToolbar() {
     }
   };
 
-  const saveImage = async () => {
-    const title = `Set ${set} · Level ${level}`;
+  const imageTitle = () => boardTitle(units, traits, championsByApi) ?? `Level ${level} board`;
+  const boardImage = () =>
+    renderBoardImage({
+      title: imageTitle(),
+      subtitle: `Set ${set} · Level ${level} · ${coreUnits} units${flexUnits ? ` + ${flexUnits} flex` : ""} · ${cost} gold`,
+      board,
+      traits,
+      championsByApi,
+      itemsByApi,
+    });
+
+  const copyImage = async () => {
     try {
-      const blob = await renderBoardImage({
-        title,
-        subtitle: `${coreUnits} units${flexUnits ? ` + ${flexUnits} flex` : ""} · ${cost} gold`,
-        board,
-        traits,
-        championsByApi,
-        itemsByApi,
-      });
+      // Safari only allows the write if the ClipboardItem is created during the click, with the image pending.
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": boardImage() })]);
+      toast.success("Board image copied.");
+    } catch (error) {
+      toast.error("Couldn't copy the image.", { description: error instanceof Error ? error.message : undefined });
+    }
+  };
+
+  const saveImage = async () => {
+    try {
+      const blob = await boardImage();
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = imageFileName(title);
+      link.download = imageFileName(imageTitle());
       link.click();
       URL.revokeObjectURL(link.href);
     } catch (error) {
@@ -139,19 +157,24 @@ export function TeamToolbar() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
+          <MenuHeading>Share this team</MenuHeading>
           <DropdownMenuItem onSelect={copyLink} disabled={units.length === 0}>
             <Link2 />
             <MenuText title="Copy link" hint="Opens this team, every level included, in the Team Builder" />
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={copyImage} disabled={units.length === 0}>
+            <Copy />
+            <MenuText title="Copy image" hint="This board and its traits, to paste into Discord or a post" />
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={saveImage} disabled={units.length === 0}>
             <ImageDown />
-            <MenuText title="Save as image" hint="A PNG of this board and its traits, for sharing anywhere" />
+            <MenuText title="Save as image" hint="Download the same image as a PNG" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs text-muted-foreground">In-game Team Planner</DropdownMenuLabel>
+          <MenuHeading>In-game Team Planner</MenuHeading>
           <DropdownMenuItem onSelect={copyCode} disabled={!codesSupported || units.length === 0}>
             <ClipboardCopy />
-            <MenuText title="Copy team code" hint="First 10 champions, for the in-game Team Planner" />
+            <MenuText title="Copy team code" hint="The first 10 champions on the board" />
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setPanel("import")} disabled={!codesSupported}>
             <ClipboardPaste />
@@ -161,9 +184,10 @@ export function TeamToolbar() {
             />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <MenuHeading>Comp guide</MenuHeading>
           <DropdownMenuItem onSelect={() => setPanel("export")} disabled={units.length === 0}>
             <FileCode />
-            <MenuText title="Export as comp file" hint="For a comp guide on the tier list" />
+            <MenuText title="Export as comp file" hint="A file for the tier list's Guides tab" />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
