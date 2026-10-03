@@ -6,7 +6,11 @@ import { stringParam } from "@/lib/search";
 
 export const Route = createFileRoute("/builder")({
   head: () => ({ meta: [{ title: "Team Builder · TFTeam Builder" }] }),
-  validateSearch: (search: Record<string, unknown>): { team?: string } => ({ team: stringParam(search.team) }),
+  /** `team` is a share link's team; `guide` is a detected comp to start a guide from. */
+  validateSearch: (search: Record<string, unknown>): { team?: string; guide?: string } => ({
+    team: stringParam(search.team),
+    guide: stringParam(search.guide),
+  }),
   component: BuilderPage,
 });
 

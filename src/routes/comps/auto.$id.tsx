@@ -1,7 +1,7 @@
 import { isRankFloor } from "@/lib/data/constants";
 import type { RankFloor } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Hammer } from "lucide-react";
+import { ArrowLeft, Hammer, NotebookPen } from "lucide-react";
 import { ChampionCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ChampionIcon } from "@/components/game/icons";
@@ -104,9 +104,17 @@ function AutoCompPage() {
             Usually played at level {comp.level} · {percent(comp.play)} of boards
           </p>
         </div>
-        <Button onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name)}>
-          <Hammer /> Open in Team Builder
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name, { guide: comp.id })}
+          >
+            <NotebookPen /> Write a guide
+          </Button>
+          <Button onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name)}>
+            <Hammer /> Open in Team Builder
+          </Button>
+        </div>
       </header>
       {stats && <StatsMeta stats={stats} />}
 

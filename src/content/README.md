@@ -24,12 +24,14 @@ Augments aren't in Riot's match data, so `augments` is always the complete, hand
 
 ## Adding a comp
 
-1. Build the board in the Team Builder, then choose **Share → Export as comp file** and download or copy the file.
+1. Build the board in the Team Builder, then choose **Share → Write a comp guide**. Or start from a detected comp:
+   **Write a guide** on its page loads its board and fills in the name, carries, tier and a playstyle.
    With more than one level board, the highest becomes `board` and the lowest `early`.
-2. Save it under `comps/set{N}/`, then fill in `tier`, `playstyle`, `difficulty`, `summary`, `augments` and `tips`.
-   Mark the main carries with `carry: true`. Optional slots can be `flex: true`, and `alternatives` lists champions
-   that can stand in for a unit.
-3. Run `npm run format` and `npm test`.
+2. Fill in the tier, playstyle, difficulty, summary, carries, augments and tips. Optional slots (`flex: true`) and
+   `alternatives` come from the board.
+3. **Submit on GitHub** opens GitHub's new-file page with the formatted file in `comps/set{N}/`, ready to propose as a
+   pull request. Or download or copy it, save it there and run `npm test`. The file is already formatted, so
+   `npm run format` has nothing to change.
 
 References use the `apiName` values from the generated game data, e.g. `DA_18_Ahri` or `TFT_Item_BlueBuff`.
 The Champions, Items and Augments pages show each entry's name, and `public/data/latest/set{N}.json` contains the apiNames.

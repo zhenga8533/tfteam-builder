@@ -9,14 +9,14 @@ export interface CompLevel {
   units: CompUnit[];
 }
 
-/** Loads a comp's boards into the Team Builder for its set and opens the builder. */
+/** Loads a comp's boards into the Team Builder for its set and opens the builder (with `guide`, its guide editor). */
 export function useOpenInBuilder() {
   const navigate = useNavigate();
   const setTeam = useBuilderStore((state) => state.setTeam);
 
-  return (set: number, levels: CompLevel[], name: string) => {
+  return (set: number, levels: CompLevel[], name: string, { guide }: { guide?: string } = {}) => {
     setTeam(set, teamOf(levels.map(({ level, units }) => ({ level, board: compBoard(units) }))));
     toast.success(`Loaded ${name} into the Team Builder.`);
-    void navigate({ to: "/builder" });
+    void navigate({ to: "/builder", search: guide ? { guide } : {} });
   };
 }
