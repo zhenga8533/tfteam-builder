@@ -43,6 +43,10 @@ function MenuText({ title, hint }: { title: string; hint: string }) {
   );
 }
 
+function MenuHeading({ children }: { children: string }) {
+  return <DropdownMenuLabel className="text-xs text-muted-foreground">{children}</DropdownMenuLabel>;
+}
+
 type Panel = "import" | "save" | "saved" | "export" | null;
 
 export function TeamToolbar() {
@@ -153,6 +157,7 @@ export function TeamToolbar() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
+          <MenuHeading>Share this team</MenuHeading>
           <DropdownMenuItem onSelect={copyLink} disabled={units.length === 0}>
             <Link2 />
             <MenuText title="Copy link" hint="Opens this team, every level included, in the Team Builder" />
@@ -166,10 +171,10 @@ export function TeamToolbar() {
             <MenuText title="Save as image" hint="Download the same image as a PNG" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs text-muted-foreground">In-game Team Planner</DropdownMenuLabel>
+          <MenuHeading>In-game Team Planner</MenuHeading>
           <DropdownMenuItem onSelect={copyCode} disabled={!codesSupported || units.length === 0}>
             <ClipboardCopy />
-            <MenuText title="Copy team code" hint="First 10 champions, for the in-game Team Planner" />
+            <MenuText title="Copy team code" hint="The first 10 champions on the board" />
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setPanel("import")} disabled={!codesSupported}>
             <ClipboardPaste />
@@ -179,9 +184,10 @@ export function TeamToolbar() {
             />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <MenuHeading>Comp guide</MenuHeading>
           <DropdownMenuItem onSelect={() => setPanel("export")} disabled={units.length === 0}>
             <FileCode />
-            <MenuText title="Export as comp file" hint="For a comp guide on the tier list" />
+            <MenuText title="Export as comp file" hint="A file for the tier list's Guides tab" />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
