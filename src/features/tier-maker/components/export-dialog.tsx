@@ -132,7 +132,7 @@ export function ExportDialog({ open, onOpenChange, kind, rows, source }: ExportD
             </p>
           )}
         </div>
-        <details className="rounded-md border">
+        <details className="min-w-0 rounded-md border">
           <summary className="cursor-pointer px-3 py-2 text-sm text-muted-foreground">File: {path}</summary>
           <pre className="max-h-80 overflow-auto border-t bg-muted/40 p-3 text-xs">
             <code>{formatted ?? raw}</code>
