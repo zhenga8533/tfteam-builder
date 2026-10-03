@@ -28,6 +28,10 @@ fallback: { items: { S: ["TFT_Item_JeweledGauntlet"], A: ["TFT_Item_BlueBuff"] }
 
 Augments aren't in Riot's match data, so `augments` is always the complete, hand-written augment tier list.
 
+The easiest way to edit any of these is **Tools → Tier List Maker**: arrange the list by dragging, then **Export to
+site**. For a stats-based list it writes only the overrides needed (entries placed away from their stats tier), or
+the whole list as the fallback; it keeps the file's other sections and can open the change on GitHub.
+
 ## Adding a comp
 
 1. Build the board in the Team Builder, then choose **Share → Write a comp guide**. Or start from a detected comp:

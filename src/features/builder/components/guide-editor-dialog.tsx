@@ -21,7 +21,7 @@ import {
   compFileName,
   compSource,
   EMPTY_GUIDE,
-  formatCompSource,
+  formatContentSource,
   type GuideDetails,
 } from "@/content/serialize";
 import { type Difficulty, type Playstyle, PLAYSTYLES, type Tier, TIERS } from "@/content/types";
@@ -30,13 +30,11 @@ import { TierBadge } from "@/features/comps/components/tier-badge";
 import { useGameData } from "@/lib/data/hooks";
 import { boardUnits } from "@/lib/game/board";
 import { pickCarries } from "@/lib/game/comp-signature";
-import { REPOSITORY } from "@/lib/site";
+import { githubFileLink } from "@/lib/github";
 import { useBuilder } from "../use-builder";
 import { TipsInput } from "./tips-input";
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
-/** GitHub rejects longer URLs; past this the file is copied and pasted into an empty new-file page instead. */
-const MAX_URL_LENGTH = 8000;
 
 interface GuideEditorDialogProps {
   open: boolean;
@@ -92,7 +90,7 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
   const [formatted, setFormatted] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
-    formatCompSource(source).then(
+    formatContentSource(source).then(
       (result) => current && setFormatted(result),
       (error: unknown) => {
         console.error("Couldn't format the comp file.", error);
@@ -129,14 +127,9 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
 
   const submit = async () => {
     if (!formatted) return;
-    const page = `${REPOSITORY}/new/main/src/content/comps/set${set}?filename=${encodeURIComponent(fileName)}`;
-    const prefilled = `${page}&value=${encodeURIComponent(formatted)}`;
-    if (prefilled.length <= MAX_URL_LENGTH) {
-      window.open(prefilled, "_blank", "noopener");
-      return;
-    }
-    if (await copy(formatted, "Comp file copied. Paste it into the GitHub page that just opened.")) {
-      window.open(page, "_blank", "noopener");
+    const { url, paste } = githubFileLink(`src/content/comps/set${set}/${fileName}`, formatted, false);
+    if (!paste || (await copy(formatted, "Comp file copied. Paste it into the GitHub page that just opened."))) {
+      window.open(url, "_blank", "noopener");
     }
   };
 

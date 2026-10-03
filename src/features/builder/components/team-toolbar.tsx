@@ -31,7 +31,8 @@ import { guideFromComp } from "@/features/comps/guide-from-comp";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { autoCompsQuery } from "@/lib/data/queries";
 import { cn } from "@/lib/utils";
-import { boardTitle, imageFileName, renderBoardImage } from "../board-image";
+import { downloadBlob, imageFileName } from "@/lib/canvas";
+import { boardTitle, renderBoardImage } from "../board-image";
 import { encodeShareCode } from "../share-link";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
 import { useBoardSummary, useBuilder } from "../use-builder";
@@ -130,12 +131,7 @@ export function TeamToolbar() {
 
   const saveImage = async () => {
     try {
-      const blob = await boardImage();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = imageFileName(imageTitle());
-      link.click();
-      URL.revokeObjectURL(link.href);
+      downloadBlob(await boardImage(), imageFileName(imageTitle()));
     } catch (error) {
       toast.error("Couldn't create the image.", { description: error instanceof Error ? error.message : undefined });
     }

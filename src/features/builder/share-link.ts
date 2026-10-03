@@ -1,3 +1,4 @@
+import { fromBase64Url, toBase64Url } from "@/lib/base64url";
 import { BOARD_SIZE, type BoardUnit, createBoard, type LevelBoard, MAX_ITEMS, type StarLevel } from "@/lib/game/board";
 
 /** `[hex, apiName, star, items, flex, alternatives]`, with trailing defaults dropped to keep links short. */
@@ -7,17 +8,6 @@ interface SharedTeam {
   set: number;
   boards: [level: number, units: SharedUnit[]][];
 }
-
-const toBase64Url = (text: string) =>
-  btoa(String.fromCharCode(...new TextEncoder().encode(text)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-
-const fromBase64Url = (code: string) =>
-  new TextDecoder().decode(
-    Uint8Array.from(atob(code.replace(/-/g, "+").replace(/_/g, "/")), (char) => char.charCodeAt(0)),
-  );
 
 function shareUnit(hex: number, unit: BoardUnit): SharedUnit {
   const shared: SharedUnit = [hex, unit.apiName, unit.star, unit.items, unit.flex ? 1 : undefined, unit.alternatives];
