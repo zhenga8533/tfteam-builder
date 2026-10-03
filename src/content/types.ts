@@ -49,18 +49,25 @@ export interface Comp {
 
 export type TierRows = Partial<Record<Tier, string[]>>;
 
-/**
- * Champion, item and trait tiers are generated from match stats; entries listed here override
- * the generated tier. Augments aren't in match data, so their tier list is fully hand-written.
- */
-export interface TierList {
-  set: number;
-  /** Champion apiName overrides. */
+/** Champion apiNames, item apiNames and trait breakpoints (`apiName:minUnits`, e.g. `"DA_18_Blossom:5"`). */
+export interface StatTierRows {
   champions?: TierRows;
-  /** Item apiName overrides (also the whole list when no stats are available). */
-  items: TierRows;
-  /** Trait breakpoint overrides as `apiName:minUnits`, e.g. `"DA_18_Blossom:5"`. */
+  items?: TierRows;
   traits?: TierRows;
+}
+
+/**
+ * Champion, item and trait tiers are generated from match stats. Augments aren't in match data, so their
+ * tier list is fully hand-written.
+ */
+export interface TierList extends StatTierRows {
+  set: number;
+  /**
+   * Hand-written tier lists shown only while a set has no match stats (before crawling starts, or on PBE).
+   * Once stats exist they're ignored, unlike the overrides (`champions`, `items`, `traits`), which always
+   * move an entry to their tier and are marked as placed by hand.
+   */
+  fallback?: StatTierRows;
   /** Augment apiNames grouped by tier. */
   augments: TierRows;
   updatedAt: string;

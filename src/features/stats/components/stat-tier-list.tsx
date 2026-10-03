@@ -1,3 +1,4 @@
+import { Pin } from "lucide-react";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
@@ -5,7 +6,7 @@ import type { TierRows } from "@/content/types";
 import { TierRows as TierRowsView } from "@/features/comps/components/tier-rows";
 import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
-import { mergeTiers } from "../tiers";
+import { tierListRows } from "../tiers";
 import type { Region } from "@/lib/data/constants";
 import { useRankChoice, useRegionChoice } from "../use-rank-choice";
 import { NoStats } from "./no-stats";
@@ -18,7 +19,10 @@ interface StatTierListProps {
   description: string;
   /** Entries from the stats file, keyed the same way as `overrides`. */
   lines: [key: string, line: StatLine][];
+  /** Entries placed by hand over their stats-based tier; they're marked with a pin. */
   overrides?: TierRows;
+  /** A hand-written list shown instead while there are no stats. */
+  fallback?: TierRows;
   renderEntry: (key: string, line: StatLine | undefined) => ReactNode;
   /** Filter controls shown above the tiers. */
   toolbar?: ReactNode;
@@ -35,21 +39,36 @@ interface StatTierListProps {
 interface EntryListProps extends Pick<StatTierListProps, "renderEntry"> {
   keys: string[];
   lines: Map<string, StatLine>;
+  pinned?: Set<string>;
 }
 
-function EntryList({ keys, renderEntry, lines }: EntryListProps) {
+const PINNED_HINT = "Placed in this tier by hand, not by stats";
+
+function EntryList({ keys, renderEntry, lines, pinned }: EntryListProps) {
   return (
     <ul className="flex flex-wrap gap-3">
       {keys.map((key) => (
-        <li key={key}>{renderEntry(key, lines.get(key))}</li>
+        <li key={key} className="relative">
+          {renderEntry(key, lines.get(key))}
+          {pinned?.has(key) && (
+            <span
+              className="pointer-events-none absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-background text-muted-foreground shadow-xs ring-1 ring-border"
+              title={PINNED_HINT}
+            >
+              <Pin className="size-2.5" aria-hidden />
+              <span className="sr-only">{PINNED_HINT}</span>
+            </span>
+          )}
+        </li>
       ))}
     </ul>
   );
 }
 
 /**
- * A tier list ranked by match stats, with hand-written overrides from `src/content`. Entries with too
- * few games for a tier (rare breakpoints such as prismatic traits) are listed after the tiers.
+ * A tier list ranked by match stats, with hand-written overrides from `src/content` (pinned). Entries with too
+ * few games for a tier (rare breakpoints such as prismatic traits) are listed after the tiers. Without stats it
+ * shows the hand-written fallback list, if there is one.
  */
 export function StatTierList({
   title,
@@ -57,6 +76,7 @@ export function StatTierList({
   description,
   lines,
   overrides = {},
+  fallback = {},
   renderEntry,
   toolbar,
   visible = () => true,
@@ -70,16 +90,24 @@ export function StatTierList({
   const regionChoice = useRegionChoice(region?.value, (value) => region?.onChange(value));
   const shown = lines.filter(([key]) => visible(key));
   const byKey = new Map(shown);
-  const overridden = new Set(Object.values(overrides).flat());
+  const onlyVisible = (rows: TierRows) =>
+    Object.fromEntries(Object.entries(rows).map(([tier, keys]) => [tier, keys.filter(visible)])) as TierRows;
   const generated = [...shown]
     .sort(([, a], [, b]) => a.score - b.score)
     .map(([key, line]) => ({ key, tier: line.tier }));
-  const visibleOverrides = Object.fromEntries(
-    Object.entries(overrides).map(([tier, keys]) => [tier, keys.filter(visible)]),
-  ) as TierRows;
-  const rows = mergeTiers(generated, visibleOverrides);
+  const {
+    rows,
+    pinned: overridden,
+    usingFallback,
+  } = tierListRows({
+    generated,
+    hasStats: lines.length > 0,
+    overrides: onlyVisible(overrides),
+    fallback: onlyVisible(fallback),
+  });
   const lowSample = generated.filter((entry) => !entry.tier && !overridden.has(entry.key)).map((entry) => entry.key);
-  const hasStats = lines.length > 0 || Object.keys(overrides).length > 0;
+  const hasStats = lines.length > 0 || usingFallback;
+  const showsPins = Object.values(rows).some((keys) => keys.some((key) => overridden.has(key)));
 
   return (
     <>
@@ -96,8 +124,18 @@ export function StatTierList({
         <div className="space-y-3">
           <TierRowsView
             rows={rows}
-            renderRow={(keys) => <EntryList keys={keys} lines={byKey} renderEntry={renderEntry} />}
+            renderRow={(keys) => <EntryList keys={keys} lines={byKey} renderEntry={renderEntry} pinned={overridden} />}
           />
+          {usingFallback && (
+            <p className="text-xs text-muted-foreground">
+              Hand-picked tiers: there are no match stats to rank these by.
+            </p>
+          )}
+          {showsPins && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Pin className="size-3" aria-hidden /> {PINNED_HINT}.
+            </p>
+          )}
           {lowSample.length > 0 && (
             <section aria-label="Low sample" className="rounded-xl border border-dashed p-3 opacity-80">
               <h2 className="mb-1 text-sm font-semibold">Low sample</h2>

@@ -57,6 +57,7 @@ function ChampionTierListPage() {
       description={`Set ${set} champions ranked by average placement in ranked games.`}
       lines={lines}
       overrides={tierListForSet(set)?.champions}
+      fallback={tierListForSet(set)?.fallback?.champions}
       visible={visible}
       stats={stats}
       rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}
