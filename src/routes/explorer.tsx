@@ -7,10 +7,10 @@ import { FilterBar } from "@/features/explorer/components/filter-bar";
 import { useExplorer } from "@/features/explorer/use-explorer";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { RANK_OPTIONS, isRankFloor } from "@/lib/data/constants";
+import { RANK_OPTIONS } from "@/lib/data/constants";
+import { parseRank } from "@/features/stats/scope";
 import { useActiveSet, useStats, useTierStats } from "@/lib/data/hooks";
 import type { RankFloor } from "@/lib/data/schema";
-import { useRankChoice } from "@/features/stats/use-scope-choices";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
 
 const isString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/explorer")({
   head: () => ({ meta: [{ title: "Explorer · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): { filters?: ExplorerFilter[]; rank?: RankFloor } => {
     const filters = parseFilters(search.filters);
-    return { ...(filters.length && { filters }), ...(isRankFloor(search.rank) && { rank: search.rank }) };
+    return { ...(filters.length && { filters }), rank: parseRank(search.rank) };
   },
   component: ExplorerPage,
 });
@@ -49,9 +49,6 @@ function ExplorerPage() {
   const filters = search.filters ?? [];
   // The sample holds every offered rank floor; the chosen one (or the default) picks its boards.
   const floorStats = useTierStats(search.rank);
-  const rankChoice = useRankChoice((rank) =>
-    navigate({ search: (previous) => ({ ...previous, rank }), replace: true }),
-  );
   const url =
     patch === "latest" && stats?.status === "ready"
       ? `${import.meta.env.BASE_URL}data/stats/set${set}/explorer.bin.gz`
@@ -68,7 +65,12 @@ function ExplorerPage() {
         title="Explorer"
         description="Filter ranked boards by champions, items, traits and level, then see what else does well with them."
       />
-      {floorStats && <StatsMeta stats={floorStats} rank={rankChoice} />}
+      {floorStats && (
+        <StatsMeta
+          stats={floorStats}
+          onRankChange={(rank) => navigate({ search: (previous) => ({ ...previous, rank }), replace: true })}
+        />
+      )}
       {status.state === "missing" ? (
         <NoStats subject={`Set ${set}`} />
       ) : status.state === "error" ? (

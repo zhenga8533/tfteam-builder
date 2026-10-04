@@ -13,9 +13,8 @@ import { type CompFilters, parseCompFilters, passesCompFilters, tooManyCarries }
 import { TierRows } from "@/features/comps/components/tier-rows";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { useRankChoice } from "@/features/stats/use-scope-choices";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
-import { isRankFloor } from "@/lib/data/constants";
+import { parseRank } from "@/features/stats/scope";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { MAX_CARRIES } from "@/lib/game/comp-signature";
 import { computeTraits } from "@/lib/game/traits";
@@ -37,7 +36,7 @@ export const Route = createFileRoute("/tierlist/comps")({
     ...parseCompFilters(search),
     playstyle: isPlaystyle(search.playstyle) ? search.playstyle : undefined,
     view: search.view === "stats" || search.view === "guides" ? search.view : undefined,
-    rank: isRankFloor(search.rank) ? search.rank : undefined,
+    rank: parseRank(search.rank),
   }),
   component: CompTierListPage,
 });
@@ -151,7 +150,6 @@ function CompTierListPage() {
   const view: View = search.view ?? (detected.length > 0 ? "stats" : "guides");
 
   const update = useUpdateSearch<CompSearch>();
-  const rankChoice = useRankChoice((rank) => update({ rank }));
 
   return (
     <>
@@ -185,7 +183,7 @@ function CompTierListPage() {
           </CompFilterBar>
         </div>
         <TabsContent value="stats">
-          {stats && <StatsMeta stats={stats} rank={rankChoice} />}
+          {stats && <StatsMeta stats={stats} onRankChange={(rank) => update({ rank })} />}
           {!stats ? (
             <NoStats />
           ) : detected.length === 0 ? (

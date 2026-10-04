@@ -11,10 +11,9 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count, percent } from "@/features/stats/format";
-import { isRankFloor } from "@/lib/data/constants";
+import { parseRank } from "@/features/stats/scope";
 import { useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import type { RankFloor } from "@/lib/data/schema";
-import { useRankChoice } from "@/features/stats/use-scope-choices";
 import { bestHolders } from "@/features/stats/builds";
 import type { StatLine } from "@/lib/data/schema";
 import { traitStyle } from "@/lib/game/traits";
@@ -36,7 +35,7 @@ export const Route = createFileRoute("/compare")({
   head: () => ({ meta: [{ title: "Compare · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): CompareSearch => ({
     kind: KINDS.includes(search.kind as Kind) ? (search.kind as Kind) : undefined,
-    rank: isRankFloor(search.rank) ? search.rank : undefined,
+    rank: parseRank(search.rank),
     a: stringParam(search.a),
     b: stringParam(search.b),
   }),
@@ -289,7 +288,6 @@ function ComparePage() {
   const search = Route.useSearch();
   const stats = useTierStats(search.rank);
   const update = useUpdateSearch<CompareSearch>();
-  const rankChoice = useRankChoice((rank) => update({ rank }));
   const kind = search.kind ?? "champions";
   const options = usePickerOptions(kind, search.rank);
   const singular = KIND_LABEL[kind].toLowerCase().replace(/s$/, "");
@@ -297,7 +295,7 @@ function ComparePage() {
   return (
     <>
       <PageHeader title="Compare" description="Two champions, items or comps side by side, from ranked games." />
-      {stats && <StatsMeta stats={stats} rank={rankChoice} />}
+      {stats && <StatsMeta stats={stats} onRankChange={(rank) => update({ rank })} />}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <ToggleGroup
           type="single"

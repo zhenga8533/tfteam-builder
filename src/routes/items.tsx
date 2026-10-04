@@ -5,6 +5,7 @@ import { ItemKindFilter } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ITEM_KINDS } from "@/lib/data/constants";
@@ -173,6 +174,7 @@ function ItemsPage() {
   return (
     <>
       <PageHeader title="Items" description="Recipes and effects for completed items, emblems, artifacts and more." />
+      {stats && <StatsMeta stats={stats} />}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <SearchInput
           value={search.q ?? ""}

@@ -7,23 +7,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { RANK_FLOORS, type Region } from "@/lib/data/constants";
+import { RANK_FLOORS, RANK_OPTIONS, type Region } from "@/lib/data/constants";
 import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
 import { count, RANK_FLOOR_LABEL, REGION_LABEL, timeAgo } from "../format";
 
-export interface RankChoice {
-  /** Floors with stats, highest first. */
-  floors: RankFloor[];
-  /** The default floor; choosing it clears the choice. */
-  base: RankFloor;
-  onChange: (rank: RankFloor | undefined) => void;
-}
-
 export interface RegionChoice {
-  /** Regions with stats. */
-  regions: Region[];
   value?: Region;
   onChange: (region: Region | undefined) => void;
 }
@@ -75,22 +65,32 @@ function ChoiceChip({
 const ALL_REGIONS = "all";
 
 /** The rank floor in the stats sentence, as a menu when other floors have stats. */
-function RankLabel({ floor, choice }: { floor: RankFloor; choice?: RankChoice }) {
-  if (!choice || choice.floors.length < 2) return <>{RANK_FLOOR_LABEL[floor]}</>;
+function RankLabel({
+  floor,
+  base,
+  onChange,
+}: {
+  floor: RankFloor;
+  base: SetStats | null;
+  onChange?: (rank: RankFloor | undefined) => void;
+}) {
+  const available = base?.ranks?.length ? [base.rankFloor, ...base.ranks] : [];
+  const floors = RANK_OPTIONS.filter((option) => available.includes(option));
+  if (!onChange || !base || floors.length < 2) return <>{RANK_FLOOR_LABEL[floor]}</>;
   return (
     <ChoiceChip
       name="Rank"
       label={RANK_FLOOR_LABEL[floor]}
       value={floor}
-      options={choice.floors.map((option) => ({ value: option, label: RANK_FLOOR_LABEL[option] }))}
-      onChange={(value) => choice.onChange(value === choice.base ? undefined : (value as RankFloor))}
+      options={floors.map((option) => ({ value: option, label: RANK_FLOOR_LABEL[option] }))}
+      onChange={(value) => onChange(value === base.rankFloor ? undefined : (value as RankFloor))}
     />
   );
 }
 
 /** "from all regions" / "in Asia", as a menu when regions have their own stats. */
-function RegionLabel({ region, choice }: { region?: Region; choice?: RegionChoice }) {
-  if (!choice?.regions.length) return region ? <> in {REGION_LABEL[region].name}</> : null;
+function RegionLabel({ region, regions, choice }: { region?: Region; regions?: Region[]; choice?: RegionChoice }) {
+  if (!choice || !regions?.length) return region ? <> in {REGION_LABEL[region].name}</> : null;
   return (
     <>
       {region ? " in " : " from "}
@@ -100,7 +100,7 @@ function RegionLabel({ region, choice }: { region?: Region; choice?: RegionChoic
         value={region ?? ALL_REGIONS}
         options={[
           { value: ALL_REGIONS, label: "All regions" },
-          ...choice.regions.map((option) => ({
+          ...regions.map((option) => ({
             value: option,
             label: REGION_LABEL[option].name,
             hint: REGION_LABEL[option].servers,
@@ -112,8 +112,19 @@ function RegionLabel({ region, choice }: { region?: Region; choice?: RegionChoic
   );
 }
 
-/** Where the numbers come from, plus notes when the data is thinner than usual. */
-export function StatsMeta({ stats, rank, region }: { stats: SetStats; rank?: RankChoice; region?: RegionChoice }) {
+/**
+ * Where the numbers come from, plus notes when the data is thinner than usual. With `onRankChange` or `region`, the
+ * rank floor and region become menus of the ones that have their own stats.
+ */
+export function StatsMeta({
+  stats,
+  onRankChange,
+  region,
+}: {
+  stats: SetStats;
+  onRankChange?: (rank: RankFloor | undefined) => void;
+  region?: RegionChoice;
+}) {
   const defaultStats = useStats();
   if (stats.status === "collecting") {
     return (
@@ -148,14 +159,15 @@ export function StatsMeta({ stats, rank, region }: { stats: SetStats; rank?: Ran
             </button>
           </TooltipTrigger>
           <TooltipContent className="max-w-72">
-            Ranked games from every server, collected every few hours from Riot's match API. Placements are averaged per
-            board; entries with fewer than {LOW_SAMPLE_GAMES} games are marked low sample.
+            Ranked games from {stats.region ? REGION_LABEL[stats.region].servers : "every server"}, collected every few
+            hours from Riot's match API. Placements are averaged per board; entries with fewer than {LOW_SAMPLE_GAMES}{" "}
+            games are marked low sample.
           </TooltipContent>
         </Tooltip>
         <span>
           Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
-          <RankLabel floor={stats.rankFloor} choice={rank} /> ranked games
-          <RegionLabel region={stats.region} choice={region} /> on patch {stats.patch} ·{" "}
+          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games
+          <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch {stats.patch} ·{" "}
           <time dateTime={stats.updatedAt} title={new Date(stats.updatedAt).toLocaleString()}>
             Updated {timeAgo(stats.updatedAt)}
           </time>

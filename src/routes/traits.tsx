@@ -4,6 +4,7 @@ import { TraitCard } from "@/components/game/cards";
 import { ChampionLink } from "@/components/game/links";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
@@ -72,6 +73,7 @@ function TraitsPage() {
   return (
     <>
       <PageHeader title="Traits" description="Breakpoints, bonuses and the champions that carry each trait." />
+      {stats && <StatsMeta stats={stats} />}
       <div className="mb-6 flex">
         <SearchInput
           value={q ?? ""}
