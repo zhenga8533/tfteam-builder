@@ -1,7 +1,7 @@
 import { addCounter, bump as bumpCounter, emptyCounter } from "../../src/lib/game/stat-line.ts";
 import type { BoardExtras, BoardRow, Counter, Counters, Match, PatchCounters, RankBucket } from "./types.ts";
 
-export const RANKED_QUEUE_ID = 1100;
+const RANKED_QUEUE_ID = 1100;
 
 /** Only standard ranked games say anything about the ranked meta. */
 export const isRankedStandard = (match: Match) =>

@@ -24,7 +24,8 @@ import {
 import { useDraft, useTierMakerStore } from "@/features/tier-maker/store";
 import { renderTierListImage } from "@/features/tier-maker/tier-image";
 import { type MakerSource, useMakerSource } from "@/features/tier-maker/use-maker-source";
-import { downloadBlob, imageFileName } from "@/lib/canvas";
+import { imageFileName } from "@/lib/canvas";
+import { copyImage, copyText, saveImage, siteUrl } from "@/lib/share";
 import { useActiveSet } from "@/lib/data/hooks";
 import { stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
@@ -119,34 +120,12 @@ function TierListMakerPage() {
       byKey: source.byKey,
     });
 
-  const copyLink = async () => {
-    const url = new URL(`${import.meta.env.BASE_URL}tools/tier-list`, location.origin);
-    url.searchParams.set("list", encodeTierListCode(set, kind, rows));
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      toast.success("Tier list link copied.");
-    } catch {
-      toast.error("Couldn't access the clipboard.", { description: url.toString() });
-    }
-  };
-
-  const copyImage = async () => {
-    try {
-      // Safari only allows the write if the ClipboardItem is created during the click, with the image pending.
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": image() })]);
-      toast.success("Tier list image copied.");
-    } catch (error) {
-      toast.error("Couldn't copy the image.", { description: error instanceof Error ? error.message : undefined });
-    }
-  };
-
-  const saveImage = async () => {
-    try {
-      downloadBlob(await image(), imageFileName(`set ${set} ${TITLE[kind]}`));
-    } catch (error) {
-      toast.error("Couldn't create the image.", { description: error instanceof Error ? error.message : undefined });
-    }
-  };
+  const copyLink = () =>
+    copyText(siteUrl("tools/tier-list", { list: encodeTierListCode(set, kind, rows) }), "Tier list link copied.", {
+      showOnFailure: true,
+    });
+  const copyListImage = () => copyImage(image(), "Tier list image copied.");
+  const saveListImage = () => saveImage(image, imageFileName(`set ${set} ${TITLE[kind]}`));
 
   return (
     <>
@@ -197,10 +176,10 @@ function TierListMakerPage() {
             <DropdownMenuItem onSelect={copyLink}>
               <Link2 /> Copy link
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={copyImage}>
+            <DropdownMenuItem onSelect={copyListImage}>
               <Copy /> Copy image
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={saveImage}>
+            <DropdownMenuItem onSelect={saveListImage}>
               <ImageDown /> Save as image
             </DropdownMenuItem>
           </DropdownMenuContent>

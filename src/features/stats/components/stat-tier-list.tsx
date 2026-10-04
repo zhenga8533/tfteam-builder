@@ -8,7 +8,7 @@ import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { tierListRows } from "../tiers";
 import type { Region } from "@/lib/data/constants";
-import { useRankChoice, useRegionChoice } from "../use-rank-choice";
+import { useRankChoice, useRegionChoice } from "../use-scope-choices";
 import { NoStats } from "./no-stats";
 import { StatsMeta } from "./stats-meta";
 

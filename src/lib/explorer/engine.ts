@@ -27,7 +27,7 @@ export interface ExplorerResult {
 }
 
 /** Below this many games a breakdown row is hidden; the sample is too small to say anything. */
-export const MIN_ROW_GAMES = 30;
+const MIN_ROW_GAMES = 30;
 
 interface Compiled {
   units: { filter: string; unit: number; minStar: number; items: number[] }[];

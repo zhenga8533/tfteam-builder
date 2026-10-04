@@ -1,4 +1,4 @@
-import type { ChampionStats } from "@/lib/data/schema";
+import type { Champion, ChampionStats, SetStats } from "@/lib/data/schema";
 
 export type Build = ChampionStats["builds"][number];
 
@@ -37,4 +37,21 @@ export function bestBuild(builds: Build[], chosen: string[], size: number): Buil
       .filter((build) => build.items.length === size && remainder(build.items, chosen) !== null)
       .sort((a, b) => a.score - b.score)[0] ?? null
   );
+}
+
+/** The champions that place best holding `item`, from each champion's best-items list, best first. */
+export function bestHolders(
+  item: string,
+  bestItems: SetStats["bestItems"],
+  championsByApi: Map<string, Champion>,
+  limit: number,
+) {
+  return Object.entries(bestItems)
+    .flatMap(([unit, lines]) => {
+      const line = lines.find((entry) => entry.item === item);
+      const champion = championsByApi.get(unit);
+      return line && champion ? [{ champion, line }] : [];
+    })
+    .sort((a, b) => a.line.score - b.line.score)
+    .slice(0, limit);
 }

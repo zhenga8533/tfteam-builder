@@ -1,7 +1,6 @@
 import { MousePointerClick, Star, Trash2, X } from "lucide-react";
 import { Suspense, useMemo } from "react";
-import { ChampionStats, ChampionTraitList } from "@/components/game/cards";
-import { GameText } from "@/components/game/game-text";
+import { ChampionAbility, ChampionStats, ChampionTraitList } from "@/components/game/cards";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
 import { COST_TEXT } from "@/components/game/styles";
 import { Button } from "@/components/ui/button";
@@ -115,12 +114,7 @@ export function UnitInspector({ className }: { className?: string }) {
         />
       </Suspense>
 
-      {champion.ability.name && (
-        <div className="space-y-1 border-t pt-3">
-          <p className="text-sm font-semibold">{champion.ability.name}</p>
-          <GameText desc={champion.ability.desc} resolve={resolve} star={unit.star} className="text-xs" />
-        </div>
-      )}
+      <ChampionAbility champion={champion} resolve={resolve} star={unit.star} />
 
       <ChampionStats champion={champion} className="border-t pt-3" />
 

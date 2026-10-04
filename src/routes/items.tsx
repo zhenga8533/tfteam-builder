@@ -9,6 +9,7 @@ import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ITEM_KINDS } from "@/lib/data/constants";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
+import { bestHolders } from "@/features/stats/builds";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Item, ItemKind } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
@@ -39,14 +40,7 @@ const TOP_HOLDERS = 6;
 function TopHolders({ item }: { item: Item }) {
   const { championsByApi } = useGameData();
   const stats = useStats();
-  const holders = Object.entries(stats?.bestItems ?? {})
-    .flatMap(([unit, lines]) => {
-      const line = lines.find((entry) => entry.item === item.apiName);
-      const champion = championsByApi.get(unit);
-      return line && champion ? [{ champion, line }] : [];
-    })
-    .sort((a, b) => a.line.score - b.line.score)
-    .slice(0, TOP_HOLDERS);
+  const holders = bestHolders(item.apiName, stats?.bestItems ?? {}, championsByApi, TOP_HOLDERS);
   if (holders.length === 0) return null;
 
   return (

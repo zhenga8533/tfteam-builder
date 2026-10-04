@@ -40,7 +40,7 @@ interface DropTarget {
 }
 
 /** Entries always show their name as text, so the icon itself is decorative. */
-export function EntryIcon({ entry, className }: { entry: MakerEntry; className?: string }) {
+function EntryIcon({ entry, className }: { entry: MakerEntry; className?: string }) {
   switch (entry.kind) {
     case "champions":
       return <ChampionIcon champion={entry.champion} className={className} decorative />;

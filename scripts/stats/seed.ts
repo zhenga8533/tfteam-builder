@@ -6,7 +6,7 @@ const APEX_TIERS = ["challenger", "grandmaster", "master"] as const;
 const DIVISIONS = ["I", "II", "III", "IV"];
 
 /** Tiers below Master, walked top-down, with the rank bucket their players count toward. */
-export const DIVISION_TIERS: { tier: string; bucket: RankBucket }[] = [
+const DIVISION_TIERS: { tier: string; bucket: RankBucket }[] = [
   { tier: "DIAMOND", bucket: "diamond" },
   { tier: "EMERALD", bucket: "emerald" },
   { tier: "PLATINUM", bucket: "platinum" },

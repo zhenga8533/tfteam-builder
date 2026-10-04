@@ -15,7 +15,7 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useGameData, useStats, useTraitStats } from "@/lib/data/hooks";
 import type { Trait, TraitStats } from "@/lib/data/schema";
-import { traitStyle } from "@/lib/game/traits";
+import { traitKey, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/traits_/$apiName")({
   head: () => ({ meta: [{ title: "Trait Stats · TFTeam Builder" }] }),
@@ -160,7 +160,7 @@ function TraitPage() {
               <p className="mb-2 text-xs text-muted-foreground">
                 {trait.name} at {trait.breakpoints[0]?.minUnits}, its first breakpoint
               </p>
-              <PatchHistoryChart kind="traits" entry={`${trait.apiName}:${trait.breakpoints[0]?.minUnits}`} />
+              <PatchHistoryChart kind="traits" entry={traitKey(trait.apiName, trait.breakpoints[0]?.minUnits ?? 0)} />
             </Section>
           )}
         </aside>

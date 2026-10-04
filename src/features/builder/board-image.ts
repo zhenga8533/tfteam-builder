@@ -5,6 +5,7 @@ import { STYLE_RANK, type TraitState } from "@/lib/game/traits";
 import {
   canvasToPng,
   createImageCanvas,
+  drawSiteAddress,
   drawTraitBadge,
   hexPath,
   loadImages,
@@ -165,10 +166,7 @@ export async function renderBoardImage(input: BoardImageInput): Promise<Blob> {
     ctx.fillText(state.trait.name, traitsLeft + 48 + ctx.measureText(count).width, top + 17);
   });
 
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = theme.muted;
-  ctx.font = `500 13px ${font}`;
-  ctx.fillText(`${location.host}${import.meta.env.BASE_URL}`.replace(/\/$/, ""), PADDING, height - PADDING / 2 - 4);
+  drawSiteAddress(ctx, theme, font, PADDING, height - PADDING / 2 - 4);
 
   return canvasToPng(canvas);
 }

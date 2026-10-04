@@ -6,22 +6,19 @@ import { SearchInput } from "@/components/layout/search-input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
+import { parseStatsScope, scopeChoices, type StatsScope } from "@/features/stats/scope";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
-import { type TraitStyle, traitStyle } from "@/lib/game/traits";
+import { traitBreakpoint, traitKey, type TraitStyle, traitStyle } from "@/lib/game/traits";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { isRankFloor, isRegion, type Region } from "@/lib/data/constants";
-import type { RankFloor } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 const STYLES = ["bronze", "silver", "gold", "prismatic", "unique"] as const satisfies TraitStyle[];
 type BreakpointStyle = (typeof STYLES)[number];
 
-interface TraitTierSearch {
-  rank?: RankFloor;
-  region?: Region;
+interface TraitTierSearch extends StatsScope {
   q?: string;
   style?: BreakpointStyle;
 }
@@ -29,16 +26,12 @@ interface TraitTierSearch {
 export const Route = createFileRoute("/tierlist/traits")({
   head: () => ({ meta: [{ title: "Trait Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): TraitTierSearch => ({
-    rank: isRankFloor(search.rank) ? search.rank : undefined,
-    region: isRegion(search.region) ? search.region : undefined,
+    ...parseStatsScope(search),
     q: stringParam(search.q),
     style: STYLES.includes(search.style as BreakpointStyle) ? (search.style as BreakpointStyle) : undefined,
   }),
   component: TraitTierListPage,
 });
-
-/** Trait entries are per breakpoint, keyed `apiName:minUnits` to match the content overrides. */
-const traitKey = (apiName: string, minUnits: number) => `${apiName}:${minUnits}`;
 
 function TraitTierListPage() {
   const { set } = useActiveSet();
@@ -50,14 +43,11 @@ function TraitTierListPage() {
     .map((line) => [traitKey(line.trait, line.minUnits), line] as [string, typeof line]);
   const update = useUpdateSearch<TraitTierSearch>();
   const visible = (key: string) => {
-    const [apiName = "", minUnits = ""] = key.split(":");
-    const trait = traitsByApi.get(apiName);
-    const breakpoint = trait?.breakpoints.find((entry) => entry.minUnits === Number(minUnits));
+    const found = traitBreakpoint(key, traitsByApi);
     return (
-      !!trait &&
-      !!breakpoint &&
-      matches(trait.name, search.q) &&
-      (!search.style || traitStyle(breakpoint.style) === search.style)
+      !!found &&
+      matches(found.trait.name, search.q) &&
+      (!search.style || traitStyle(found.breakpoint.style) === search.style)
     );
   };
 
@@ -71,8 +61,7 @@ function TraitTierListPage() {
       fallback={tierListForSet(set)?.fallback?.traits}
       visible={visible}
       stats={stats}
-      rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}
-      region={{ value: search.region, onChange: (region) => update({ region, rank: undefined }) }}
+      {...scopeChoices(search, update)}
       toolbar={
         <>
           <SearchInput
@@ -97,10 +86,9 @@ function TraitTierListPage() {
         </>
       }
       renderEntry={(key, line) => {
-        const [apiName = "", minUnits = ""] = key.split(":");
-        const trait = traitsByApi.get(apiName);
-        const breakpoint = trait?.breakpoints.find((entry) => entry.minUnits === Number(minUnits));
-        if (!trait || !breakpoint) return null;
+        const found = traitBreakpoint(key, traitsByApi);
+        if (!found) return null;
+        const { trait, breakpoint } = found;
         return (
           <TierEntry
             icon={<TraitIcon trait={trait} style={traitStyle(breakpoint.style)} decorative className="size-12" />}

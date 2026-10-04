@@ -2,6 +2,7 @@ import type { ChampionStats, StatLine } from "../../src/lib/data/schema.ts";
 import type { Counter } from "../stats/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
 import { bump as bumpCounter, counterFor, round, statLine } from "../../src/lib/game/stat-line.ts";
+import { parseTraitKey, traitKey } from "../../src/lib/game/traits.ts";
 
 /** Minimum games before a build, partner or trait is listed; larger item sets split the sample further. */
 export const MIN_CHAMPION_GAMES = { build1: 50, build2: 30, build3: 20, partner: 50, trait: 50 } as const;
@@ -35,7 +36,7 @@ export class ChampionAccumulator {
     const { placement } = board;
     this.boards += 1;
     const units = board.units.map(({ apiName, star, items }) => ({ unit: apiName, star, items }));
-    const traits = board.traits.map(({ apiName, minUnits }) => `${apiName}:${minUnits}`);
+    const traits = board.traits.map(({ apiName, minUnits }) => traitKey(apiName, minUnits));
 
     const present = [...new Set(units.map(({ unit }) => unit))];
     for (const unit of present) {
@@ -88,13 +89,13 @@ export class ChampionAccumulator {
       stats.partners.push({ unit: other, ...withDelta(stats, statLine(counter, stats.overall.games)) });
     }
     for (const [key, counter] of this.traits) {
-      const [unit = "", traitKey = ""] = key.split("|");
-      const [trait = "", minUnits = ""] = traitKey.split(":");
+      const [unit = "", breakpoint = ""] = key.split("|");
+      const { apiName: trait, minUnits } = parseTraitKey(breakpoint);
       const stats = byUnit.get(unit);
       if (!stats || counter[0] < MIN_CHAMPION_GAMES.trait) continue;
       stats.traits.push({
         trait,
-        minUnits: Number(minUnits),
+        minUnits,
         ...withDelta(stats, statLine(counter, stats.overall.games)),
       });
     }

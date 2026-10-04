@@ -145,7 +145,8 @@ test("the team builder and tier list maker work from the keyboard", async ({ pag
   const name = (await entry.getAttribute("aria-label"))!.split(",")[0]!;
   await entry.focus();
   await page.keyboard.press("Enter");
-  await page.keyboard.press("ArrowDown");
+  // Opening the menu from the keyboard focuses its first item, S tier.
+  await expect(page.getByRole("menuitemradio", { name: "S tier" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("region", { name: "S tier" }).getByLabel(`${name}, S tier`)).toBeFocused();
 });

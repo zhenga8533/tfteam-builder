@@ -2,12 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
-import { CostFilter, TraitFilter } from "@/components/game/filters";
+import { ChampionFilterBar } from "@/components/game/filters";
+import { type ChampionFilters, matchesChampionFilters, parseChampionFilters } from "@/components/game/filter-params";
 import { ChampionIcon, TraitIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
-import { SearchInput } from "@/components/layout/search-input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -16,22 +16,16 @@ import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summ
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches, numberParam, stringParam } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
-interface ChampionSearch {
-  q?: string;
-  cost?: number;
-  trait?: string;
+interface ChampionSearch extends ChampionFilters {
   sort?: "avg";
 }
 
 export const Route = createFileRoute("/champions")({
   head: () => ({ meta: [{ title: "Champions · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionSearch => ({
-    q: stringParam(search.q),
-    cost: numberParam(search.cost),
-    trait: stringParam(search.trait),
+    ...parseChampionFilters(search),
     sort: search.sort === "avg" ? "avg" : undefined,
   }),
   component: ChampionsPage,
@@ -87,12 +81,7 @@ function ChampionsPage() {
 
   const stats = useStats();
   const groups = useMemo(() => {
-    const filtered = champions.filter(
-      (champion) =>
-        matches(champion.name, search.q) &&
-        (search.cost === undefined || champion.cost === search.cost) &&
-        (!search.trait || champion.traits.includes(search.trait)),
-    );
+    const filtered = champions.filter((champion) => matchesChampionFilters(champion, search));
     if (search.sort === "avg" && stats?.status === "ready") {
       const score = (champion: Champion) => stats.units[champion.apiName]?.score ?? Infinity;
       return [
@@ -110,13 +99,7 @@ function ChampionsPage() {
     <>
       <PageHeader title="Champions" description="Every unit in the shop with its traits, ability and base stats." />
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <SearchInput
-          value={search.q ?? ""}
-          onChange={(q) => update({ q: q || undefined })}
-          placeholder="Search champions"
-        />
-        <CostFilter value={search.cost} onChange={(cost) => update({ cost })} />
-        <TraitFilter value={search.trait} onChange={(trait) => update({ trait })} />
+        <ChampionFilterBar value={search} onChange={update} />
         {stats?.status === "ready" && (
           <ToggleGroup
             type="single"

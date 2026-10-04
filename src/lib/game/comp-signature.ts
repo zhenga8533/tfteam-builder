@@ -1,8 +1,8 @@
 import type { Trait } from "@/lib/data/schema";
 import { STYLE_RANK, type TraitStyle } from "./traits";
 
-export const MAX_CARRIES = 2;
-export const CORE_TRAITS = 2;
+const MAX_CARRIES = 2;
+const CORE_TRAITS = 2;
 
 /** A trait that only ever needs one unit (e.g. a champion's unique trait) says nothing about the comp. */
 export const isUniqueTrait = (trait: Trait) => trait.breakpoints.every((breakpoint) => breakpoint.minUnits <= 1);
