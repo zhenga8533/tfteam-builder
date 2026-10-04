@@ -10,7 +10,7 @@ import { ChampionIcon, TraitIcon } from "./icons";
 import { AUGMENT_TIER_LABEL, AUGMENT_TIER_TEXT, AUGMENT_TIERS, COST_TEXT, COSTS, ITEM_KIND_LABELS } from "./styles";
 
 /** Shop cost toggles; pressing the selected cost again clears the filter. */
-export function CostFilter({ value, onChange }: { value?: number; onChange: (cost: number | undefined) => void }) {
+function CostFilter({ value, onChange }: { value?: number; onChange: (cost: number | undefined) => void }) {
   return (
     <ToggleGroup
       type="single"
@@ -116,7 +116,7 @@ export function ItemKindFilter({
 }
 
 /** Silver / gold / prismatic toggles; pressing the selected one again clears the filter. */
-export function AugmentTierFilter({
+function AugmentTierFilter({
   value,
   onChange,
 }: {

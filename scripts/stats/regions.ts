@@ -11,7 +11,7 @@ export interface Platform {
   poolSize: number;
 }
 
-export const PLATFORMS: Platform[] = [
+const PLATFORMS: Platform[] = [
   { id: "na1", region: "americas", poolSize: 1000 },
   { id: "br1", region: "americas", poolSize: 500 },
   { id: "la1", region: "americas", poolSize: 300 },

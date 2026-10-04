@@ -42,7 +42,7 @@ export const championSchema = z.object({
 });
 export type Champion = z.infer<typeof championSchema>;
 
-export const traitBreakpointSchema = z.object({
+const traitBreakpointSchema = z.object({
   minUnits: z.number().int(),
   maxUnits: z.number().int(),
   style: z.number().int(),

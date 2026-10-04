@@ -7,7 +7,7 @@ import type { StatLine } from "@/lib/data/schema";
 export type Counter = [games: number, placementSum: number, top4: number, wins: number, ...places: number[]];
 
 /** Placements in a lobby. */
-export const PLACEMENTS = 8;
+const PLACEMENTS = 8;
 const FIRST_PLACE_INDEX = 4;
 
 export const emptyCounter = (): Counter => [0, 0, 0, 0, ...Array<number>(PLACEMENTS).fill(0)];
@@ -26,7 +26,7 @@ export function counterFor<K>(map: Map<K, Counter>, key: K): Counter {
 }
 
 /** Weight, in games, of the 4.5 prior that small samples are pulled toward. */
-export const PRIOR_GAMES = 30;
+const PRIOR_GAMES = 30;
 const AVERAGE_PLACEMENT = 4.5;
 
 export const adjustedAverage = ([games, placementSum]: Counter) =>

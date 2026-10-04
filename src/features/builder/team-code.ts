@@ -1,7 +1,7 @@
 import type { Champion } from "@/lib/data/schema";
 
 /** The in-game Team Planner holds at most this many champions. */
-export const TEAM_CODE_SLOTS = 10;
+const TEAM_CODE_SLOTS = 10;
 
 const CODE_PATTERN = /^0[0-9a-f]([0-9a-f]+)TFTSet(\d+)$/i;
 

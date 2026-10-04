@@ -7,7 +7,7 @@ import { comparePatches } from "../stats/state.ts";
 import { type Counter, type Counters, type PatchCounters, RANK_BUCKETS, type RankBucket } from "../stats/types.ts";
 
 /** Minimum ranked matches before a rank floor (and patch) is trusted. */
-export const MIN_MATCHES = 2000;
+const MIN_MATCHES = 2000;
 /** Minimum games for an entry to receive a tier; below this it is shown but not ranked. */
 export const MIN_GAMES = { unit: 200, item: 200, trait: 150, unitItem: 50 } as const;
 /** Cumulative share of ranked entries per tier: top 10% S, next 25% A, next 35% B, rest C. */
@@ -135,7 +135,7 @@ export function buildFloorStats(
 }
 
 /** Regions have a fraction of the games, so they need fewer matches than the whole sample to be shown. */
-export const MIN_REGION_MATCHES = 1000;
+const MIN_REGION_MATCHES = 1000;
 
 /**
  * Stats for one region's boards at the patch and rank floor of the published stats, for the tier lists'
