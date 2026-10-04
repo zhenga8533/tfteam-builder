@@ -32,16 +32,7 @@ export const Route = createFileRoute("/champions")({
   component: ChampionsPage,
 });
 
-function ChampionTile({
-  champion,
-  onSelect,
-  showPlay = false,
-}: {
-  champion: Champion;
-  onSelect: () => void;
-  /** Shows the play rate instead of the average placement, when the list is sorted by it. */
-  showPlay?: boolean;
-}) {
+function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: () => void }) {
   const { traitsByApi } = useGameData();
   const line = useStats()?.units[champion.apiName];
   return (
@@ -60,17 +51,17 @@ function ChampionTile({
           })}
         </div>
       </div>
-      {line &&
-        (showPlay ? (
+      {line && (
+        <span className="flex flex-col items-end self-start">
+          <AvgPlacement line={line} className="text-sm" />
           <span
-            className="self-start text-sm font-semibold tabular-nums"
+            className="text-[11px] text-muted-foreground tabular-nums"
             title="Share of boards fielding this champion"
           >
-            {share(line.play)}
+            {share(line.play)} played
           </span>
-        ) : (
-          <AvgPlacement line={line} className="self-start text-sm" />
-        ))}
+        </span>
+      )}
     </button>
   );
 }
@@ -158,12 +149,7 @@ function ChampionsPage() {
               </h2>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
                 {group.champions.map((champion) => (
-                  <ChampionTile
-                    key={champion.apiName}
-                    champion={champion}
-                    onSelect={() => setSelected(champion)}
-                    showPlay={search.sort === "play"}
-                  />
+                  <ChampionTile key={champion.apiName} champion={champion} onSelect={() => setSelected(champion)} />
                 ))}
               </div>
             </section>
