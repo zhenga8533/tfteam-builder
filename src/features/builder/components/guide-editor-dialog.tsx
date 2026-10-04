@@ -1,5 +1,5 @@
 import { ClipboardCopy, Download, X } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { EntityPicker } from "@/components/game/entity-picker";
 import { AugmentIcon, ChampionIcon } from "@/components/game/icons";
@@ -16,14 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  boardToCompUnits,
-  compFileName,
-  compSource,
-  EMPTY_GUIDE,
-  formatContentSource,
-  type GuideDetails,
-} from "@/content/serialize";
+import { boardToCompUnits, compFileName, compSource, EMPTY_GUIDE, type GuideDetails } from "@/content/serialize";
 import { type Difficulty, type Playstyle, PLAYSTYLES, type Tier, TIERS } from "@/content/types";
 import { CompCard } from "@/features/comps/components/comp-card";
 import { TierBadge } from "@/features/comps/components/tier-badge";
@@ -31,6 +24,7 @@ import { useGameData } from "@/lib/data/hooks";
 import { boardUnits } from "@/lib/game/board";
 import { pickCarries } from "@/lib/game/comp-signature";
 import { downloadBlob } from "@/lib/canvas";
+import { useFormattedSource } from "@/lib/use-formatted-source";
 import { useBuilder } from "../use-builder";
 import { TipsInput } from "./tips-input";
 
@@ -87,20 +81,7 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
   const update = (changes: Partial<GuideDetails>) => setDraft((current) => ({ ...current, ...changes }));
 
   const source = compSource({ guide, set, board, early });
-  const [formatted, setFormatted] = useState<string | null>(null);
-  useEffect(() => {
-    let current = true;
-    formatContentSource(source).then(
-      (result) => current && setFormatted(result),
-      (error: unknown) => {
-        console.error("Couldn't format the comp file.", error);
-        if (current) setFormatted(source);
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [source]);
+  const formatted = useFormattedSource(source, open);
 
   const fileName = compFileName(guide.name);
   const missing = [!guide.name.trim() && "a name", !guide.summary.trim() && "a summary"].filter(Boolean);

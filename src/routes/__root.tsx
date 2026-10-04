@@ -18,7 +18,8 @@ function RootLayout() {
     <div className="flex min-h-dvh flex-col">
       <HeadContent />
       <Header />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">
+      {/* At least a screen tall, so the footer starts below the fold and doesn't jump as pages load their data. */}
+      <main className="mx-auto min-h-dvh w-full max-w-7xl flex-1 px-4 py-8">
         <Outlet />
       </main>
       <Footer />
