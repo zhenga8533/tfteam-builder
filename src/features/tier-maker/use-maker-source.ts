@@ -3,7 +3,7 @@ import type { Tier, TierRows } from "@/content/types";
 import { tierListRows } from "@/features/stats/tiers";
 import { useActiveSet, useGameData, useStats } from "@/lib/data/hooks";
 import type { Augment, Champion, Item, Trait } from "@/lib/data/schema";
-import { type TraitStyle, traitStyle } from "@/lib/game/traits";
+import { traitKey, type TraitStyle, traitStyle } from "@/lib/game/traits";
 import type { MakerKind } from "./model";
 
 /** One thing that can be placed in a tier, with what's needed to draw it on the page and in an image. */
@@ -22,9 +22,6 @@ export interface MakerSource {
   /** Each entry's tier from the stats (undefined: too few games); null when the list isn't stats-based. */
   statTiers: Map<string, Tier | undefined> | null;
 }
-
-/** Trait entries are per breakpoint, keyed `apiName:minUnits` like the tier list overrides. */
-const traitKey = (apiName: string, minUnits: number) => `${apiName}:${minUnits}`;
 
 /** Everything the Tier List Maker can rank for `kind`, and where the site currently ranks it. */
 export function useMakerSource(kind: MakerKind): MakerSource {

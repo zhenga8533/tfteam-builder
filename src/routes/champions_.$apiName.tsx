@@ -19,7 +19,7 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion, ChampionStats } from "@/lib/data/schema";
-import { traitStyle } from "@/lib/game/traits";
+import { traitKey, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/champions_/$apiName")({
   head: () => ({ meta: [{ title: "Champion Stats · TFTeam Builder" }] }),
@@ -55,7 +55,7 @@ function Traits({ stats }: { stats: ChampionStats }) {
         if (!trait || !breakpoint) return [];
         return [
           {
-            key: `${entry.trait}:${entry.minUnits}`,
+            key: traitKey(entry.trait, entry.minUnits),
             label: (
               <TraitLink
                 trait={trait}

@@ -25,6 +25,22 @@ export const STYLE_RANK: Record<TraitStyle, number> = {
   prismatic: 5,
 };
 
+/** A trait breakpoint's key, `apiName:minUnits` (e.g. "DA_18_Blossom:5"), as tier lists, overrides and trends use. */
+export const traitKey = (apiName: string, minUnits: number) => `${apiName}:${minUnits}`;
+
+export function parseTraitKey(key: string): { apiName: string; minUnits: number } {
+  const [apiName = "", minUnits = ""] = key.split(":");
+  return { apiName, minUnits: Number(minUnits) };
+}
+
+/** The trait and breakpoint a key names, or null when the game data doesn't have them. */
+export function traitBreakpoint(key: string, traitsByApi: Map<string, Trait>) {
+  const { apiName, minUnits } = parseTraitKey(key);
+  const trait = traitsByApi.get(apiName);
+  const breakpoint = trait?.breakpoints.find((entry) => entry.minUnits === minUnits);
+  return trait && breakpoint ? { trait, breakpoint } : null;
+}
+
 export interface TraitState {
   trait: Trait;
   count: number;

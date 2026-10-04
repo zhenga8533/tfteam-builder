@@ -13,7 +13,7 @@ import { useUpdateSearch } from "@/lib/use-update-search";
 import { isRankFloor } from "@/lib/data/constants";
 import { useGameData, useTierStats } from "@/lib/data/hooks";
 import type { PatchTrend, RankFloor, SetStats, StatLine } from "@/lib/data/schema";
-import { traitStyle } from "@/lib/game/traits";
+import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/tierlist/changes")({
   head: () => ({ meta: [{ title: "Patch Changes · TFTeam Builder" }] }),
@@ -87,11 +87,11 @@ function useMovers(trend: PatchTrend, stats: SetStats) {
       : [];
   });
   const traits = Object.entries(trend.traits).flatMap(([key, delta]) => {
-    const [apiName = "", minUnits = ""] = key.split(":");
-    const trait = traitsByApi.get(apiName);
-    const breakpoint = trait?.breakpoints.find((entry) => entry.minUnits === Number(minUnits));
-    const line = stats.traits.find((entry) => entry.trait === apiName && entry.minUnits === Number(minUnits));
-    if (!trait || !breakpoint || !line) return [];
+    const found = traitBreakpoint(key, traitsByApi);
+    if (!found) return [];
+    const { trait, breakpoint } = found;
+    const line = stats.traits.find((entry) => entry.trait === trait.apiName && entry.minUnits === breakpoint.minUnits);
+    if (!line) return [];
     return [
       {
         key,
@@ -102,7 +102,7 @@ function useMovers(trend: PatchTrend, stats: SetStats) {
             trait={trait}
             style={traitStyle(breakpoint.style)}
             count={breakpoint.minUnits}
-            label={`${minUnits} ${trait.name}`}
+            label={`${breakpoint.minUnits} ${trait.name}`}
           />
         ),
       },

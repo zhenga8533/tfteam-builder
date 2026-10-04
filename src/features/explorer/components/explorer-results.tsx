@@ -7,7 +7,7 @@ import { count, percent } from "@/features/stats/format";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { useGameData } from "@/lib/data/hooks";
 import type { ExplorerFilter, ExplorerResult, ExplorerRow } from "@/lib/explorer/engine";
-import { traitStyle } from "@/lib/game/traits";
+import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 const BASELINE = "the average of the boards matching your filters";
 
@@ -58,10 +58,10 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
     ];
   });
   const traitRows = result.traits.flatMap((row) => {
-    const [apiName = "", minUnits = ""] = row.key.split(":");
-    const trait = traitsByApi.get(apiName);
-    const breakpoint = trait?.breakpoints.find((b) => b.minUnits === Number(minUnits));
-    if (!trait || !breakpoint) return [];
+    const found = traitBreakpoint(row.key, traitsByApi);
+    if (!found) return [];
+    const { trait, breakpoint } = found;
+    const { minUnits } = breakpoint;
     return [
       {
         key: row.key,
@@ -69,7 +69,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
         label: (
           <AddButton
             label={`Filter by ${minUnits} ${trait.name}`}
-            onClick={() => add({ type: "trait", trait: apiName, minUnits: Number(minUnits) })}
+            onClick={() => add({ type: "trait", trait: trait.apiName, minUnits })}
           >
             <TraitIcon trait={trait} style={traitStyle(breakpoint.style)} className="size-6" decorative />
             <span className="truncate">

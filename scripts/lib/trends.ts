@@ -1,12 +1,13 @@
 import type { AutoComp, PatchHistory, PatchTrend, SetStats, StatLine } from "../../src/lib/data/schema.ts";
 import { comparePatches } from "../stats/state.ts";
 import { round } from "../../src/lib/game/stat-line.ts";
+import { traitKey } from "../../src/lib/game/traits.ts";
 import { MIN_GAMES } from "./stats.ts";
 
 type Lines = Record<string, StatLine>;
 
 const traitLines = (stats: SetStats): Lines =>
-  Object.fromEntries(stats.traits.map((line) => [`${line.trait}:${line.minUnits}`, line]));
+  Object.fromEntries(stats.traits.map((line) => [traitKey(line.trait, line.minUnits), line]));
 
 /** Changes in average placement for entries with enough games on both patches (negative = improved). */
 function differences(current: Lines, previous: Lines, minGames: number): Record<string, number> {
