@@ -92,11 +92,11 @@ test("the guide editor turns the board into a comp file", async ({ page }) => {
   await page.locator('[aria-roledescription="draggable"][aria-label^="Add "]').nth(0).click();
   await page.getByRole("button", { name: "Share" }).click();
   await page.getByRole("menuitem", { name: /Write a comp guide/ }).click();
-  const submit = page.getByRole("button", { name: "Submit on GitHub" });
-  await expect(submit).toBeDisabled();
+  const copy = page.getByRole("button", { name: "Copy", exact: true });
+  await expect(copy).toBeDisabled();
   await page.getByLabel("Comp name").fill("Smoke Test");
   await page.getByLabel("Summary").fill("A summary.");
-  await expect(submit).toBeEnabled();
+  await expect(copy).toBeEnabled();
 
   // Enter starts the next tip; Backspace in an empty one removes it.
   await page.getByRole("textbox", { name: "Tip 1", exact: true }).fill("First tip.");

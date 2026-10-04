@@ -1,4 +1,4 @@
-import { ClipboardCopy, Download, Send } from "lucide-react";
+import { ClipboardCopy, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import { formatContentSource, tierListSource } from "@/content/serialize";
 import type { TierRows } from "@/content/types";
 import { downloadBlob } from "@/lib/canvas";
 import { useActiveSet } from "@/lib/data/hooks";
-import { githubFileLink } from "@/lib/github";
 import { type ExportMode, exportTierList, type MakerKind } from "../model";
 import type { MakerSource } from "../use-maker-source";
 
@@ -30,7 +29,7 @@ interface ExportDialogProps {
 
 const count = (rows: TierRows) => Object.values(rows).reduce((total, keys) => total + keys.length, 0);
 
-/** Writes the edited list into the set's tier list file, to download, copy or propose on GitHub. */
+/** Writes the edited list into the set's tier list file, to download or copy into the repository. */
 export function ExportDialog({ open, onOpenChange, kind, rows, source }: ExportDialogProps) {
   const { set } = useActiveSet();
   const existing = tierListForSet(set);
@@ -68,23 +67,12 @@ export function ExportDialog({ open, onOpenChange, kind, rows, source }: ExportD
     try {
       await navigator.clipboard.writeText(text);
       toast.success(message);
-      return true;
     } catch {
       toast.error("Couldn't access the clipboard.");
-      return false;
     }
   };
 
   const download = () => formatted && downloadBlob(new Blob([formatted], { type: "text/typescript" }), `set${set}.ts`);
-
-  const submit = async () => {
-    if (!formatted) return;
-    const { url, paste } = githubFileLink(path, formatted, Boolean(existing));
-    const message = existing
-      ? "Tier list file copied. Paste it over the file on the GitHub page that just opened."
-      : "Tier list file copied. Paste it into the GitHub page that just opened.";
-    if (!paste || (await copy(formatted, message))) window.open(url, "_blank", "noopener");
-  };
 
   const plural = (total: number, noun: string) => `${total} ${noun}${total === 1 ? "" : "s"}`;
   const summary =
@@ -143,15 +131,8 @@ export function ExportDialog({ open, onOpenChange, kind, rows, source }: ExportD
           <Button variant="outline" onClick={download} disabled={!formatted}>
             <Download /> Download
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => formatted && copy(formatted, "Tier list file copied.")}
-            disabled={!formatted}
-          >
+          <Button onClick={() => formatted && copy(formatted, "Tier list file copied.")} disabled={!formatted}>
             <ClipboardCopy /> Copy
-          </Button>
-          <Button onClick={submit} disabled={!formatted}>
-            <Send /> Submit on GitHub
           </Button>
         </DialogFooter>
       </DialogContent>

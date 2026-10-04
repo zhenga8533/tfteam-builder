@@ -220,7 +220,7 @@ export function TeamToolbar() {
           <MenuHeading>Comp guide</MenuHeading>
           <DropdownMenuItem onSelect={() => setPanel("guide")} disabled={units.length === 0}>
             <NotebookPen />
-            <MenuText title="Write a comp guide" hint="Fill in the details, then submit it on GitHub" />
+            <MenuText title="Write a comp guide" hint="Fill in the details and get the guide's file" />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

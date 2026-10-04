@@ -30,7 +30,7 @@ Augments aren't in Riot's match data, so `augments` is always the complete, hand
 
 The easiest way to edit any of these is **Tools → Tier List Maker**: arrange the list by dragging, then **Export to
 site**. For a stats-based list it writes only the overrides needed (entries placed away from their stats tier), or
-the whole list as the fallback; it keeps the file's other sections and can open the change on GitHub.
+the whole list as the fallback, keeping the file's other sections. Copy or download it over `tierlists/set{N}.ts`.
 
 ## Adding a comp
 
@@ -39,9 +39,8 @@ the whole list as the fallback; it keeps the file's other sections and can open 
    With more than one level board, the highest becomes `board` and the lowest `early`.
 2. Fill in the tier, playstyle, difficulty, summary, carries, augments and tips. Optional slots (`flex: true`) and
    `alternatives` come from the board.
-3. **Submit on GitHub** opens GitHub's new-file page with the formatted file in `comps/set{N}/`, ready to propose as a
-   pull request. Or download or copy it, save it there and run `npm test`. The file is already formatted, so
-   `npm run format` has nothing to change.
+3. Copy or download the file into `comps/set{N}/` and run `npm test`. It's already formatted, so `npm run format` has
+   nothing to change.
 
 References use the `apiName` values from the generated game data, e.g. `DA_18_Ahri` or `TFT_Item_BlueBuff`.
 The Champions, Items and Augments pages show each entry's name, and `public/data/latest/set{N}.json` contains the apiNames.
