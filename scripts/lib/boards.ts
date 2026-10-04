@@ -24,7 +24,6 @@ export interface ResolvedBoard {
   traits: ResolvedTrait[];
   /** Round the player was knocked out (or the final round, for the winner); missing on older boards. */
   lastRound?: number;
-  damage?: number;
   companion?: string;
 }
 
@@ -57,7 +56,7 @@ export class BoardResolver {
       const breakpoint = apiName ? this.breakpoints.get(apiName)?.[tier - 1] : undefined;
       return apiName && breakpoint ? [{ apiName, minUnits: breakpoint.minUnits, style: breakpoint.style, count }] : [];
     });
-    const { lastRound, damage, companion } = extras;
-    return { placement, level, units, traits, lastRound, damage, companion };
+    const { lastRound, companion } = extras;
+    return { placement, level, units, traits, lastRound, companion };
   }
 }

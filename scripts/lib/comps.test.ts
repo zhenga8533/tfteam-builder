@@ -111,16 +111,14 @@ describe("CompDetector", () => {
     ]);
   });
 
-  it("reports the median knockout round of non-winning boards and average damage, once enough boards have them", () => {
+  it("reports the median knockout round of non-winning boards, once enough boards have it", () => {
     const boards = Array.from({ length: games }, (_, i) => ({
       ...ahriBlossom(i === 0 ? 1 : 3),
       // The winner's last round is the game's final round, so it's left out of knockouts.
       lastRound: i === 0 ? 40 : i % 3 ? 30 : 25,
-      damage: i === 0 ? 100 : 50,
     }));
     const [comp] = run(boards);
     expect(comp!.knockoutRound).toBe(30);
-    expect(comp!.damage).toBe(Math.round((100 + 50 * (games - 1)) / games));
     expect(run(Array.from({ length: games }, (_, i) => ahriBlossom(i === 0 ? 1 : 3)))[0]).not.toHaveProperty(
       "knockoutRound",
     );

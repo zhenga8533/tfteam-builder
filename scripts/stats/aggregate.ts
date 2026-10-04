@@ -38,7 +38,6 @@ export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
     ];
     const extras: BoardExtras = {
       lastRound: participant.last_round,
-      damage: participant.total_damage_to_players,
       companion: participant.companion?.content_ID,
     };
     // JSON drops the undefined fields, so only what the match reported is stored.

@@ -66,7 +66,7 @@ export function renderReport({ sets, files, now, skipped }: Report): string {
       `- **${count(report.matches)} matches**, newest crawled ${text}` +
         (stale ? " ⚠️ no new matches lately; is crawling enabled (`CRAWL_ENABLED`)?" : ""),
       `- **${count(report.comps)} comps** detected`,
-      `- Knockout round and damage on ${percent(report.withRounds, report.boards)} of boards, Little Legends on ${percent(report.withCompanions, report.boards)}` +
+      `- Knockout round on ${percent(report.withRounds, report.boards)} of boards, Little Legends on ${percent(report.withCompanions, report.boards)}` +
         (report.boards && !report.withRounds ? " ⚠️ none yet, so those sections stay hidden" : ""),
     );
     if (report.floors.length) {

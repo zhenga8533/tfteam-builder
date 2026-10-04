@@ -30,7 +30,7 @@ describe("renderReport", () => {
     });
     expect(markdown).toContain("### Set 18: ready, patch 18.3b, diamond+");
     expect(markdown).toContain("- **6,618 matches**, newest crawled 6 hours ago\n");
-    expect(markdown).toContain("Knockout round and damage on 40% of boards, Little Legends on 40%\n");
+    expect(markdown).toContain("Knockout round on 40% of boards, Little Legends on 40%\n");
     expect(markdown).toContain("| master+ | 2,100 | 12 |");
     expect(markdown).toContain("| americas | 2,500 |");
     expect(markdown).toContain("### Files: 2, 2.8 MB");
