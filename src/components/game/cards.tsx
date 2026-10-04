@@ -58,7 +58,7 @@ export function ChampionTraitList({ champion }: { champion: Champion }) {
         return trait
           ? [
               <span key={apiName} className="flex items-center gap-1 text-xs">
-                <TraitIcon trait={trait} className="size-5" />
+                <TraitIcon trait={trait} className="size-5" decorative />
                 {trait.name}
               </span>,
             ]
@@ -73,7 +73,7 @@ export function ChampionCard({ champion, star }: { champion: Champion; star?: nu
   return (
     <div className="space-y-3">
       <CardHeading
-        icon={<ChampionIcon champion={champion} className="size-12" />}
+        icon={<ChampionIcon champion={champion} decorative className="size-12" />}
         title={champion.name}
         subtitle={
           <span className={COST_TEXT[champion.cost]}>
@@ -115,7 +115,7 @@ export function ItemCard({ item }: { item: Item }) {
   return (
     <div className="space-y-3">
       <CardHeading
-        icon={<ItemIcon item={item} className="size-10" />}
+        icon={<ItemIcon item={item} decorative className="size-10" />}
         title={item.name}
         subtitle={<ItemRecipe item={item} />}
       />
@@ -129,7 +129,7 @@ export function AugmentCard({ augment }: { augment: Augment }) {
   return (
     <div className="space-y-3">
       <CardHeading
-        icon={<AugmentIcon augment={augment} className="size-10" />}
+        icon={<AugmentIcon augment={augment} decorative className="size-10" />}
         title={augment.name}
         subtitle={<span className={AUGMENT_TIER_TEXT[augment.tier]}>{AUGMENT_TIER_LABEL[augment.tier]}</span>}
       />

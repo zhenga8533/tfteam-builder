@@ -12,7 +12,10 @@ import { StatTable } from "./stat-table";
 
 const MAX_ITEMS = 3;
 
-/** A build's item icons (and the name for a single item); `linked` makes each icon open its item page. */
+/**
+ * A build's item icons (and the name for a single item); `linked` makes each icon open its item page. Unlinked
+ * labels sit inside a row's button, so their icons aren't focusable themselves.
+ */
 function ItemLabel({ items, linked = false }: { items: string[]; linked?: boolean }) {
   const { itemsByApi } = useGameData();
   return (
@@ -22,8 +25,8 @@ function ItemLabel({ items, linked = false }: { items: string[]; linked?: boolea
         if (item && linked) return <ItemLink key={index} item={item} label={null} />;
         return item ? (
           <GameHoverCard key={index} content={<ItemCard item={item} />}>
-            <span tabIndex={0} className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <ItemIcon item={item} className="size-7" />
+            <span className="flex">
+              <ItemIcon item={item} className="size-7" decorative={items.length === 1} />
             </span>
           </GameHoverCard>
         ) : null;

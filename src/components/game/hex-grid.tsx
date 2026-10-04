@@ -15,9 +15,9 @@ interface HexGridProps {
 /** Lays out the 4×7 honeycomb; each cell's content comes from `renderCell`. */
 export function HexGrid({ renderCell, className, label = "Board" }: HexGridProps) {
   return (
-    <div className={cn("hex-board mx-auto w-full select-none", className)} role="grid" aria-label={label}>
+    <div className={cn("hex-board mx-auto w-full select-none", className)} role="group" aria-label={label}>
       {Array.from({ length: BOARD_ROWS }, (_, row) => (
-        <div key={row} className="hex-row" role="row">
+        <div key={row} className="hex-row">
           {Array.from({ length: BOARD_COLS }, (_, col) => renderCell(row * BOARD_COLS + col))}
         </div>
       ))}

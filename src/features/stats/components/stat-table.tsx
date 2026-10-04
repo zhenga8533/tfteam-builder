@@ -80,10 +80,14 @@ export function StatTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="text-xs text-muted-foreground">
-            <th className="py-1.5 text-left font-medium" />
+            <th scope="col" className="py-1.5 text-left font-medium">
+              <span className="sr-only">Name</span>
+            </th>
             {columns.map((column) => (
               <th
                 key={column.key}
+                scope="col"
+                aria-sort={sort === column.key ? (ASCENDING_BEST[column.key] ? "ascending" : "descending") : undefined}
                 className={cn(
                   "w-12 py-1.5 pl-2 text-right font-medium sm:w-16",
                   column.key === "top4" && "max-sm:hidden",
@@ -113,7 +117,9 @@ export function StatTable({
               className={cn("border-t", isLowSample(row.line) && "opacity-60")}
               title={isLowSample(row.line) ? LOW_SAMPLE_HINT : undefined}
             >
-              <td className="max-w-0 py-1.5 pr-2">{row.label}</td>
+              <th scope="row" className="max-w-0 py-1.5 pr-2 text-left font-normal">
+                {row.label}
+              </th>
               {showDelta && (
                 <td className="py-1.5 pl-2 text-right">
                   {row.line.delta !== undefined && <DeltaValue delta={row.line.delta} />}

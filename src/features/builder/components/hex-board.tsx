@@ -35,7 +35,17 @@ function PlacedUnit({ unit, index }: { unit: BoardUnit; index: number }) {
           event.preventDefault();
           remove(index);
         }}
-        aria-label={`${champion.name}, ${unit.star} star${unit.flex ? ", flex" : ""}. Right-click to remove.`}
+        // Delete is the keyboard counterpart of right-click; other keys go to the drag sensor (Space picks up).
+        onKeyDown={(event) => {
+          if (event.key === "Delete" || event.key === "Backspace") {
+            event.preventDefault();
+            remove(index);
+            return;
+          }
+          listeners?.onKeyDown?.(event);
+        }}
+        aria-keyshortcuts="Delete"
+        aria-label={`${champion.name}, ${unit.star} star${unit.flex ? ", flex" : ""}. Right-click or press Delete to remove.`}
         className={cn("absolute inset-0 touch-none outline-none", isDragging && "opacity-30")}
       >
         <HexUnit

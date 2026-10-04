@@ -27,7 +27,7 @@ export function ChampionLink({
   return (
     <GameHoverCard content={<ChampionCard champion={champion} />}>
       <Link to="/champions/$apiName" params={{ apiName: champion.apiName }} className={cn(LINK_CLASS, className)}>
-        <ChampionIcon champion={champion} className={iconClassName} />
+        <ChampionIcon champion={champion} className={iconClassName} decorative={label !== null} />
         {label !== null && <span className="truncate">{label ?? champion.name}</span>}
       </Link>
     </GameHoverCard>
@@ -39,7 +39,7 @@ export function ItemLink({ item, label, className, iconClassName = "size-7" }: L
   return (
     <GameHoverCard content={<ItemCard item={item} />}>
       <Link to="/items/$apiName" params={{ apiName: item.apiName }} className={cn(LINK_CLASS, className)}>
-        <ItemIcon item={item} className={iconClassName} />
+        <ItemIcon item={item} className={iconClassName} decorative={label !== null} />
         {label !== null && <span className="truncate">{label ?? item.name}</span>}
       </Link>
     </GameHoverCard>
@@ -58,7 +58,7 @@ export function TraitLink({
   return (
     <GameHoverCard content={<TraitCard trait={trait} count={count} />}>
       <Link to="/traits/$apiName" params={{ apiName: trait.apiName }} className={cn(LINK_CLASS, className)}>
-        <TraitIcon trait={trait} style={style} className={iconClassName} />
+        <TraitIcon trait={trait} style={style} className={iconClassName} decorative={label !== null} />
         {label !== null && <span className="truncate">{label ?? trait.name}</span>}
       </Link>
     </GameHoverCard>

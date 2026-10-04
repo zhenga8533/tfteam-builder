@@ -20,9 +20,9 @@ export const RANK_FLOOR_LABEL: Record<RankFloor, string> = {
 /** Average placement is centred on 4.5; color how far an entry sits from it. */
 export function avgPlacementClass(avg: number) {
   if (avg <= 4.1) return "text-cost-2";
-  if (avg <= 4.4) return "text-tier-c";
+  if (avg <= 4.4) return "text-placement-better";
   if (avg <= 4.6) return "text-foreground";
-  if (avg <= 4.9) return "text-tier-a";
+  if (avg <= 4.9) return "text-placement-worse";
   return "text-destructive";
 }
 

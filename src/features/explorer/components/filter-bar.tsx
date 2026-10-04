@@ -80,7 +80,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             if (!champion) return null;
             return (
               <div key={index} className="flex items-center gap-1.5 rounded-lg border bg-card py-1 pr-1 pl-1.5">
-                <ChampionIcon champion={champion} className="size-7" />
+                <ChampionIcon champion={champion} className="size-7" decorative />
                 <span className="text-sm font-medium">{champion.name}</span>
                 <Select
                   value={String(filter.minStar ?? ANY)}
@@ -146,6 +146,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                   trait={trait}
                   style={breakpoint ? traitStyle(breakpoint.style) : "inactive"}
                   className="size-7"
+                  decorative
                 />
                 <span className="text-sm font-medium">{trait.name}</span>
                 <Select

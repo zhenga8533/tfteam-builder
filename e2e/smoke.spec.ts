@@ -128,6 +128,28 @@ test("the tier list maker moves entries and exports the file", async ({ page }) 
   await expect(page.getByRole("dialog").locator("pre")).toContainText("satisfies TierList");
 });
 
+test("the team builder and tier list maker work from the keyboard", async ({ page }) => {
+  await page.goto("builder");
+  // Enter adds a pool champion (Space is for dragging); Delete removes a placed unit.
+  await page.locator('[aria-roledescription="draggable"][aria-label^="Add "]').first().focus();
+  await page.keyboard.press("Enter");
+  const units = page.locator('button[aria-label*="press Delete to remove"]');
+  await expect(units).toHaveCount(1);
+  await units.first().focus();
+  await page.keyboard.press("Delete");
+  await expect(units).toHaveCount(0);
+
+  // A tier menu move keeps focus on the moved entry.
+  await page.goto("tools/tier-list?kind=augments");
+  const entry = page.getByRole("region", { name: "Unranked" }).getByRole("button").first();
+  const name = (await entry.getAttribute("aria-label"))!.split(",")[0]!;
+  await entry.focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("region", { name: "S tier" }).getByLabel(`${name}, S tier`)).toBeFocused();
+});
+
 test("site search opens a page", async ({ page }) => {
   await page.goto("");
   await expect(page.getByRole("button", { name: "Search" })).toBeVisible();

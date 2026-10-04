@@ -4,13 +4,16 @@ import type { TraitStyle } from "@/lib/game/traits";
 import { cn } from "@/lib/utils";
 import { COST_RING } from "./styles";
 
-type ImgProps = Omit<ComponentProps<"img">, "src" | "alt">;
+type ImgProps = Omit<ComponentProps<"img">, "src" | "alt"> & {
+  /** The name is already shown as text next to the icon, so screen readers skip the image instead of repeating it. */
+  decorative?: boolean;
+};
 
-function GameImage({ src, alt, className, ...props }: ImgProps & { src: string; alt: string }) {
+function GameImage({ src, alt, decorative, className, ...props }: ImgProps & { src: string; alt: string }) {
   return (
     <img
       src={src}
-      alt={alt}
+      alt={decorative ? "" : alt}
       loading="lazy"
       decoding="async"
       draggable={false}
@@ -51,10 +54,13 @@ export function TraitIcon({
   trait,
   style = "inactive",
   className,
+  decorative,
 }: {
   trait: Trait;
   style?: TraitStyle;
   className?: string;
+  /** The name is already shown as text next to the badge. */
+  decorative?: boolean;
 }) {
   return (
     <span
@@ -63,7 +69,7 @@ export function TraitIcon({
       <span className={cn("hex-clip absolute inset-[9%] flex items-center justify-center", `trait-face-${style}`)}>
         <img
           src={trait.icon}
-          alt={trait.name}
+          alt={decorative ? "" : trait.name}
           loading="lazy"
           draggable={false}
           className={cn(

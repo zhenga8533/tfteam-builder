@@ -39,21 +39,26 @@ interface DropTarget {
   before?: string;
 }
 
+/** Entries always show their name as text, so the icon itself is decorative. */
 export function EntryIcon({ entry, className }: { entry: MakerEntry; className?: string }) {
   switch (entry.kind) {
     case "champions":
-      return <ChampionIcon champion={entry.champion} className={className} />;
+      return <ChampionIcon champion={entry.champion} className={className} decorative />;
     case "items":
-      return <ItemIcon item={entry.item} className={className} />;
+      return <ItemIcon item={entry.item} className={className} decorative />;
     case "traits":
-      return <TraitIcon trait={entry.trait} style={entry.style} className={className} />;
+      return <TraitIcon trait={entry.trait} style={entry.style} className={className} decorative />;
     case "augments":
-      return <AugmentIcon augment={entry.augment} className={className} />;
+      return <AugmentIcon augment={entry.augment} className={className} decorative />;
   }
 }
 
 interface BoardActions {
   move: (key: string, tier: Slot) => void;
+  /** Takes the focus for `key` if it was just moved from its menu, so keyboard users keep their place. */
+  claimFocus: (key: string, element: HTMLElement | null) => void;
+  /** Whether the menu that just closed moved its entry, which refocuses itself; read once per close. */
+  movingFromMenu: () => boolean;
   /** Whether a click is the tail end of a drag, which shouldn't open the entry's menu. */
   justDragged: () => boolean;
 }
@@ -68,7 +73,7 @@ function useBoard() {
 
 /** An entry: drag it to another tier (or before another entry), or click it to pick a tier from a menu. */
 function MakerEntryButton({ entry, slot }: { entry: MakerEntry; slot: Slot }) {
-  const { move, justDragged } = useBoard();
+  const { move, justDragged, claimFocus, movingFromMenu } = useBoard();
   const [open, setOpen] = useState(false);
   const drag = useDraggable({ id: `entry:${entry.key}`, data: { key: entry.key } });
   const drop = useDroppable({
@@ -83,6 +88,7 @@ function MakerEntryButton({ entry, slot }: { entry: MakerEntry; slot: Slot }) {
           ref={(node) => {
             drag.setNodeRef(node);
             drop.setNodeRef(node);
+            claimFocus(entry.key, node);
           }}
           type="button"
           {...drag.attributes}
@@ -106,7 +112,11 @@ function MakerEntryButton({ entry, slot }: { entry: MakerEntry; slot: Slot }) {
           </span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-44">
+      <DropdownMenuContent
+        align="start"
+        className="w-44"
+        onCloseAutoFocus={(event) => movingFromMenu() && event.preventDefault()}
+      >
         <DropdownMenuLabel className="truncate">{entry.label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
@@ -210,6 +220,9 @@ interface MakerBoardProps {
 export function MakerBoard({ entries, byKey, rows, onChange }: MakerBoardProps) {
   const [dragging, setDragging] = useState<MakerEntry | null>(null);
   const lastDrop = useRef(0);
+  // An entry moved from its menu re-renders in another tier, so its old button (and focus) is gone.
+  const refocus = useRef<string | null>(null);
+  const menuMoved = useRef(false);
   const sensors = useSensors(
     // A small activation distance keeps clicks (which open the tier menu) working on draggable entries.
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -217,7 +230,22 @@ export function MakerBoard({ entries, byKey, rows, onChange }: MakerBoardProps) 
   const pool = entries.filter((entry) => !tierOf(rows, entry.key)).map((entry) => entry.key);
 
   const actions: BoardActions = {
-    move: (key, tier) => onChange(moveEntry(rows, key, tier)),
+    move: (key, tier) => {
+      if (tier === tierOf(rows, key)) return;
+      refocus.current = key;
+      menuMoved.current = true;
+      onChange(moveEntry(rows, key, tier));
+    },
+    claimFocus: (key, element) => {
+      if (!element || refocus.current !== key) return;
+      refocus.current = null;
+      element.focus();
+    },
+    movingFromMenu: () => {
+      const moved = menuMoved.current;
+      menuMoved.current = false;
+      return moved;
+    },
     justDragged: () => Date.now() - lastDrop.current < 250,
   };
 

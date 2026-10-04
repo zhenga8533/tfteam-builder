@@ -14,11 +14,11 @@
   --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
   --primary: oklch(0.62 0.13 75);
-  --primary-foreground: oklch(0.99 0.005 85);
+  --primary-foreground: oklch(0.2 0.03 265);
   --secondary: oklch(0.93 0.01 265);
   --secondary-foreground: var(--foreground);
   --muted: oklch(0.94 0.008 265);
-  --muted-foreground: oklch(0.47 0.02 265);
+  --muted-foreground: oklch(0.44 0.02 265);
   --accent: oklch(0.92 0.012 265);
   --accent-foreground: var(--foreground);
   --destructive: oklch(0.56 0.22 25);
@@ -52,6 +52,9 @@
   --tier-b: oklch(0.84 0.15 90);
   --tier-c: oklch(0.8 0.17 130);
   --tier-x: oklch(0.6 0.02 265);
+  /* Average placement text, a little better or worse than average; darker than the tier colours for contrast on light backgrounds. */
+  --placement-better: oklch(0.5 0.14 130);
+  --placement-worse: oklch(0.52 0.16 50);
 }
 
 .dark {
@@ -101,6 +104,8 @@
   --tier-b: oklch(0.84 0.15 90);
   --tier-c: oklch(0.8 0.17 130);
   --tier-x: oklch(0.6 0.02 265);
+  --placement-better: var(--tier-c);
+  --placement-worse: var(--tier-a);
 }
 
 @theme inline {
@@ -151,6 +156,8 @@
   --color-tier-a: var(--tier-a);
   --color-tier-b: var(--tier-b);
   --color-tier-c: var(--tier-c);
+  --color-placement-better: var(--placement-better);
+  --color-placement-worse: var(--placement-worse);
   --color-tier-x: var(--tier-x);
 }
 

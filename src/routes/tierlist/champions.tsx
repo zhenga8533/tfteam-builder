@@ -78,7 +78,7 @@ function ChampionTierListPage() {
         if (!champion) return null;
         return (
           <TierEntry
-            icon={<ChampionIcon champion={champion} className="size-12" />}
+            icon={<ChampionIcon champion={champion} decorative className="size-12" />}
             label={champion.name}
             line={line}
             link={{ to: "/champions/$apiName", params: { apiName: champion.apiName } }}
