@@ -1,5 +1,12 @@
 import { type TierRows, TIERS } from "@/content/types";
-import { canvasToPng, createImageCanvas, drawTraitBadge, loadImages, readDarkTheme } from "@/lib/canvas";
+import {
+  canvasToPng,
+  createImageCanvas,
+  drawSiteAddress,
+  drawTraitBadge,
+  loadImages,
+  readDarkTheme,
+} from "@/lib/canvas";
 import type { MakerEntry } from "./use-maker-source";
 
 const WIDTH = 1200;
@@ -97,8 +104,6 @@ export async function renderTierListImage({ title, subtitle, rows, byKey }: Tier
     top += rowTall + ROW_GAP;
   }
 
-  ctx.fillStyle = theme.muted;
-  ctx.font = `500 13px ${font}`;
-  ctx.fillText(`${location.host}${import.meta.env.BASE_URL}`.replace(/\/$/, ""), PADDING, height - PADDING / 2 - 4);
+  drawSiteAddress(ctx, theme, font, PADDING, height - PADDING / 2 - 4);
   return canvasToPng(canvas);
 }

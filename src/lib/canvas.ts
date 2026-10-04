@@ -80,6 +80,14 @@ export function createImageCanvas(width: number, height: number) {
   return { canvas, ctx };
 }
 
+/** The site's address, small and muted: exported images' footer, with its baseline at `y`. */
+export function drawSiteAddress(ctx: CanvasRenderingContext2D, theme: Theme, font: string, x: number, y: number) {
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = theme.muted;
+  ctx.font = `500 13px ${font}`;
+  ctx.fillText(`${location.host}${import.meta.env.BASE_URL}`.replace(/\/$/, ""), x, y);
+}
+
 export function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) =>
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Couldn't create the image."))), "image/png"),
