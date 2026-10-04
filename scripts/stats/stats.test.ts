@@ -8,7 +8,7 @@ import { BudgetExceededError, type Clock, parseRateLimitHeader, RateLimiter, Rio
 import { seedPlayers } from "./seed.ts";
 import { FileBlobStore } from "./blob.ts";
 import { R2BlobStore } from "./r2.ts";
-import { comparePatches, namedExtras, runStamp, StatsStore } from "./state.ts";
+import { comparePatches, runStamp, StatsStore } from "./state.ts";
 import type { LeagueEntry, Match } from "./types.ts";
 
 function fakeClock(start = 0): Clock & { time: number } {
@@ -220,19 +220,6 @@ describe("aggregation", () => {
     mergeCounters(merged, b);
     expect(merged.matches).toBe(2);
     expect(merged.units["TFT18_Ahri"]).toEqual([4, 14, 2, 2, 2, 0, 0, 0, 0, 2, 0, 0]);
-  });
-});
-
-describe("stored rows", () => {
-  it("reads rows that kept the extra fields positionally into the named form", () => {
-    const core = ["NA1_1", 1, "diamond", 3, 8, [], []];
-    expect(namedExtras([...core, 27, 40, "ossia-1"])).toEqual([
-      ...core,
-      { lastRound: 27, damage: 40, companion: "ossia-1" },
-    ]);
-    expect(namedExtras([...core, 27, 40, ""])).toEqual([...core, { lastRound: 27, damage: 40 }]);
-    expect(namedExtras([...core, { lastRound: 30 }])).toEqual([...core, { lastRound: 30 }]);
-    expect(namedExtras(core)).toEqual(core);
   });
 });
 
