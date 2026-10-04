@@ -21,9 +21,8 @@ export function TierRows<T>({ rows, renderRow }: TierRowsProps<T>) {
           <section
             key={tier}
             aria-labelledby={`${id}-${tier}`}
-            // Off-screen rows skip rendering work until scrolled near; long tier lists stay responsive.
             className={cn(
-              "flex flex-col gap-3 rounded-xl border bg-card/60 p-3 [contain-intrinsic-size:auto_12rem] [content-visibility:auto] sm:flex-row sm:gap-4",
+              "flex flex-col gap-3 rounded-xl border bg-card/60 p-3 sm:flex-row sm:gap-4",
               TIER_BORDER[tier],
             )}
           >

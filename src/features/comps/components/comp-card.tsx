@@ -1,5 +1,5 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { memo, type ReactNode, useMemo } from "react";
 import { ItemCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
@@ -73,7 +73,9 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
   return (
     <article
       className={cn(
-        "relative flex flex-col gap-3 rounded-lg border bg-card p-3 transition-colors focus-within:ring-2 focus-within:ring-ring sm:flex-row sm:gap-4",
+        // Off-screen cards skip rendering until scrolled near. Per card rather than per tier row: cards are of similar
+        // height, so the placeholder size keeps the page's height (and scrollbar) close to right.
+        "relative flex flex-col gap-3 rounded-lg border bg-card p-3 transition-colors [contain-intrinsic-size:auto_10rem] [content-visibility:auto] focus-within:ring-2 focus-within:ring-ring sm:flex-row sm:gap-4",
         link && "hover:border-primary/50",
       )}
     >
@@ -148,7 +150,7 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
 }
 
 /** A hand-written comp guide. */
-export function CompCard({ comp, preview = false }: { comp: Comp; preview?: boolean }) {
+export const CompCard = memo(function CompCard({ comp, preview = false }: { comp: Comp; preview?: boolean }) {
   return (
     <CompCardView
       title={comp.name}
@@ -163,18 +165,20 @@ export function CompCard({ comp, preview = false }: { comp: Comp; preview?: bool
       }
     />
   );
-}
+});
 
 /** A comp detected from match data, with its placement stats. */
-export function AutoCompCard({ comp, rank }: { comp: AutoComp; rank?: RankFloor }) {
+export const AutoCompCard = memo(function AutoCompCard({ comp, rank }: { comp: AutoComp; rank?: RankFloor }) {
   const trendPatch = useCompTrendPatch(rank);
   const { championsByApi } = useGameData();
+  // Stable across renders, so the card's trait calculation (memoized on the units) isn't redone each time.
+  const units = useMemo(() => autoCompUnits(comp, championsByApi), [comp, championsByApi]);
   return (
     <CompCardView
       title={comp.name}
       link={{ to: "/comps/auto/$id", params: { id: comp.id }, search: rank ? { rank } : {} }}
-      units={autoCompUnits(comp, championsByApi)}
+      units={units}
       aside={<CompStats line={comp} trend={<PatchTrendBadge delta={comp.trend} patch={trendPatch} />} />}
     />
   );
-}
+});
