@@ -13,7 +13,7 @@ import { AutoCompCard, CompCard } from "@/features/comps/components/comp-card";
 import { TierRows } from "@/features/comps/components/tier-rows";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { useRankChoice } from "@/features/stats/use-rank-choice";
+import { useRankChoice } from "@/features/stats/use-scope-choices";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import { isRankFloor } from "@/lib/data/constants";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
