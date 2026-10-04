@@ -1,6 +1,5 @@
 import { ClipboardCopy, Download, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { toast } from "sonner";
 import { EntityPicker } from "@/components/game/entity-picker";
 import { AugmentIcon, ChampionIcon } from "@/components/game/icons";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ import { TierBadge } from "@/features/comps/components/tier-badge";
 import { useGameData } from "@/lib/data/hooks";
 import { boardUnits } from "@/lib/game/board";
 import { pickCarries } from "@/lib/game/comp-signature";
-import { downloadBlob } from "@/lib/canvas";
+import { copyText, downloadBlob } from "@/lib/share";
 import { useFormattedSource } from "@/lib/use-formatted-source";
 import { useBuilder } from "../use-builder";
 import { TipsInput } from "./tips-input";
@@ -86,15 +85,6 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
   const fileName = compFileName(guide.name);
   const missing = [!guide.name.trim() && "a name", !guide.summary.trim() && "a summary"].filter(Boolean);
   const ready = missing.length === 0 && formatted !== null;
-
-  const copy = async (text: string, message: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(message);
-    } catch {
-      toast.error("Couldn't access the clipboard.");
-    }
-  };
 
   const download = () => formatted && downloadBlob(new Blob([formatted], { type: "text/typescript" }), fileName);
 
@@ -286,7 +276,7 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
           <Button variant="outline" onClick={download} disabled={!ready}>
             <Download /> Download
           </Button>
-          <Button onClick={() => formatted && copy(formatted, "Comp file copied.")} disabled={!ready}>
+          <Button onClick={() => formatted && copyText(formatted, "Comp file copied.")} disabled={!ready}>
             <ClipboardCopy /> Copy
           </Button>
         </DialogFooter>

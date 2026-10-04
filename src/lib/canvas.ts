@@ -95,13 +95,6 @@ export function imageFileName(title: string): string {
   return `${slug || "image"}.png`;
 }
 
-/** Saves a file through a temporary download link. */
-export function downloadBlob(blob: Blob, fileName: string) {
-  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: fileName });
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
 /** Loads each distinct image; ones that fail (offline, blocked) are left out and drawn without art. */
 export async function loadImages(sources: (string | undefined)[]): Promise<Map<string, HTMLImageElement>> {
   const unique = [...new Set(sources.filter((source): source is string => Boolean(source)))];

@@ -31,7 +31,8 @@ import { guideFromComp } from "@/features/comps/guide-from-comp";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { autoCompsQuery } from "@/lib/data/queries";
 import { cn } from "@/lib/utils";
-import { downloadBlob, imageFileName } from "@/lib/canvas";
+import { imageFileName } from "@/lib/canvas";
+import { copyImage, copyText, saveImage, siteUrl } from "@/lib/share";
 import { boardTitle, renderBoardImage } from "../board-image";
 import { encodeShareCode } from "../share-link";
 import { encodeTeamCode, supportsTeamCodes } from "../team-code";
@@ -83,30 +84,19 @@ export function TeamToolbar() {
   const flexUnits = units.filter((unit) => unit.flex).length;
   const coreUnits = units.length - flexUnits;
 
-  const copyLink = async () => {
-    const url = new URL(`${import.meta.env.BASE_URL}builder`, location.origin);
-    url.searchParams.set("team", encodeShareCode(set, boards));
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      toast.success("Team link copied.");
-    } catch {
-      toast.error("Couldn't access the clipboard.", { description: url.toString() });
-    }
-  };
+  const copyLink = () =>
+    copyText(siteUrl("builder", { team: encodeShareCode(set, boards) }), "Team link copied.", { showOnFailure: true });
 
-  const copyCode = async () => {
-    const code = encodeTeamCode(
-      units.map((unit) => unit.apiName),
-      champions,
-      set,
+  const copyCode = () =>
+    copyText(
+      encodeTeamCode(
+        units.map((unit) => unit.apiName),
+        champions,
+        set,
+      ),
+      "Team code copied. Paste it into the in-game Team Planner.",
+      { showOnFailure: true },
     );
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success("Team code copied. Paste it into the in-game Team Planner.");
-    } catch {
-      toast.error("Couldn't access the clipboard.", { description: code });
-    }
-  };
 
   const imageTitle = () => boardTitle(units, traits, championsByApi) ?? `Level ${level} board`;
   const boardImage = () =>
@@ -119,23 +109,8 @@ export function TeamToolbar() {
       itemsByApi,
     });
 
-  const copyImage = async () => {
-    try {
-      // Safari only allows the write if the ClipboardItem is created during the click, with the image pending.
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": boardImage() })]);
-      toast.success("Board image copied.");
-    } catch (error) {
-      toast.error("Couldn't copy the image.", { description: error instanceof Error ? error.message : undefined });
-    }
-  };
-
-  const saveImage = async () => {
-    try {
-      downloadBlob(await boardImage(), imageFileName(imageTitle()));
-    } catch (error) {
-      toast.error("Couldn't create the image.", { description: error instanceof Error ? error.message : undefined });
-    }
-  };
+  const copyBoardImage = () => copyImage(boardImage(), "Board image copied.");
+  const saveBoardImage = () => saveImage(boardImage, imageFileName(imageTitle()));
 
   const clearBoard = () => {
     const previous = board;
@@ -195,11 +170,11 @@ export function TeamToolbar() {
             <Link2 />
             <MenuText title="Copy link" hint="Opens this team, every level included, in the Team Builder" />
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={copyImage} disabled={units.length === 0}>
+          <DropdownMenuItem onSelect={copyBoardImage} disabled={units.length === 0}>
             <Copy />
             <MenuText title="Copy image" hint="This board and its traits, to paste into Discord or a post" />
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={saveImage} disabled={units.length === 0}>
+          <DropdownMenuItem onSelect={saveBoardImage} disabled={units.length === 0}>
             <ImageDown />
             <MenuText title="Save as image" hint="Download the same image as a PNG" />
           </DropdownMenuItem>
