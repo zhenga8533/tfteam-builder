@@ -105,7 +105,7 @@ function ChampionHeader({ champion }: { champion: Champion }) {
         </p>
         {line && (
           <span className="flex items-center gap-2">
-            <StatSummary line={line} />
+            <StatSummary line={line} play="of boards" />
             <StatTrend kind="units" entry={champion.apiName} />
           </span>
         )}

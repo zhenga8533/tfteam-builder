@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
+import { share } from "@/features/stats/format";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
@@ -19,19 +20,28 @@ import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
 interface ChampionSearch extends ChampionFilters {
-  sort?: "avg";
+  sort?: "avg" | "play";
 }
 
 export const Route = createFileRoute("/champions")({
   head: () => ({ meta: [{ title: "Champions · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionSearch => ({
     ...parseChampionFilters(search),
-    sort: search.sort === "avg" ? "avg" : undefined,
+    sort: search.sort === "avg" || search.sort === "play" ? search.sort : undefined,
   }),
   component: ChampionsPage,
 });
 
-function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: () => void }) {
+function ChampionTile({
+  champion,
+  onSelect,
+  showPlay = false,
+}: {
+  champion: Champion;
+  onSelect: () => void;
+  /** Shows the play rate instead of the average placement, when the list is sorted by it. */
+  showPlay?: boolean;
+}) {
   const { traitsByApi } = useGameData();
   const line = useStats()?.units[champion.apiName];
   return (
@@ -50,7 +60,17 @@ function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: ()
           })}
         </div>
       </div>
-      {line && <AvgPlacement line={line} className="self-start text-sm" />}
+      {line &&
+        (showPlay ? (
+          <span
+            className="self-start text-sm font-semibold tabular-nums"
+            title="Share of boards fielding this champion"
+          >
+            {share(line.play)}
+          </span>
+        ) : (
+          <AvgPlacement line={line} className="self-start text-sm" />
+        ))}
     </button>
   );
 }
@@ -88,6 +108,10 @@ function ChampionsPage() {
         { title: "By average placement", cost: undefined, champions: filtered.sort((a, b) => score(a) - score(b)) },
       ];
     }
+    if (search.sort === "play" && stats?.status === "ready") {
+      const play = (champion: Champion) => stats.units[champion.apiName]?.play ?? 0;
+      return [{ title: "By play rate", cost: undefined, champions: filtered.sort((a, b) => play(b) - play(a)) }];
+    }
     return COSTS.map((cost) => ({
       title: `${cost} Cost`,
       cost,
@@ -105,7 +129,9 @@ function ChampionsPage() {
             type="single"
             variant="outline"
             value={search.sort ?? "cost"}
-            onValueChange={(value) => value && update({ sort: value === "avg" ? "avg" : undefined })}
+            onValueChange={(value) =>
+              value && update({ sort: value === "avg" || value === "play" ? value : undefined })
+            }
             aria-label="Sort"
           >
             <ToggleGroupItem value="cost" className="px-3">
@@ -113,6 +139,9 @@ function ChampionsPage() {
             </ToggleGroupItem>
             <ToggleGroupItem value="avg" className="px-3">
               By placement
+            </ToggleGroupItem>
+            <ToggleGroupItem value="play" className="px-3">
+              By play rate
             </ToggleGroupItem>
           </ToggleGroup>
         )}
@@ -129,7 +158,12 @@ function ChampionsPage() {
               </h2>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
                 {group.champions.map((champion) => (
-                  <ChampionTile key={champion.apiName} champion={champion} onSelect={() => setSelected(champion)} />
+                  <ChampionTile
+                    key={champion.apiName}
+                    champion={champion}
+                    onSelect={() => setSelected(champion)}
+                    showPlay={search.sort === "play"}
+                  />
                 ))}
               </div>
             </section>
@@ -146,7 +180,7 @@ function ChampionsPage() {
               <ChampionCard champion={selected} />
               <ChampionForms champion={selected} title="Other forms" className="border-t pt-3" />
               {stats?.units[selected.apiName] && (
-                <StatSummary line={stats.units[selected.apiName]!} className="border-t pt-3" />
+                <StatSummary line={stats.units[selected.apiName]!} play="of boards" className="border-t pt-3" />
               )}
               <Button asChild variant="secondary" className="w-full">
                 <Link to="/champions/$apiName" params={{ apiName: selected.apiName }}>

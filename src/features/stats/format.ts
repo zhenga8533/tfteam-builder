@@ -28,6 +28,9 @@ export function avgPlacementClass(avg: number) {
 
 export const percent = (value: number, digits = 0) => `${Math.round(value * 10 ** (digits + 2)) / 10 ** digits}%`;
 
+/** A share that's often small (a play rate): one decimal place under 10%, and "<0.1%" below that. */
+export const share = (value: number) => (value < 0.001 ? "<0.1%" : value < 0.1 ? percent(value, 1) : percent(value));
+
 export const count = (value: number) => value.toLocaleString("en-US");
 
 const RELATIVE = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
