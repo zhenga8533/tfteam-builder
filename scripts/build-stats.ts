@@ -232,6 +232,149 @@ async function publishSavedSummary(store: StatsStore, set: number) {
   console.log(`set ${set}: saved summary from patch ${last.patch} (no stored boards)`);
 }
 
+/**
+ * Other rank floors that get their own tier list stats: each with enough games, and with games the floors above it
+ * don't already cover.
+ */
+function floorStatsFor(data: SetData, patches: PatchCounters[], stats: SetStats): SetStats[] {
+  const floors: SetStats[] = [];
+  let previous = -1;
+  for (const floor of RANK_OPTIONS) {
+    const floorLines = floor === stats.rankFloor ? stats : buildFloorStats(data, patches, floor);
+    if (!floorLines || floorLines.matches === previous) continue;
+    previous = floorLines.matches;
+    if (floor !== stats.rankFloor) floors.push(floorLines);
+  }
+  return floors;
+}
+
+/** Tier list stats for each region with boards, at the same patch and rank floor as `stats`. */
+async function regionStatsFor(read: ReadBoards, data: SetData, stats: SetStats, patchChunks: BoardChunk[]) {
+  const regions: SetStats[] = [];
+  for (const region of REGIONS) {
+    const regionChunks = patchChunks.filter((chunk) => chunk.name.endsWith(`-${region}`));
+    if (regionChunks.length === 0) continue;
+    const regional = await loadPatch(read, stats.set, stats.patch, regionChunks);
+    const entry = buildRegionStats(data, regional, stats, region);
+    if (entry) regions.push(entry);
+  }
+  return regions;
+}
+
+/** Saves each floor's summary, with its trend since the previous patch, so later patches can compare. */
+async function saveFloorSummaries(store: StatsStore, set: number, floorStats: SetStats[]) {
+  for (const entry of floorStats) {
+    const floorTrend = patchTrend(
+      entry,
+      (await store.summaries(set, entry.rankFloor)).filter((summary) => summary.patch !== entry.patch),
+    );
+    if (floorTrend) entry.trend = floorTrend;
+    await store.putSummary(set, entry.patch, JSON.stringify(setStatsSchema.parse(entry)), entry.rankFloor);
+  }
+}
+
+async function writeRegionFiles(set: number, regionStats: SetStats[]) {
+  if (regionStats.length === 0) return;
+  await mkdir(join(OUT_DIR, `set${set}`, "regions"), { recursive: true });
+  for (const entry of regionStats) {
+    await writeFile(
+      join(OUT_DIR, `set${set}`, "regions", `${entry.region}.json`),
+      JSON.stringify(setStatsSchema.parse(entry)),
+    );
+  }
+}
+
+/** Each floor's tier list stats and detected comps; returns the figures for the deploy summary. */
+async function writeFloorFiles(
+  store: StatsStore,
+  read: ReadBoards,
+  data: SetData,
+  floorStats: SetStats[],
+  setChunks: BoardChunk[],
+): Promise<SetReport["floors"]> {
+  if (floorStats.length === 0) return [];
+  const set = data.number;
+  await mkdir(join(OUT_DIR, `set${set}`, "ranks"), { recursive: true });
+  const floors: SetReport["floors"] = [];
+  for (const entry of floorStats) {
+    await writeFile(
+      join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.json`),
+      JSON.stringify(setStatsSchema.parse(entry)),
+    );
+    const floorComps = await detectComps(boardsOf(read, data, entry, setChunks), data);
+    await writeFile(
+      join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.comps.json`),
+      JSON.stringify(await withCompTrends(store, entry, floorComps, entry.rankFloor)),
+    );
+    console.log(`  ${entry.rankFloor}+: ${floorComps.length} comps`);
+    floors.push({ floor: entry.rankFloor, matches: entry.matches, comps: floorComps.length });
+  }
+  return floors;
+}
+
+/**
+ * Builds and writes one set's stats from its newest patches' boards. A set whose boards are gone publishes its
+ * saved summary instead, and has nothing to report.
+ */
+async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): Promise<SetReport | undefined> {
+  const setChunks = chunks.filter((chunk) => chunk.set === set);
+  const byPatch = Map.groupBy(setChunks, (chunk) => chunk.patch);
+  const newest = [...byPatch.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
+  if (newest.length === 0) {
+    await publishSavedSummary(store, set);
+    return undefined;
+  }
+
+  const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
+  const forms = new FormInference(data);
+  const read: ReadBoards = async (chunk) => (await store.readBoards(chunk)).map((row) => forms.row(row));
+  const patches = await Promise.all(newest.map((patch) => loadPatch(read, set, patch, byPatch.get(patch)!)));
+  const { stats, unknown } = buildSetStats(data, patches);
+  const summaries = (await store.summaries(set)).filter((summary) => summary.patch !== stats.patch);
+  const trend = patchTrend(stats, summaries);
+  if (trend) stats.trend = trend;
+
+  // Tier lists can switch to another rank floor, or narrow to one region at the default floor.
+  const ready = stats.status === "ready";
+  const floorStats = ready ? floorStatsFor(data, patches, stats) : [];
+  const regionStats = ready ? await regionStatsFor(read, data, stats, byPatch.get(stats.patch) ?? []) : [];
+  if (floorStats.length) stats.ranks = floorStats.map((entry) => entry.rankFloor);
+  if (regionStats.length) stats.regions = regionStats.map((entry) => entry.region!);
+  await saveFloorSummaries(store, set, floorStats);
+
+  const json = JSON.stringify(setStatsSchema.parse(stats));
+  await writeFile(join(OUT_DIR, `set${set}.json`), json);
+  if (ready) await store.putSummary(set, stats.patch, json);
+  // Clears and rewrites the set's folder, so the region and floor files are written after it.
+  const figures = await writeDetails(store, read, data, stats, setChunks);
+  await writeRegionFiles(set, regionStats);
+  const floors = await writeFloorFiles(store, read, data, floorStats, setChunks);
+  if (ready) {
+    const history = patchHistory([...summaries, stats]);
+    await writeFile(join(OUT_DIR, `set${set}`, "history.json"), JSON.stringify(patchHistorySchema.parse(history)));
+  }
+
+  console.log(
+    `set ${set}: ${stats.status}, patch ${stats.patch}, ${stats.rankFloor}+, ${stats.matches} matches` +
+      (stats.previousPatch ? " (previous patch)" : ""),
+  );
+  for (const [kind, names] of Object.entries(unknown)) {
+    if (names.size) console.warn(`  unmapped ${kind}: ${top(names)}`);
+  }
+  return {
+    set,
+    status: stats.status,
+    patch: stats.patch,
+    rankFloor: stats.rankFloor,
+    matches: stats.matches,
+    updatedAt: stats.updatedAt,
+    floors,
+    regions: regionStats.map((entry) => ({ region: entry.region!, matches: entry.matches })),
+    unmapped: Object.entries(unknown).flatMap(([kind, names]) => (names.size ? [`${kind}: ${top(names)}`] : [])),
+    ...figures,
+  };
+}
+
 async function main() {
   const source = createStatsStore(args.stats);
   if (!source) {
@@ -246,7 +389,6 @@ async function main() {
     );
     return;
   }
-  const reports: SetReport[] = [];
   // Each set's boards are read in several passes (counters, champion and comp details, the Explorer sample).
   const store = new StatsStore(new CachingBlobStore(source.blobs, "boards/"));
   const chunks = await store.listBoardChunks();
@@ -255,120 +397,10 @@ async function main() {
   const manifest = await readJson<Manifest>(join(DATA_DIR, "manifest.json"));
   await mkdir(OUT_DIR, { recursive: true });
 
+  const reports: SetReport[] = [];
   for (const set of manifest.patches.latest.sets) {
-    const byPatch = Map.groupBy(
-      chunks.filter((chunk) => chunk.set === set),
-      (chunk) => chunk.patch,
-    );
-    const newest = [...byPatch.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
-    if (newest.length === 0) {
-      await publishSavedSummary(store, set);
-      continue;
-    }
-
-    const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
-    const forms = new FormInference(data);
-    const read: ReadBoards = async (chunk) => (await store.readBoards(chunk)).map((row) => forms.row(row));
-    const patches = await Promise.all(newest.map((patch) => loadPatch(read, set, patch, byPatch.get(patch)!)));
-    const { stats, unknown } = buildSetStats(data, patches);
-    const summaries = (await store.summaries(set)).filter((summary) => summary.patch !== stats.patch);
-    const trend = patchTrend(stats, summaries);
-    if (trend) stats.trend = trend;
-    // Tier lists can switch to another rank floor; each one with enough games, and with games the floors
-    // above it don't already cover, gets its own file.
-    const floorStats: SetStats[] = [];
-    if (stats.status === "ready") {
-      let previous = -1;
-      for (const floor of RANK_OPTIONS) {
-        const floorLines = floor === stats.rankFloor ? stats : buildFloorStats(data, patches, floor);
-        if (!floorLines || floorLines.matches === previous) continue;
-        previous = floorLines.matches;
-        if (floor !== stats.rankFloor) floorStats.push(floorLines);
-      }
-    }
-    if (floorStats.length) stats.ranks = floorStats.map((entry) => entry.rankFloor);
-    // Tier lists can also narrow to one region, at the same patch and rank floor.
-    const regionStats: SetStats[] = [];
-    if (stats.status === "ready") {
-      const patchChunks = byPatch.get(stats.patch) ?? [];
-      for (const region of REGIONS) {
-        const regionChunks = patchChunks.filter((chunk) => chunk.name.endsWith(`-${region}`));
-        if (regionChunks.length === 0) continue;
-        const regional = await loadPatch(read, set, stats.patch, regionChunks);
-        const entry = buildRegionStats(data, regional, stats, region);
-        if (entry) regionStats.push(entry);
-      }
-    }
-    if (regionStats.length) stats.regions = regionStats.map((entry) => entry.region!);
-    for (const entry of floorStats) {
-      const floorTrend = patchTrend(
-        entry,
-        (await store.summaries(set, entry.rankFloor)).filter((summary) => summary.patch !== entry.patch),
-      );
-      if (floorTrend) entry.trend = floorTrend;
-      await store.putSummary(set, entry.patch, JSON.stringify(setStatsSchema.parse(entry)), entry.rankFloor);
-    }
-    const json = JSON.stringify(setStatsSchema.parse(stats));
-    await writeFile(join(OUT_DIR, `set${set}.json`), json);
-    if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
-    const figures = await writeDetails(
-      store,
-      read,
-      data,
-      stats,
-      chunks.filter((chunk) => chunk.set === set),
-    );
-    const report: SetReport = {
-      set,
-      status: stats.status,
-      patch: stats.patch,
-      rankFloor: stats.rankFloor,
-      matches: stats.matches,
-      updatedAt: stats.updatedAt,
-      floors: [],
-      regions: regionStats.map((entry) => ({ region: entry.region!, matches: entry.matches })),
-      unmapped: Object.entries(unknown).flatMap(([kind, names]) => (names.size ? [`${kind}: ${top(names)}`] : [])),
-      ...figures,
-    };
-    reports.push(report);
-    if (regionStats.length) {
-      await mkdir(join(OUT_DIR, `set${set}`, "regions"), { recursive: true });
-      for (const entry of regionStats) {
-        await writeFile(
-          join(OUT_DIR, `set${set}`, "regions", `${entry.region}.json`),
-          JSON.stringify(setStatsSchema.parse(entry)),
-        );
-      }
-    }
-    if (floorStats.length) {
-      await mkdir(join(OUT_DIR, `set${set}`, "ranks"), { recursive: true });
-      const setChunks = chunks.filter((chunk) => chunk.set === set);
-      for (const entry of floorStats) {
-        await writeFile(
-          join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.json`),
-          JSON.stringify(setStatsSchema.parse(entry)),
-        );
-        const floorComps = await detectComps(boardsOf(read, data, entry, setChunks), data);
-        await writeFile(
-          join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.comps.json`),
-          JSON.stringify(await withCompTrends(store, entry, floorComps, entry.rankFloor)),
-        );
-        console.log(`  ${entry.rankFloor}+: ${floorComps.length} comps`);
-        report.floors.push({ floor: entry.rankFloor, matches: entry.matches, comps: floorComps.length });
-      }
-    }
-    if (stats.status === "ready") {
-      const history = patchHistory([...summaries, stats]);
-      await writeFile(join(OUT_DIR, `set${set}`, "history.json"), JSON.stringify(patchHistorySchema.parse(history)));
-    }
-
-    console.log(
-      `set ${set}: ${stats.status}, patch ${stats.patch}, ${stats.rankFloor}+, ${stats.matches} matches` +
-        (stats.previousPatch ? " (previous patch)" : ""),
-    );
-    for (const [kind, names] of Object.entries(unknown)) {
-      if (names.size) console.warn(`  unmapped ${kind}: ${top(names)}`);
-    }
+    const report = await buildSet(store, chunks, set);
+    if (report) reports.push(report);
   }
   await publishReport(renderReport({ sets: reports, files: await statsFiles(), now: new Date() }));
 }
