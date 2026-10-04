@@ -56,6 +56,7 @@ function ChampionTierListPage() {
             line={line}
             link={{ to: "/champions/$apiName", params: { apiName: champion.apiName } }}
             trend={<StatTrend kind="units" entry={apiName} />}
+            play="of boards"
             card={<ChampionCard champion={champion} />}
           />
         );

@@ -9,7 +9,7 @@ export type ExplorerStatus =
   | { state: "error"; message: string };
 
 /** A question for the sample: a filtered query (Explorer) or boards similar to a list of units (builder). */
-type Question = { type: "query"; filters: ExplorerFilter[] } | { type: "similar"; units: string[] };
+type Question = { type: "query"; filters: ExplorerFilter[]; floor?: number } | { type: "similar"; units: string[] };
 type Answer<Q extends Question> = Q extends { type: "query" } ? ExplorerResult : SimilarBoards | null;
 
 interface Loaded {
@@ -70,9 +70,9 @@ function useSampleWorker<Q extends Question>(url: string | null, question: Q | n
   return { status, answer };
 }
 
-/** The Explorer: stats for boards matching `filters`. */
-export function useExplorer(url: string | null, filters: ExplorerFilter[]) {
-  const { status, answer } = useSampleWorker(url, { type: "query", filters });
+/** The Explorer: stats for boards matching `filters`, at rank `floor` (an index into `RANK_OPTIONS`; default floor if unset). */
+export function useExplorer(url: string | null, filters: ExplorerFilter[], floor?: number) {
+  const { status, answer } = useSampleWorker(url, { type: "query", filters, floor });
   return { status, result: answer };
 }
 

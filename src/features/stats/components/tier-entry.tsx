@@ -13,13 +13,15 @@ interface TierEntryProps {
   link?: Pick<LinkProps, "to" | "params">;
   /** Movement since the previous patch, e.g. a `StatTrend`. */
   trend?: ReactNode;
+  /** Shows the play rate in the hover card, with this wording (see `StatSummary`). */
+  play?: string;
 }
 
 const ENTRY_CLASS =
   "flex w-16 flex-col items-center gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 /** Icon, name and average placement, with the full game card (plus stats) on hover. */
-export function TierEntry({ icon, label, line, card, link, trend }: TierEntryProps) {
+export function TierEntry({ icon, label, line, card, link, trend, play }: TierEntryProps) {
   const content = (
     <>
       {icon}
@@ -38,7 +40,7 @@ export function TierEntry({ icon, label, line, card, link, trend }: TierEntryPro
       content={
         <div className="space-y-3">
           {card}
-          {line && <StatSummary line={line} className="border-t pt-3" />}
+          {line && <StatSummary line={line} className="border-t pt-3" play={play} />}
         </div>
       }
     >

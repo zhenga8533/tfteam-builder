@@ -9,10 +9,12 @@
  */
 
 const MAGIC = "TFTX";
-const VERSION = 1;
+const VERSION = 2;
 export const ITEM_SLOTS = 3;
 
 export interface ExplorerHeader {
+  /** Boards at this rank or above (see `ExplorerBoard.rank`) make up the default view; the rest serve other floors. */
+  defaultRank: number;
   units: string[];
   items: string[];
   traits: string[];
@@ -24,6 +26,7 @@ export interface ExplorerHeader {
 export interface ExplorerData extends ExplorerHeader {
   placement: Uint8Array;
   level: Uint8Array;
+  rank: Uint8Array;
   /** Board b's units are rows `unitStart[b]` to `unitStart[b + 1]`. */
   unitStart: Uint32Array;
   traitStart: Uint32Array;
@@ -42,6 +45,7 @@ const SECTIONS: { name: Section; type: "u8" | "u32"; length: (h: ExplorerHeader)
   { name: "traitStart", type: "u32", length: (h) => h.boards + 1 },
   { name: "placement", type: "u8", length: (h) => h.boards },
   { name: "level", type: "u8", length: (h) => h.boards },
+  { name: "rank", type: "u8", length: (h) => h.boards },
   { name: "unitIndex", type: "u8", length: (h) => h.unitRows },
   { name: "unitStar", type: "u8", length: (h) => h.unitRows },
   { name: "unitItems", type: "u8", length: (h) => h.unitRows * ITEM_SLOTS },
@@ -54,11 +58,13 @@ const align = (offset: number) => Math.ceil(offset / 4) * 4;
 export interface ExplorerBoard {
   placement: number;
   level: number;
+  /** The rank tier the board counts toward, as an index into `RANK_BUCKETS` (0 = Master+); higher is lower. */
+  rank?: number;
   units: { apiName: string; star: number; items: string[] }[];
   traits: { apiName: string; minUnits: number }[];
 }
 
-export function encodeExplorer(boards: ExplorerBoard[]): Uint8Array {
+export function encodeExplorer(boards: ExplorerBoard[], defaultRank = 0): Uint8Array {
   const dictionary = () => {
     const names: string[] = [];
     const indices = new Map<string, number>();
@@ -81,6 +87,7 @@ export function encodeExplorer(boards: ExplorerBoard[]): Uint8Array {
     traitStart: new Uint32Array(boards.length + 1),
     placement: new Uint8Array(boards.length),
     level: new Uint8Array(boards.length),
+    rank: new Uint8Array(boards.length),
     unitIndex: new Uint8Array(unitRows),
     unitStar: new Uint8Array(unitRows),
     unitItems: new Uint8Array(unitRows * ITEM_SLOTS),
@@ -93,6 +100,7 @@ export function encodeExplorer(boards: ExplorerBoard[]): Uint8Array {
   boards.forEach((board, b) => {
     data.placement[b] = board.placement;
     data.level[b] = board.level;
+    data.rank[b] = board.rank ?? 0;
     data.unitStart[b] = unitRow;
     data.traitStart[b] = traitRow;
     for (const unit of board.units) {
@@ -113,6 +121,7 @@ export function encodeExplorer(boards: ExplorerBoard[]): Uint8Array {
   data.traitStart[boards.length] = traitRow;
 
   const header: ExplorerHeader = {
+    defaultRank,
     units: units.names,
     items: items.names,
     traits: traits.names,

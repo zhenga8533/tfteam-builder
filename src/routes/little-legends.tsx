@@ -6,7 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { count, percent } from "@/features/stats/format";
+import { count, share } from "@/features/stats/format";
 import { useLittleLegends, useStats } from "@/lib/data/hooks";
 import type { LittleLegend } from "@/lib/data/schema";
 import { matches, stringParam } from "@/lib/search";
@@ -15,9 +15,6 @@ import { useUpdateSearch } from "@/lib/use-update-search";
 type Kind = LittleLegend["kind"];
 
 const KIND_LABEL: Record<Kind, string> = { legend: "Little Legends", chibi: "Chibis" };
-
-/** Most legends are a sliver of players, so shares get a decimal place. */
-const share = (play: number) => (play < 0.001 ? "<0.1%" : percent(play, 1));
 
 const isKind = (value: unknown): value is Kind => value === "legend" || value === "chibi";
 

@@ -38,6 +38,20 @@ describe("explorer format", () => {
     expect(data.traitMinUnits[0]).toBe(5);
   });
 
+  it("keeps each board's rank and the default floor", () => {
+    const data = decodeExplorer(
+      encodeExplorer(
+        [
+          { ...boards[0]!, rank: 0 },
+          { ...boards[1]!, rank: 2 },
+        ],
+        1,
+      ).slice().buffer,
+    );
+    expect([...data.rank]).toEqual([0, 2]);
+    expect(data.defaultRank).toBe(1);
+  });
+
   it("rejects data that isn't in this format", () => {
     expect(() => decodeExplorer(new Uint8Array(16).buffer)).toThrow(/Unsupported/);
   });
