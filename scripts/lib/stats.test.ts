@@ -3,7 +3,7 @@ import type { SetData, StatLine } from "../../src/lib/data/schema.ts";
 import { emptyCounters } from "../stats/aggregate.ts";
 import type { Counters, PatchCounters, RankBucket } from "../stats/types.ts";
 import { adjustedAverage, statLine } from "../../src/lib/game/stat-line.ts";
-import { assignTiers, buildFloorStats, buildSetStats, chooseSample, MIN_GAMES } from "./stats.ts";
+import { assignTiers, buildFloorStats, buildSetStats, chooseSample, distinctFloors, MIN_GAMES } from "./stats.ts";
 
 const withMatches = (matches: number, extra: Partial<Counters> = {}): Counters => ({
   ...emptyCounters(),
@@ -128,6 +128,26 @@ describe("buildSetStats", () => {
   it("reports collecting status until there are enough matches", () => {
     const result = buildSetStats(data, [patch("16.1", { gold: withMatches(50) })]);
     expect(result.stats).toMatchObject({ status: "collecting", matches: 50, patch: "16.1" });
+  });
+});
+
+describe("distinctFloors", () => {
+  const floor = (name: string, matches: number) => ({ name, matches });
+  const names = (floors: { name: string }[]) => floors.map((entry) => entry.name);
+
+  it("drops floors within 10% of their neighbour, on both sides of the default", () => {
+    // master, diamond (default), emerald, platinum
+    const floors = [floor("master", 15008), floor("diamond", 15232), floor("emerald", 15483), floor("platinum", 18000)];
+    expect(names(distinctFloors(floors, 1))).toEqual(["platinum"]);
+  });
+
+  it("keeps floors that add enough games, comparing each to the last one kept", () => {
+    const floors = [floor("master", 6000), floor("diamond", 10000), floor("emerald", 10500), floor("platinum", 11600)];
+    expect(names(distinctFloors(floors, 1))).toEqual(["master", "platinum"]);
+  });
+
+  it("skips floors without stats", () => {
+    expect(names(distinctFloors([undefined, floor("diamond", 100), floor("emerald", 200)], 1))).toEqual(["emerald"]);
   });
 });
 

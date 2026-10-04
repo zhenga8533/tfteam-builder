@@ -18,6 +18,17 @@ export class BudgetExceededError extends Error {
   }
 }
 
+/** Riot refused the key (401/403): it's invalid, or it's a development key past its 24 hours. */
+export class ApiKeyRejectedError extends Error {
+  constructor(status: number) {
+    super(
+      `Riot rejected the API key (HTTP ${status}). Development keys expire 24 hours after they're generated: ` +
+        "create a new one and update the RIOT_API_KEY secret.",
+    );
+    this.name = "ApiKeyRejectedError";
+  }
+}
+
 /** `"20:1,100:120"` → `[[20, 1], [100, 120]]` (requests per seconds). */
 export const parseRateLimitHeader = (header: string | null): [number, number][] =>
   (header ?? "")
@@ -143,6 +154,7 @@ export class RiotClient {
         (response.headers.get("X-Rate-Limit-Type") === "method" ? endpoint : app).block(until);
         continue;
       }
+      if (response.status === 401 || response.status === 403) throw new ApiKeyRejectedError(response.status);
       if (response.status === 404) return null;
       if (response.status >= 500) {
         await this.clock.sleep(2 ** attempt * 1000);

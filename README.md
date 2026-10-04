@@ -164,9 +164,12 @@ ranked games collected through the [Riot Games API](https://developer.riotgames.
 match data, so the augment tier list and comp guides stay hand-written.
 
 - **Crawl** (`.github/workflows/crawl.yml`, every 3 hours): `scripts/stats/crawl.ts` builds a player pool on every server
-  from the top of the ranked ladder down, then fetches their new ranked matches. Every player's final board is stored in
+  and fetches their new ranked matches. Each pool is shared between tiers (40% Master+, 35% Diamond, 25% Emerald), so
+  every rank floor gets games of its own; space a tier can't fill passes down, reaching Platinum and Gold only early in
+  a set. A match counts toward the tier of the player it was found through. Every player's final board is stored in
   [Cloudflare R2](https://developers.cloudflare.com/r2/), as one gzipped chunk per region per run, together with the
-  crawler's state. Boards are kept for the current and previous patch of each set.
+  crawler's state. Boards are kept for the current and previous patch of each set. Each run's summary on its Actions
+  page lists players checked, games kept per tier and the pools' make-up.
 - **Build** (on deploy): `scripts/build-stats.ts` reads the stored boards and builds `public/data/stats/set{N}.json`.
   It also saves a summary of each patch's stats to R2 permanently. It shows
   Diamond+ games when there are enough. Otherwise it falls back to the previous patch of the same set, or to lower ranks
@@ -204,6 +207,10 @@ To enable crawling:
    `R2_SECRET_ACCESS_KEY` (from the token), and `R2_BUCKET` (the bucket name). Then add a repository variable
    `CRAWL_ENABLED` set to `true`.
 4. Start the **Crawl** workflow manually, or wait for the next scheduled run.
+
+A development key works for test crawls, but it expires 24 hours after it's generated: crawls then fail with
+"Riot rejected the API key" until `RIOT_API_KEY` is updated (`gh secret set RIOT_API_KEY` prompts for it). Riot meant
+development keys for development, so use a personal or production key for the live site's stats.
 
 To crawl locally: `RIOT_API_KEY=… npm run crawl -- --state .stats-local --platforms na1 --max-matches 200`, then
 `npm run stats -- --stats .stats-local`. With `--state`/`--stats` and no `R2_*` variables set, everything is stored

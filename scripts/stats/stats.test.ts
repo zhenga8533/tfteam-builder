@@ -4,7 +4,14 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { addBoard, emptyCounters, matchToRows, isRankedStandard, mergeCounters } from "./aggregate.ts";
 import type { Platform } from "./regions.ts";
-import { BudgetExceededError, type Clock, parseRateLimitHeader, RateLimiter, RiotClient } from "./riot.ts";
+import {
+  ApiKeyRejectedError,
+  BudgetExceededError,
+  type Clock,
+  parseRateLimitHeader,
+  RateLimiter,
+  RiotClient,
+} from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
 import { FileBlobStore } from "./blob.ts";
 import { R2BlobStore } from "./r2.ts";
@@ -108,6 +115,21 @@ describe("RiotClient", () => {
     expect(clock.time).toBeGreaterThanOrEqual(3000);
     expect(await client.match("americas", "NA1_404")).toBeNull();
   });
+
+  it("explains a rejected (e.g. expired) key instead of retrying", async () => {
+    let calls = 0;
+    const client = new RiotClient({
+      apiKey: "expired",
+      clock: fakeClock(),
+      fetch: async () => {
+        calls += 1;
+        return new Response(null, { status: 403 });
+      },
+    });
+    await expect(client.match("americas", "NA1_1")).rejects.toThrow(ApiKeyRejectedError);
+    await expect(client.match("americas", "NA1_1")).rejects.toThrow(/RIOT_API_KEY/);
+    expect(calls).toBe(2);
+  });
 });
 
 describe("RiotClient network errors", () => {
@@ -159,6 +181,31 @@ describe("seedPlayers", () => {
     });
     const players = await seedPlayers(client, platform, "diamond", []);
     expect(players.map((player) => player.puuid)).toEqual(["c0"]);
+  });
+  const bucketCounts = (players: { bucket: string }[]) =>
+    Object.fromEntries(
+      Object.entries(Object.groupBy(players, (player) => player.bucket)).map(([k, v]) => [k, v!.length]),
+    );
+
+  it("gives each tier its share of the pool", async () => {
+    const client = fakeClient({
+      challenger: entries("c", 50),
+      "DIAMOND-I": entries("d", 50),
+      "EMERALD-I": entries("e", 50),
+    });
+    const players = await seedPlayers(client, { ...platform, poolSize: 20 }, "gold", []);
+    expect(bucketCounts(players)).toEqual({ master_plus: 8, diamond: 7, emerald: 5 });
+  });
+
+  it("passes space a thin tier can't fill down to the tiers below, then to Platinum as a fallback", async () => {
+    const client = fakeClient({
+      challenger: entries("c", 2),
+      "DIAMOND-I": entries("d", 50),
+      "EMERALD-I": entries("e", 3),
+      "PLATINUM-I": entries("p", 50),
+    });
+    const players = await seedPlayers(client, { ...platform, poolSize: 20 }, "gold", []);
+    expect(bucketCounts(players)).toEqual({ master_plus: 2, diamond: 13, emerald: 3, platinum: 2 });
   });
 });
 
