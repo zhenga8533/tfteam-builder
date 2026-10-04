@@ -98,12 +98,7 @@
   --trait-prismatic: oklch(0.85 0.1 200);
   --trait-unique: oklch(0.72 0.18 30);
 
-  /* Tier list ranks */
-  --tier-s: oklch(0.66 0.21 20);
-  --tier-a: oklch(0.74 0.17 55);
-  --tier-b: oklch(0.84 0.15 90);
-  --tier-c: oklch(0.8 0.17 130);
-  --tier-x: oklch(0.6 0.02 265);
+  /* Tier colours are the same in both themes (set on :root); placement text switches to them in dark. */
   --placement-better: var(--tier-c);
   --placement-worse: var(--tier-a);
 }
