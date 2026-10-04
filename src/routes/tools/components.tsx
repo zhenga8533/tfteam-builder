@@ -10,6 +10,7 @@ import { ItemLink } from "@/components/game/links";
 import { EmptyState } from "@/components/layout/empty-state";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { PageHeader } from "@/components/layout/page-header";
+import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { Section } from "@/components/layout/section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -204,6 +205,7 @@ function ComponentPlannerPage() {
         title="Component Planner"
         description="Enter the components you're holding to see what they build, and the best items for your carry."
       />
+      {stats && <StatsMeta stats={stats} />}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <Section title="Your components">

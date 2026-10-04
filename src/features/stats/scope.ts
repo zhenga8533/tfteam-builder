@@ -7,8 +7,10 @@ export interface StatsScope {
   region?: Region;
 }
 
+export const parseRank = (value: unknown): RankFloor | undefined => (isRankFloor(value) ? value : undefined);
+
 export const parseStatsScope = (search: Record<string, unknown>): StatsScope => ({
-  rank: isRankFloor(search.rank) ? search.rank : undefined,
+  rank: parseRank(search.rank),
   region: isRegion(search.region) ? search.region : undefined,
 });
 

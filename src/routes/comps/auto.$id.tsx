@@ -1,4 +1,4 @@
-import { isRankFloor } from "@/lib/data/constants";
+import { parseRank } from "@/features/stats/scope";
 import type { RankFloor } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Hammer, NotebookPen } from "lucide-react";
@@ -25,8 +25,9 @@ import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/dat
 
 export const Route = createFileRoute("/comps/auto/$id")({
   head: () => ({ meta: [{ title: "Comp Stats · TFTeam" }] }),
-  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } =>
-    isRankFloor(search.rank) ? { rank: search.rank } : {},
+  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } => ({
+    rank: parseRank(search.rank),
+  }),
   component: AutoCompPage,
 });
 
@@ -108,7 +109,7 @@ function AutoCompPage() {
           </Button>
         </div>
       </header>
-      {stats && <StatsMeta stats={stats} />}
+      <StatsMeta stats={stats} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">

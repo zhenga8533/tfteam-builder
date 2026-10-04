@@ -8,6 +8,7 @@ import { ChampionIcon, TraitIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -113,6 +114,7 @@ function ChampionsPage() {
   return (
     <>
       <PageHeader title="Champions" description="Every unit in the shop with its traits, ability and base stats." />
+      {stats && <StatsMeta stats={stats} />}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <ChampionFilterBar value={search} onChange={update} />
         {stats?.status === "ready" && (

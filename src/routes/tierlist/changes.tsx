@@ -8,17 +8,17 @@ import { TrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { MIN_TREND } from "@/features/stats/format";
-import { useRankChoice } from "@/features/stats/use-scope-choices";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { isRankFloor } from "@/lib/data/constants";
+import { parseRank } from "@/features/stats/scope";
 import { useGameData, useTierStats } from "@/lib/data/hooks";
 import type { PatchTrend, RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/tierlist/changes")({
   head: () => ({ meta: [{ title: "Patch Changes · TFTeam" }] }),
-  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } =>
-    isRankFloor(search.rank) ? { rank: search.rank } : {},
+  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } => ({
+    rank: parseRank(search.rank),
+  }),
   component: PatchChangesPage,
 });
 
@@ -128,7 +128,6 @@ function PatchChangesPage() {
   const { rank } = Route.useSearch();
   const stats = useTierStats(rank);
   const update = useUpdateSearch<{ rank?: RankFloor }>();
-  const rankChoice = useRankChoice((value) => update({ rank: value }));
   const trend = stats?.trend;
   return (
     <>
@@ -140,7 +139,7 @@ function PatchChangesPage() {
             : "What moved the most since the previous patch, by change in average placement."
         }
       />
-      {stats && <StatsMeta stats={stats} rank={rankChoice} />}
+      {stats && <StatsMeta stats={stats} onRankChange={(rank) => update({ rank })} />}
       {!stats ? (
         <NoStats />
       ) : trend ? (

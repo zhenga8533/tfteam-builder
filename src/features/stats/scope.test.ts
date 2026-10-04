@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseStatsScope, scopeChoices } from "./scope";
+import { parseRank, parseStatsScope, scopeChoices } from "./scope";
 
 describe("stats scope", () => {
   it("keeps only valid rank floors and regions from the URL", () => {
     expect(parseStatsScope({ rank: "master", region: "asia" })).toEqual({ rank: "master", region: "asia" });
     expect(parseStatsScope({ rank: "wood", region: "mars" })).toEqual({ rank: undefined, region: undefined });
+  });
+
+  it("keeps only a valid rank floor", () => {
+    expect(parseRank("emerald")).toBe("emerald");
+    expect(parseRank("wood")).toBeUndefined();
   });
 
   it("clears the region when a rank is picked, and the other way round", () => {
