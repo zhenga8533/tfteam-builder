@@ -166,10 +166,20 @@
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
+  }
+  /*
+   * The glow stays put while the page scrolls. It's a fixed layer of its own rather than a fixed body background,
+   * which would make the browser repaint everything on screen on every scroll frame.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow-gold), transparent),
       radial-gradient(ellipse 60% 40% at 100% 0%, var(--glow-violet), transparent);
-    background-attachment: fixed;
   }
   /*
    * Radix's scroll lock (dialogs, dropdowns) pads the body by the scrollbar's width to stop a shift,

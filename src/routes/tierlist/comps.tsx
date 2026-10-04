@@ -1,3 +1,5 @@
+import { memo, useDeferredValue } from "react";
+import { useProgressiveCount } from "@/lib/use-progressive-count";
 import { createFileRoute } from "@tanstack/react-router";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
@@ -51,7 +53,15 @@ function NoMatches({ filters, what }: { filters: CompFilters; what: string }) {
   );
 }
 
-function GuideRows({ comps, filters, playstyle }: { comps: Comp[]; filters: CompFilters; playstyle?: Playstyle }) {
+const GuideRows = memo(function GuideRows({
+  comps,
+  filters,
+  playstyle,
+}: {
+  comps: Comp[];
+  filters: CompFilters;
+  playstyle?: Playstyle;
+}) {
   const { championsByApi, traitsByApi, itemsByApi } = useGameData();
   const championName = (apiName: string) => championsByApi.get(apiName)?.name ?? "";
   const filtered = comps.filter(
@@ -88,9 +98,17 @@ function GuideRows({ comps, filters, playstyle }: { comps: Comp[]; filters: Comp
       )}
     />
   );
-}
+});
 
-function StatRows({ comps, filters, rank }: { comps: AutoComp[]; filters: CompFilters; rank?: RankFloor }) {
+const StatRows = memo(function StatRows({
+  comps,
+  filters,
+  rank,
+}: {
+  comps: AutoComp[];
+  filters: CompFilters;
+  rank?: RankFloor;
+}) {
   const { championsByApi } = useGameData();
   const championName = (apiName: string) => championsByApi.get(apiName)?.name ?? "";
   const filtered = comps.filter((comp) =>
@@ -104,8 +122,10 @@ function StatRows({ comps, filters, rank }: { comps: AutoComp[]; filters: CompFi
       championName,
     ),
   );
+  const shown = useProgressiveCount(filtered.length);
   if (filtered.length === 0) return <NoMatches filters={filters} what="comps" />;
-  const rows: Partial<Record<Tier, AutoComp[]>> = Object.groupBy(filtered, (comp) => comp.tier ?? "C");
+  // Comps come best first, so the first batches fill the top tiers.
+  const rows: Partial<Record<Tier, AutoComp[]>> = Object.groupBy(filtered.slice(0, shown), (comp) => comp.tier ?? "C");
   return (
     <TierRows
       rows={rows}
@@ -118,11 +138,13 @@ function StatRows({ comps, filters, rank }: { comps: AutoComp[]; filters: CompFi
       )}
     />
   );
-}
+});
 
 function CompTierListPage() {
   const { set } = useActiveSet();
   const search = Route.useSearch();
+  // The comp lists render with the previous filters while a keystroke's update is pending, so typing stays responsive.
+  const filters = useDeferredValue(search);
   const stats = useTierStats(search.rank);
   const detected = useAutoComps(search.rank) ?? [];
   const guides = compsForSet(set);
@@ -169,14 +191,14 @@ function CompTierListPage() {
           ) : detected.length === 0 ? (
             <EmptyState>No comps have enough games to be detected for Set {set} yet.</EmptyState>
           ) : (
-            <StatRows comps={detected} filters={search} rank={search.rank} />
+            <StatRows comps={detected} filters={filters} rank={search.rank} />
           )}
         </TabsContent>
         <TabsContent value="guides">
           {guides.length === 0 ? (
             <EmptyState>No comp guides have been written for Set {set} yet.</EmptyState>
           ) : (
-            <GuideRows comps={guides} filters={search} playstyle={search.playstyle} />
+            <GuideRows comps={guides} filters={filters} playstyle={search.playstyle} />
           )}
         </TabsContent>
       </Tabs>
