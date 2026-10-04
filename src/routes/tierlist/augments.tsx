@@ -13,7 +13,7 @@ import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { useUpdateSearch } from "@/lib/use-update-search";
 
 export const Route = createFileRoute("/tierlist/augments")({
-  head: () => ({ meta: [{ title: "Augment Tier List · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Augment Tier List · TFTeam" }] }),
   validateSearch: parseAugmentFilters,
   component: AugmentTierListPage,
 });

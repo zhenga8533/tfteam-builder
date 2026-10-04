@@ -16,7 +16,7 @@ import type { PatchTrend, RankFloor, SetStats, StatLine } from "@/lib/data/schem
 import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/tierlist/changes")({
-  head: () => ({ meta: [{ title: "Patch Changes · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Patch Changes · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } =>
     isRankFloor(search.rank) ? { rank: search.rank } : {},
   component: PatchChangesPage,

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/comps/$slug")({
   },
   head: ({ loaderData }) => ({
     meta: loaderData
-      ? [{ title: `${loaderData.name} · TFTeam Builder` }, { name: "description", content: loaderData.summary }]
+      ? [{ title: `${loaderData.name} · TFTeam` }, { name: "description", content: loaderData.summary }]
       : [],
   }),
   component: CompGuidePage,

@@ -18,7 +18,7 @@ import { useGameData, useItemStats, useStats } from "@/lib/data/hooks";
 import type { Item, ItemStats } from "@/lib/data/schema";
 
 export const Route = createFileRoute("/items_/$apiName")({
-  head: () => ({ meta: [{ title: "Item Stats · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Item Stats · TFTeam" }] }),
   component: ItemPage,
 });
 

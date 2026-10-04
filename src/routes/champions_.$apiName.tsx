@@ -22,7 +22,7 @@ import type { Champion, ChampionStats } from "@/lib/data/schema";
 import { traitKey, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/champions_/$apiName")({
-  head: () => ({ meta: [{ title: "Champion Stats · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Champion Stats · TFTeam" }] }),
   component: ChampionPage,
 });
 

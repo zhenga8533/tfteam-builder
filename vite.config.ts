@@ -31,7 +31,7 @@ const spaFallback = (): Plugin => ({
 });
 
 export default defineConfig({
-  base: "/tfteam-builder/",
+  base: "/tfteam/",
   plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss(), spaFallback()],
   resolve: {
     alias: {

@@ -14,7 +14,7 @@ import { useUpdateSearch } from "@/lib/use-update-search";
 interface ChampionTierSearch extends StatsScope, ChampionFilters {}
 
 export const Route = createFileRoute("/tierlist/champions")({
-  head: () => ({ meta: [{ title: "Champion Tier List · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Champion Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionTierSearch => ({
     ...parseStatsScope(search),
     ...parseChampionFilters(search),

@@ -24,7 +24,7 @@ interface TraitTierSearch extends StatsScope {
 }
 
 export const Route = createFileRoute("/tierlist/traits")({
-  head: () => ({ meta: [{ title: "Trait Tier List · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Trait Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): TraitTierSearch => ({
     ...parseStatsScope(search),
     q: stringParam(search.q),

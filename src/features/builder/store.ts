@@ -71,6 +71,7 @@ export const useBuilderStore = create<BuilderState>()(
       setAutofillGoal: (autofillGoal) => set({ autofillGoal }),
     }),
     {
+      // The project's former name; kept so visitors' saved teams survive the rename.
       name: "tfteam-builder",
       partialize: ({ teams, saved, autofillGoal }) => ({ teams, saved, autofillGoal }),
     },

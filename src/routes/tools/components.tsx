@@ -29,7 +29,7 @@ interface ComponentSearch {
 }
 
 export const Route = createFileRoute("/tools/components")({
-  head: () => ({ meta: [{ title: "Component Planner · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Component Planner · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ComponentSearch => ({
     held: stringParam(search.held),
     carry: stringParam(search.carry),

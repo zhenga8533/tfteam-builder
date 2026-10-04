@@ -15,7 +15,7 @@ import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/traits")({
-  head: () => ({ meta: [{ title: "Traits · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Traits · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): { q?: string } => ({ q: stringParam(search.q) }),
   component: TraitsPage,
 });

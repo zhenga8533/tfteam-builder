@@ -29,7 +29,7 @@ interface CompareSearch {
 }
 
 export const Route = createFileRoute("/compare")({
-  head: () => ({ meta: [{ title: "Compare · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Compare · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): CompareSearch => ({
     kind: KINDS.includes(search.kind as Kind) ? (search.kind as Kind) : undefined,
     a: stringParam(search.a),

@@ -22,7 +22,7 @@ interface ItemTierSearch extends StatsScope {
 const RANKED_KINDS: ItemKind[] = ITEM_KINDS.filter((kind) => kind !== "component");
 
 export const Route = createFileRoute("/tierlist/items")({
-  head: () => ({ meta: [{ title: "Item Tier List · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Item Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ItemTierSearch => ({
     ...parseStatsScope(search),
     q: stringParam(search.q),

@@ -27,7 +27,7 @@ interface LittleLegendSearch {
 }
 
 export const Route = createFileRoute("/little-legends")({
-  head: () => ({ meta: [{ title: "Little Legends · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Little Legends · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): LittleLegendSearch => ({
     q: stringParam(search.q),
     kind: isKind(search.kind) ? search.kind : undefined,
