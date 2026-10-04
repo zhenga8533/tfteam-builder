@@ -6,8 +6,9 @@ import { useManifest } from "@/lib/data/hooks";
 import { REPOSITORY } from "@/lib/site";
 import { isNavGroup, NAV } from "./nav";
 
-const linkClass = "text-muted-foreground transition-colors hover:text-foreground";
-const iconLinkClass = `inline-flex items-center gap-1.5 ${linkClass}`;
+// Links are at least 24px tall (a comfortable touch target); the lists' spacing is tightened to match.
+const linkClass = "inline-flex min-h-6 items-center text-muted-foreground transition-colors hover:text-foreground";
+const iconLinkClass = `gap-1.5 ${linkClass}`;
 
 /** The GitHub mark; lucide-react doesn't ship brand icons. */
 function GitHubIcon({ className }: { className?: string }) {
@@ -55,7 +56,7 @@ export function Footer() {
         {groups.map((group) => (
           <nav key={group.label} aria-label={group.label} className="space-y-2">
             <p className="font-semibold">{group.label}</p>
-            <ul className="space-y-1.5">
+            <ul className="space-y-0.5">
               {group.links.map((link) => (
                 <li key={link.label}>
                   <Link to={link.to} className={linkClass}>
@@ -68,7 +69,7 @@ export function Footer() {
         ))}
         <nav aria-label="Tools" className="space-y-2">
           <p className="font-semibold">Tools</p>
-          <ul className="space-y-1.5">
+          <ul className="space-y-0.5">
             {tools.map((link) => (
               <li key={link.label}>
                 <Link to={link.to} className={linkClass}>

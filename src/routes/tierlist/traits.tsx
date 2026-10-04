@@ -103,7 +103,7 @@ function TraitTierListPage() {
         if (!trait || !breakpoint) return null;
         return (
           <TierEntry
-            icon={<TraitIcon trait={trait} style={traitStyle(breakpoint.style)} className="size-12" />}
+            icon={<TraitIcon trait={trait} style={traitStyle(breakpoint.style)} decorative className="size-12" />}
             label={`${breakpoint.minUnits} ${trait.name}`}
             line={line}
             link={{ to: "/traits/$apiName", params: { apiName: trait.apiName } }}

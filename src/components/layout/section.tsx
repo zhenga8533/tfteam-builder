@@ -7,7 +7,9 @@ export function Section({ title, children, className }: { title: string; childre
   return (
     <Card className={cn("gap-3 py-4", className)}>
       <CardHeader className="px-4">
-        <CardTitle className="font-display">{title}</CardTitle>
+        <CardTitle className="font-display">
+          <h2>{title}</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent className="px-4">{children}</CardContent>
     </Card>

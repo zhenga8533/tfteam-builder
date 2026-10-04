@@ -63,7 +63,11 @@ export function EntityPicker({
     >
       <div className={cn("relative flex w-48", className)}>
         <PopoverTrigger asChild>
-          <Button variant="outline" aria-label={label} className="w-full justify-start gap-2 pr-8 font-normal">
+          <Button
+            variant="outline"
+            aria-label={`${label}: ${selected?.label ?? placeholder}`}
+            className="w-full justify-start gap-2 pr-8 font-normal"
+          >
             {selected ? (
               <>
                 <span className="shrink-0 [&>*]:size-5">{selected.icon}</span>

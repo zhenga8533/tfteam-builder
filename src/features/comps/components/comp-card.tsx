@@ -1,6 +1,9 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { ChampionLink, ItemLink, TraitLink } from "@/components/game/links";
+import { ItemCard } from "@/components/game/cards";
+import { GameHoverCard } from "@/components/game/game-hover-card";
+import { ItemIcon } from "@/components/game/icons";
+import { ChampionLink, TraitLink } from "@/components/game/links";
 import type { Comp, CompUnit } from "@/content/types";
 import { TrendBadge as PatchTrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
@@ -78,7 +81,10 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-display font-semibold">
             {link ? (
-              <Link {...link} className="outline-none after:absolute after:inset-0 after:content-['']">
+              <Link
+                {...link}
+                className="inline-flex min-h-6 items-center outline-none after:absolute after:inset-0 after:content-['']"
+              >
                 {title}
               </Link>
             ) : (
@@ -100,16 +106,17 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
                 iconClassName={unit.carry ? "size-12 ring-3 ring-primary" : "size-10"}
               />
               {unit.items && unit.items.length > 0 && (
+                // Too small to be good touch targets, so they're images with hover cards rather than links; the
+                // comp's page lists the same items larger.
                 <span className="flex">
                   {unit.items.map((apiName, index) => {
                     const item = itemsByApi.get(apiName);
                     return item ? (
-                      <ItemLink
-                        key={index}
-                        item={item}
-                        label={null}
-                        iconClassName={unit.carry ? "size-4" : "size-[13px]"}
-                      />
+                      <GameHoverCard key={index} content={<ItemCard item={item} />}>
+                        <span className="flex">
+                          <ItemIcon item={item} className={unit.carry ? "size-4" : "size-[13px]"} />
+                        </span>
+                      </GameHoverCard>
                     ) : null;
                   })}
                 </span>

@@ -34,6 +34,7 @@ function PoolChampion({ champion, onBoard }: { champion: Champion; onBoard: bool
       >
         <ChampionIcon
           champion={champion}
+          decorative
           className={cn("w-full transition group-hover:brightness-110", onBoard && "opacity-40")}
         />
         <span className="w-full truncate text-center text-[11px] text-muted-foreground">{champion.name}</span>

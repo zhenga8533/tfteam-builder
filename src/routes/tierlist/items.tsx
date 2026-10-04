@@ -78,7 +78,7 @@ function ItemTierListPage() {
         if (!item) return null;
         return (
           <TierEntry
-            icon={<ItemIcon item={item} className="size-12" />}
+            icon={<ItemIcon item={item} decorative className="size-12" />}
             label={item.name}
             line={line}
             link={{ to: "/items/$apiName", params: { apiName: item.apiName } }}

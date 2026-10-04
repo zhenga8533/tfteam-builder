@@ -50,7 +50,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
         line: row.line,
         label: (
           <AddButton label={`Filter by ${champion.name}`} onClick={() => add({ type: "unit", unit: row.key })}>
-            <ChampionIcon champion={champion} className="size-7" />
+            <ChampionIcon champion={champion} className="size-7" decorative />
             <span className="truncate">{champion.name}</span>
           </AddButton>
         ),
@@ -71,7 +71,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
             label={`Filter by ${minUnits} ${trait.name}`}
             onClick={() => add({ type: "trait", trait: apiName, minUnits: Number(minUnits) })}
           >
-            <TraitIcon trait={trait} style={traitStyle(breakpoint.style)} className="size-6" />
+            <TraitIcon trait={trait} style={traitStyle(breakpoint.style)} className="size-6" decorative />
             <span className="truncate">
               {minUnits} {trait.name}
             </span>
@@ -139,7 +139,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
                           )
                         }
                       >
-                        <ItemIcon item={item} className="size-7" />
+                        <ItemIcon item={item} className="size-7" decorative />
                         <span className="truncate">{item.name}</span>
                       </AddButton>
                     ),

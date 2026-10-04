@@ -81,7 +81,7 @@ function AugmentTierListPage() {
                     return (
                       <li key={apiName}>
                         <TierEntry
-                          icon={<AugmentIcon augment={augment} className="size-12" />}
+                          icon={<AugmentIcon augment={augment} decorative className="size-12" />}
                           label={augment.name}
                           line={undefined}
                           card={<AugmentCard augment={augment} />}

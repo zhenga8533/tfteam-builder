@@ -43,7 +43,8 @@ export function Builder() {
   const sensors = useSensors(
     // A small activation distance keeps clicks (add / select) working on draggable elements.
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor),
+    // Space picks up and moves; Enter stays a click, so it adds a pool champion or selects a placed unit.
+    useSensor(KeyboardSensor, { keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space", "Enter"] } }),
   );
 
   const onDragStart = ({ active }: DragStartEvent) => setDragging(active.data.current as DragPayload);

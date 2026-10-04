@@ -5,7 +5,7 @@ import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
 import { ChampionLink, ItemLink, TraitLink } from "@/components/game/links";
 import { COST_TEXT, ITEM_KIND_LABELS } from "@/components/game/styles";
 import { PageHeader } from "@/components/layout/page-header";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AutoCompCard } from "@/features/comps/components/comp-card";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend } from "@/features/stats/components/patch-trend";
@@ -299,15 +299,19 @@ function ComparePage() {
       <PageHeader title="Compare" description="Two champions, items or comps side by side, from ranked games." />
       {stats && <StatsMeta stats={stats} />}
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <Tabs value={kind} onValueChange={(value) => update({ kind: value as Kind, a: undefined, b: undefined })}>
-          <TabsList>
-            {KINDS.map((option) => (
-              <TabsTrigger key={option} value={option}>
-                {KIND_LABEL[option]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={kind}
+          onValueChange={(value) => value && update({ kind: value as Kind, a: undefined, b: undefined })}
+          aria-label="What to compare"
+        >
+          {KINDS.map((option) => (
+            <ToggleGroupItem key={option} value={option} className="px-3">
+              {KIND_LABEL[option]}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
         {(["a", "b"] as const).map((slot) => (
           <EntityPicker
             key={`${kind}-${slot}`}
