@@ -5,17 +5,14 @@ import { ChampionIcon } from "@/components/game/icons";
 import { SearchInput } from "@/components/layout/search-input";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
+import { parseStatsScope, scopeChoices, type StatsScope } from "@/features/stats/scope";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { isRankFloor, isRegion, type Region } from "@/lib/data/constants";
-import type { RankFloor } from "@/lib/data/schema";
 import { matches, numberParam, stringParam } from "@/lib/search";
 
-interface ChampionTierSearch {
-  rank?: RankFloor;
-  region?: Region;
+interface ChampionTierSearch extends StatsScope {
   q?: string;
   cost?: number;
   trait?: string;
@@ -24,8 +21,7 @@ interface ChampionTierSearch {
 export const Route = createFileRoute("/tierlist/champions")({
   head: () => ({ meta: [{ title: "Champion Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionTierSearch => ({
-    rank: isRankFloor(search.rank) ? search.rank : undefined,
-    region: isRegion(search.region) ? search.region : undefined,
+    ...parseStatsScope(search),
     q: stringParam(search.q),
     cost: numberParam(search.cost),
     trait: stringParam(search.trait),
@@ -60,8 +56,7 @@ function ChampionTierListPage() {
       fallback={tierListForSet(set)?.fallback?.champions}
       visible={visible}
       stats={stats}
-      rank={{ value: search.rank, onChange: (rank) => update({ rank, region: undefined }) }}
-      region={{ value: search.region, onChange: (region) => update({ region, rank: undefined }) }}
+      {...scopeChoices(search, update)}
       toolbar={
         <>
           <SearchInput
