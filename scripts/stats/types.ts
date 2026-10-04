@@ -29,7 +29,6 @@ export interface MatchParticipant {
   level: number;
   /** The last round played: when the player was eliminated, or the game's final round for the winner. */
   last_round?: number;
-  total_damage_to_players?: number;
   /** The player's Little Legend (or Chibi); `content_ID` matches CDragon's companions.json. */
   companion?: { content_ID: string };
   traits: MatchTrait[];
@@ -78,8 +77,6 @@ export type BoardRow = [
 export interface BoardExtras {
   /** The last round played: when the player was knocked out, or the game's final round for the winner. */
   lastRound?: number;
-  /** Damage dealt to other players. */
-  damage?: number;
   /** The Little Legend's content ID (CDragon's companions.json). */
   companion?: string;
 }

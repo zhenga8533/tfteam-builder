@@ -261,8 +261,6 @@ export const autoCompSchema = statLineSchema.extend({
   trend: z.number().optional(),
   /** Median round the comp is knocked out on when it doesn't win (absent until enough boards record it). */
   knockoutRound: z.number().int().optional(),
-  /** Average damage dealt to other players per game. */
-  damage: z.number().int().optional(),
   /** Placement by the player's final level, for levels with enough games; `play` is the share of the comp's games. */
   byLevel: z.array(statLineSchema.extend({ level: z.number().int() })),
 });

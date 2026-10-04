@@ -29,23 +29,13 @@ export const Route = createFileRoute("/comps/auto/$id")({
   component: AutoCompPage,
 });
 
-/** When the comp tends to bow out and how hard it hits on the way: early-game strength versus a late spike. */
-function GameLength({ knockoutRound, damage }: { knockoutRound?: number; damage?: number }) {
-  if (knockoutRound === undefined && damage === undefined) return null;
+/** When the comp tends to bow out when it loses: early-game strength versus a late spike. */
+function KnockoutRound({ round }: { round?: number }) {
+  if (round === undefined) return null;
   return (
-    <dl className="mt-3 grid grid-cols-2 gap-2 border-t pt-3 text-xs">
-      {knockoutRound !== undefined && (
-        <div title="Median round it's knocked out on, in games it doesn't win">
-          <dt className="text-muted-foreground">Out around</dt>
-          <dd className="font-display text-base font-semibold tabular-nums">{stageRound(knockoutRound)}</dd>
-        </div>
-      )}
-      {damage !== undefined && (
-        <div title="Average damage dealt to other players per game">
-          <dt className="text-muted-foreground">Damage per game</dt>
-          <dd className="font-display text-base font-semibold tabular-nums">{damage}</dd>
-        </div>
-      )}
+    <dl className="mt-3 border-t pt-3 text-xs" title="Median round it's knocked out on, in games it doesn't win">
+      <dt className="text-muted-foreground">Out around</dt>
+      <dd className="font-display text-base font-semibold tabular-nums">{stageRound(round)}</dd>
     </dl>
   );
 }
@@ -137,7 +127,7 @@ function AutoCompPage() {
           {comp.places && (
             <Section title="Placements">
               <PlacementChart places={comp.places} />
-              <GameLength knockoutRound={comp.knockoutRound} damage={comp.damage} />
+              <KnockoutRound round={comp.knockoutRound} />
             </Section>
           )}
           {comp.byLevel.length > 1 && (

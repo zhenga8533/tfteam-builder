@@ -1,5 +1,5 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { join, relative, sep } from "node:path";
 import { parseArgs } from "node:util";
 import { gzipSync } from "node:zlib";
 import {
@@ -24,6 +24,7 @@ import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { compTrends, patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
+import { type FileSize, renderReport, type SetReport } from "./lib/report.ts";
 import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
 import { buildFloorStats, buildRegionStats, buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
@@ -148,11 +149,15 @@ async function writeExplorerSample(
   console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
 }
 
-/** Everything beyond the tier list stats: detail pages, comps, Little Legends and the Explorer sample. */
+/**
+ * Everything beyond the tier list stats: detail pages, comps, Little Legends and the Explorer sample. Returns
+ * figures for the deploy summary.
+ */
 async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const dir = join(OUT_DIR, `set${data.number}`);
   await rm(dir, { recursive: true, force: true });
-  if (stats.status !== "ready") return;
+  const figures = { comps: 0, boards: 0, withRounds: 0, withCompanions: 0 };
+  if (stats.status !== "ready") return figures;
 
   // One pass feeds every accumulator; comps need a second to collect details for the signatures that qualify.
   const eachBoard = boardsOf(read, data, stats, chunks);
@@ -165,6 +170,9 @@ async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, 
     database.add(board);
     comps.count(board);
     legends.add(board);
+    figures.boards += 1;
+    if (board.lastRound !== undefined) figures.withRounds += 1;
+    if (board.companion) figures.withCompanions += 1;
   });
   await eachBoard((board) => comps.add(board));
   const detected = comps.results();
@@ -185,6 +193,25 @@ async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, 
 
   await writeLittleLegends(dir, legends);
   await writeExplorerSample(dir, read, data, stats, chunks);
+  return { ...figures, comps: detected.length };
+}
+
+/** Every published stats file with its size, for the deploy summary. */
+async function statsFiles(): Promise<FileSize[]> {
+  const entries = await readdir(OUT_DIR, { recursive: true, withFileTypes: true });
+  return Promise.all(
+    entries
+      .filter((entry) => entry.isFile())
+      .map(async (entry) => {
+        const path = join(entry.parentPath, entry.name);
+        return { path: relative(OUT_DIR, path).split(sep).join("/"), bytes: (await stat(path)).size };
+      }),
+  );
+}
+
+/** Adds the summary to the GitHub Actions run page when running there. */
+async function publishReport(markdown: string) {
+  if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown);
 }
 
 /**
@@ -209,8 +236,17 @@ async function main() {
   const source = createStatsStore(args.stats);
   if (!source) {
     console.log("No R2 credentials or --stats directory; skipping stats.");
+    await publishReport(
+      renderReport({
+        sets: [],
+        files: [],
+        now: new Date(),
+        skipped: "No R2 credentials, so no match stats were built.",
+      }),
+    );
     return;
   }
+  const reports: SetReport[] = [];
   // Each set's boards are read in several passes (counters, champion and comp details, the Explorer sample).
   const store = new StatsStore(new CachingBlobStore(source.blobs, "boards/"));
   const chunks = await store.listBoardChunks();
@@ -275,13 +311,26 @@ async function main() {
     const json = JSON.stringify(setStatsSchema.parse(stats));
     await writeFile(join(OUT_DIR, `set${set}.json`), json);
     if (stats.status === "ready") await store.putSummary(set, stats.patch, json);
-    await writeDetails(
+    const figures = await writeDetails(
       store,
       read,
       data,
       stats,
       chunks.filter((chunk) => chunk.set === set),
     );
+    const report: SetReport = {
+      set,
+      status: stats.status,
+      patch: stats.patch,
+      rankFloor: stats.rankFloor,
+      matches: stats.matches,
+      updatedAt: stats.updatedAt,
+      floors: [],
+      regions: regionStats.map((entry) => ({ region: entry.region!, matches: entry.matches })),
+      unmapped: Object.entries(unknown).flatMap(([kind, names]) => (names.size ? [`${kind}: ${top(names)}`] : [])),
+      ...figures,
+    };
+    reports.push(report);
     if (regionStats.length) {
       await mkdir(join(OUT_DIR, `set${set}`, "regions"), { recursive: true });
       for (const entry of regionStats) {
@@ -305,6 +354,7 @@ async function main() {
           JSON.stringify(await withCompTrends(store, entry, floorComps, entry.rankFloor)),
         );
         console.log(`  ${entry.rankFloor}+: ${floorComps.length} comps`);
+        report.floors.push({ floor: entry.rankFloor, matches: entry.matches, comps: floorComps.length });
       }
     }
     if (stats.status === "ready") {
@@ -320,6 +370,7 @@ async function main() {
       if (names.size) console.warn(`  unmapped ${kind}: ${top(names)}`);
     }
   }
+  await publishReport(renderReport({ sets: reports, files: await statsFiles(), now: new Date() }));
 }
 
 main().catch((error: unknown) => {
