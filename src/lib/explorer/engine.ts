@@ -87,7 +87,13 @@ function rows(counters: Map<string, Counter>, baseline: number, total: number, m
     .sort((a, b) => a.line.score - b.line.score);
 }
 
-export function runQuery(data: ExplorerData, filters: ExplorerFilter[], minGames = MIN_ROW_GAMES): ExplorerResult {
+/** `floor`: include boards at this rank index or above (see `ExplorerBoard.rank`); the sample's default floor if unset. */
+export function runQuery(
+  data: ExplorerData,
+  filters: ExplorerFilter[],
+  minGames = MIN_ROW_GAMES,
+  floor = data.defaultRank,
+): ExplorerResult {
   const empty: ExplorerResult = { summary: null, units: [], traits: [], items: {} };
   const compiled = compile(data, filters);
   if (!compiled) return empty;
@@ -99,7 +105,11 @@ export function runQuery(data: ExplorerData, filters: ExplorerFilter[], minGames
   const filtered = new Set(compiled.units.map((filter) => filter.unit));
   const matchedRows: number[] = [];
 
+  // Shares are of the boards at this floor, not the whole sample (which can hold lower floors too).
+  let atFloor = 0;
   for (let board = 0; board < data.boards; board++) {
+    if (data.rank[board]! > floor) continue;
+    atFloor++;
     if (data.level[board]! < compiled.minLevel) continue;
     const unitStart = data.unitStart[board]!;
     const unitEnd = data.unitStart[board + 1]!;
@@ -151,7 +161,7 @@ export function runQuery(data: ExplorerData, filters: ExplorerFilter[], minGames
   }
 
   if (summary[0] === 0) return empty;
-  const line = statLine(summary, data.boards);
+  const line = statLine(summary, atFloor);
   return {
     summary: line,
     units: rows(unitCounters, line.avg, summary[0], minGames),
@@ -177,14 +187,22 @@ const MIN_SHARED = 3;
  * Stats for sample boards that share as many of `units` as possible: the largest overlap with at least
  * `minGames` boards. Null when no overlap of `MIN_SHARED` or more units has enough boards.
  */
-export function similarBoards(data: ExplorerData, units: string[], minGames = MIN_ROW_GAMES): SimilarBoards | null {
+export function similarBoards(
+  data: ExplorerData,
+  units: string[],
+  minGames = MIN_ROW_GAMES,
+  floor = data.defaultRank,
+): SimilarBoards | null {
   const index = new Map(data.units.map((name, i) => [name, i]));
   const wanted = new Set(units.flatMap((unit) => index.get(unit) ?? []));
   if (wanted.size < MIN_SHARED) return null;
 
   // byOverlap[k] counts boards sharing exactly k of the wanted units.
   const byOverlap = Array.from({ length: wanted.size + 1 }, emptyCounter);
+  let atFloor = 0;
   for (let board = 0; board < data.boards; board++) {
+    if (data.rank[board]! > floor) continue;
+    atFloor++;
     const seen = new Set<number>();
     for (let row = data.unitStart[board]!; row < data.unitStart[board + 1]!; row++) {
       const unit = data.unitIndex[row]!;
@@ -197,7 +215,7 @@ export function similarBoards(data: ExplorerData, units: string[], minGames = MI
   const total = emptyCounter();
   for (let shared = wanted.size; shared >= MIN_SHARED; shared--) {
     addCounter(total, byOverlap[shared]!);
-    if (total[0] >= minGames) return { shared, total: wanted.size, line: statLine(total, data.boards) };
+    if (total[0] >= minGames) return { shared, total: wanted.size, line: statLine(total, atFloor) };
   }
   return null;
 }

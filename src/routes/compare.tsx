@@ -11,7 +11,10 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count, percent } from "@/features/stats/format";
-import { useAutoComps, useGameData, useStats } from "@/lib/data/hooks";
+import { isRankFloor } from "@/lib/data/constants";
+import { useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
+import type { RankFloor } from "@/lib/data/schema";
+import { useRankChoice } from "@/features/stats/use-scope-choices";
 import { bestHolders } from "@/features/stats/builds";
 import type { StatLine } from "@/lib/data/schema";
 import { traitStyle } from "@/lib/game/traits";
@@ -24,6 +27,7 @@ type Kind = (typeof KINDS)[number];
 
 interface CompareSearch {
   kind?: Kind;
+  rank?: RankFloor;
   a?: string;
   b?: string;
 }
@@ -32,6 +36,7 @@ export const Route = createFileRoute("/compare")({
   head: () => ({ meta: [{ title: "Compare · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): CompareSearch => ({
     kind: KINDS.includes(search.kind as Kind) ? (search.kind as Kind) : undefined,
+    rank: isRankFloor(search.rank) ? search.rank : undefined,
     a: stringParam(search.a),
     b: stringParam(search.b),
   }),
@@ -129,9 +134,9 @@ function CompareTable({
   );
 }
 
-function ChampionCompare({ a, b }: { a?: string; b?: string }) {
+function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
   const { championsByApi, traitsByApi, itemsByApi } = useGameData();
-  const stats = useStats();
+  const stats = useTierStats(rank);
   const side = (apiName?: string): Side | undefined => {
     const champion = apiName ? championsByApi.get(apiName) : undefined;
     if (!champion) return undefined;
@@ -175,9 +180,9 @@ function ChampionCompare({ a, b }: { a?: string; b?: string }) {
   return <CompareTable sides={[side(a), side(b)]} trendKind="units" />;
 }
 
-function ItemCompare({ a, b }: { a?: string; b?: string }) {
+function ItemCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
   const { itemsByApi, championsByApi } = useGameData();
-  const stats = useStats();
+  const stats = useTierStats(rank);
   const side = (apiName?: string): Side | undefined => {
     const item = apiName ? itemsByApi.get(apiName) : undefined;
     if (!item) return undefined;
@@ -206,8 +211,8 @@ function ItemCompare({ a, b }: { a?: string; b?: string }) {
   return <CompareTable sides={[side(a), side(b)]} trendKind="items" />;
 }
 
-function CompCompare({ a, b }: { a?: string; b?: string }) {
-  const comps = useAutoComps() ?? [];
+function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
+  const comps = useAutoComps(rank) ?? [];
   const { traitsByApi } = useGameData();
   const side = (id?: string): Side | undefined => {
     const comp = comps.find((entry) => entry.id === id);
@@ -259,9 +264,9 @@ function CompCompare({ a, b }: { a?: string; b?: string }) {
   );
 }
 
-function usePickerOptions(kind: Kind): EntityOption[] {
+function usePickerOptions(kind: Kind, rank?: RankFloor): EntityOption[] {
   const { champions, items } = useGameData();
-  const comps = useAutoComps() ?? [];
+  const comps = useAutoComps(rank) ?? [];
   if (kind === "champions") {
     return champions.map((champion) => ({
       key: champion.apiName,
@@ -281,17 +286,18 @@ function usePickerOptions(kind: Kind): EntityOption[] {
 const KIND_LABEL: Record<Kind, string> = { champions: "Champions", items: "Items", comps: "Comps" };
 
 function ComparePage() {
-  const stats = useStats();
   const search = Route.useSearch();
+  const stats = useTierStats(search.rank);
   const update = useUpdateSearch<CompareSearch>();
+  const rankChoice = useRankChoice((rank) => update({ rank }));
   const kind = search.kind ?? "champions";
-  const options = usePickerOptions(kind);
+  const options = usePickerOptions(kind, search.rank);
   const singular = KIND_LABEL[kind].toLowerCase().replace(/s$/, "");
 
   return (
     <>
       <PageHeader title="Compare" description="Two champions, items or comps side by side, from ranked games." />
-      {stats && <StatsMeta stats={stats} />}
+      {stats && <StatsMeta stats={stats} rank={rankChoice} />}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <ToggleGroup
           type="single"
@@ -321,11 +327,11 @@ function ComparePage() {
       {!stats ? (
         <NoStats />
       ) : kind === "champions" ? (
-        <ChampionCompare a={search.a} b={search.b} />
+        <ChampionCompare a={search.a} b={search.b} rank={search.rank} />
       ) : kind === "items" ? (
-        <ItemCompare a={search.a} b={search.b} />
+        <ItemCompare a={search.a} b={search.b} rank={search.rank} />
       ) : (
-        <CompCompare a={search.a} b={search.b} />
+        <CompCompare a={search.a} b={search.b} rank={search.rank} />
       )}
     </>
   );

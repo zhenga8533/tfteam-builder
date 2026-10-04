@@ -30,7 +30,7 @@ import { buildFloorStats, buildRegionStats, buildSetStats, distinctFloors, FLOOR
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
-import type { BoardRow, PatchCounters } from "./stats/types.ts";
+import { type BoardRow, type PatchCounters, RANK_BUCKETS } from "./stats/types.ts";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
@@ -123,7 +123,10 @@ async function writeLittleLegends(dir: string, legends: LittleLegendAccumulator)
   }
 }
 
-/** The newest boards behind `stats`, packed for the Explorer. */
+/**
+ * The newest boards behind `stats` and the other offered rank floors, packed for the Explorer with each board's rank,
+ * so it can show any offered floor (the default floor by default).
+ */
 async function writeExplorerSample(
   dir: string,
   read: ReadBoards,
@@ -131,7 +134,9 @@ async function writeExplorerSample(
   stats: SetStats,
   chunks: BoardChunk[],
 ) {
-  const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
+  const offered = [stats.rankFloor, ...(stats.ranks ?? [])];
+  const lowest = RANK_OPTIONS.findLast((floor) => offered.includes(floor)) ?? stats.rankFloor;
+  const buckets = new Set(FLOOR_BUCKETS[lowest]);
   const resolver = new BoardResolver(data);
   const newestFirst = chunks
     .filter((chunk) => chunk.patch === stats.patch)
@@ -140,11 +145,11 @@ async function writeExplorerSample(
   for (const chunk of newestFirst) {
     for (const row of await read(chunk)) {
       if (explorer.length >= EXPLORER_SAMPLE) break;
-      if (buckets.has(row[2])) explorer.push(resolver.board(row));
+      if (buckets.has(row[2])) explorer.push({ ...resolver.board(row), rank: RANK_BUCKETS.indexOf(row[2]) });
     }
     if (explorer.length >= EXPLORER_SAMPLE) break;
   }
-  const encoded = gzipSync(encodeExplorer(explorer), { level: 9 });
+  const encoded = gzipSync(encodeExplorer(explorer, RANK_OPTIONS.indexOf(stats.rankFloor)), { level: 9 });
   await writeFile(join(dir, "explorer.bin.gz"), encoded);
   console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
 }

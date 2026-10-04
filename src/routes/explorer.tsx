@@ -7,8 +7,10 @@ import { FilterBar } from "@/features/explorer/components/filter-bar";
 import { useExplorer } from "@/features/explorer/use-explorer";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { count } from "@/features/stats/format";
-import { useActiveSet, useStats } from "@/lib/data/hooks";
+import { RANK_OPTIONS, isRankFloor } from "@/lib/data/constants";
+import { useActiveSet, useStats, useTierStats } from "@/lib/data/hooks";
+import type { RankFloor } from "@/lib/data/schema";
+import { useRankChoice } from "@/features/stats/use-scope-choices";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
 
 const isString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
@@ -32,9 +34,9 @@ function parseFilters(value: unknown): ExplorerFilter[] {
 
 export const Route = createFileRoute("/explorer")({
   head: () => ({ meta: [{ title: "Explorer · TFTeam" }] }),
-  validateSearch: (search: Record<string, unknown>): { filters?: ExplorerFilter[] } => {
+  validateSearch: (search: Record<string, unknown>): { filters?: ExplorerFilter[]; rank?: RankFloor } => {
     const filters = parseFilters(search.filters);
-    return filters.length ? { filters } : {};
+    return { ...(filters.length && { filters }), ...(isRankFloor(search.rank) && { rank: search.rank }) };
   },
   component: ExplorerPage,
 });
@@ -45,14 +47,20 @@ function ExplorerPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const filters = search.filters ?? [];
+  // The sample holds every offered rank floor; the chosen one (or the default) picks its boards.
+  const floorStats = useTierStats(search.rank);
+  const rankChoice = useRankChoice((rank) =>
+    navigate({ search: (previous) => ({ ...previous, rank }), replace: true }),
+  );
   const url =
     patch === "latest" && stats?.status === "ready"
       ? `${import.meta.env.BASE_URL}data/stats/set${set}/explorer.bin.gz`
       : null;
-  const { status, result } = useExplorer(url, filters);
+  const floor = floorStats ? RANK_OPTIONS.indexOf(floorStats.rankFloor) : undefined;
+  const { status, result } = useExplorer(url, filters, floor);
 
   const setFilters = (next: ExplorerFilter[]) =>
-    navigate({ search: next.length ? { filters: next } : {}, replace: true });
+    navigate({ search: (previous) => ({ ...previous, filters: next.length ? next : undefined }), replace: true });
 
   return (
     <>
@@ -60,7 +68,7 @@ function ExplorerPage() {
         title="Explorer"
         description="Filter ranked boards by champions, items, traits and level, then see what else does well with them."
       />
-      {stats && <StatsMeta stats={stats} />}
+      {floorStats && <StatsMeta stats={floorStats} rank={rankChoice} />}
       {status.state === "missing" ? (
         <NoStats subject={`Set ${set}`} />
       ) : status.state === "error" ? (
@@ -74,8 +82,7 @@ function ExplorerPage() {
           <div className="space-y-2">
             <FilterBar filters={filters} onChange={setFilters} />
             <p className="text-xs text-muted-foreground">
-              Results come from a sample of the {count(status.boards)} most recent boards, so they can differ slightly
-              from the tier lists.
+              Results come from a sample of the most recent boards, so they can differ slightly from the tier lists.
             </p>
           </div>
           {result && <ExplorerResults result={result} filters={filters} onChange={setFilters} />}

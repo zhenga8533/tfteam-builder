@@ -10,7 +10,7 @@ import { decodeExplorer, type ExplorerData } from "@/lib/explorer/format";
 
 export type WorkerRequest =
   | { type: "load"; url: string }
-  | { type: "query"; id: number; filters: ExplorerFilter[] }
+  | { type: "query"; id: number; filters: ExplorerFilter[]; floor?: number }
   | { type: "similar"; id: number; units: string[] };
 
 export type WorkerResponse =
@@ -47,7 +47,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       post({ type: "error", message: error instanceof Error ? error.message : String(error) }),
     );
   } else if (data && request.type === "query") {
-    post({ type: "result", id: request.id, result: runQuery(data, request.filters) });
+    post({ type: "result", id: request.id, result: runQuery(data, request.filters, undefined, request.floor) });
   } else if (data && request.type === "similar") {
     post({ type: "similar", id: request.id, result: similarBoards(data, request.units) });
   }

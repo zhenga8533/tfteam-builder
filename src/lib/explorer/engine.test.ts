@@ -82,3 +82,24 @@ describe("similar boards", () => {
     expect(similarBoards(data, ["Ahri", "Sett", "Zyra", "Kayle"], 10)).toMatchObject({ shared: 3, total: 3 });
   });
 });
+
+describe("explorer rank floors", () => {
+  // Master+ (rank 0) boards win, Diamond (1) boards place 4th, Emerald (2) boards place 8th.
+  const ranked = [
+    ...Array.from({ length: 4 }, () => ({ ...board(1, [["Ahri", 1, []]], []), rank: 0 })),
+    ...Array.from({ length: 4 }, () => ({ ...board(4, [["Ahri", 1, []]], []), rank: 1 })),
+    ...Array.from({ length: 4 }, () => ({ ...board(8, [["Ahri", 1, []]], []), rank: 2 })),
+  ];
+  const sample = decodeExplorer(encodeExplorer(ranked, 1).slice().buffer);
+
+  it("uses the default floor unless asked for another", () => {
+    expect(runQuery(sample, [], 1).summary?.games).toBe(8);
+    expect(runQuery(sample, [], 1, 0).summary).toMatchObject({ games: 4, avg: 1 });
+    expect(runQuery(sample, [], 1, 2).summary?.games).toBe(12);
+  });
+
+  it("gives shares of the boards at the floor, not the whole sample", () => {
+    expect(runQuery(sample, [], 1).summary?.play).toBe(1);
+    expect(runQuery(sample, [], 1, 0).summary?.play).toBe(1);
+  });
+});
