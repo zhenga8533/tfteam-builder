@@ -2,12 +2,13 @@ import { appendFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { fetchTftPatches, mergeTimelines, patchAt } from "../lib/tft-patches.ts";
 import { isRankedStandard, matchToRows } from "./aggregate.ts";
-import { type Platform, REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./regions.ts";
+import { REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./regions.ts";
+import { crawlOrder } from "./crawl-order.ts";
 import { renderCrawlReport } from "./crawl-report.ts";
 import { ApiKeyRejectedError, BudgetExceededError, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
 import { createStatsStore, runStamp } from "./state.ts";
-import { type BoardRow, RANK_BUCKETS, type RankBucket, type TrackedPlayer } from "./types.ts";
+import { type BoardRow, RANK_BUCKETS, type RankBucket } from "./types.ts";
 
 const HOUR = 3600;
 const DAY = 24 * HOUR;
@@ -80,25 +81,13 @@ async function main() {
     }),
   );
 
-  /** Least recently crawled players first, alternating between the region's platforms. */
-  const crawlOrder = (regionPlatforms: Platform[]) => {
-    const queues = regionPlatforms.map((platform) =>
-      [...states.get(platform.id)!.players].sort((a, b) => (a.lastCrawledAt ?? 0) - (b.lastCrawledAt ?? 0)),
-    );
-    const order: TrackedPlayer[] = [];
-    for (let i = 0; queues.some((queue) => i < queue.length); i++) {
-      for (const queue of queues) if (queue[i]) order.push(queue[i]!);
-    }
-    return order;
-  };
-
   const crawlRegion = async (region: RegionalHost): Promise<RegionSummary> => {
     const summary: RegionSummary = { players: 0, fetched: 0, kept: 0, byBucket: {} };
     const regionPlatforms = platforms.filter((platform) => platform.region === region);
     const regionBoards = new Map<string, BoardRow[]>();
     boards.set(region, regionBoards);
     try {
-      for (const player of crawlOrder(regionPlatforms)) {
+      for (const player of crawlOrder(regionPlatforms.map((platform) => states.get(platform.id)!.players))) {
         if (summary.fetched >= maxMatches) break;
         const ids = await client.matchIds(
           region,
