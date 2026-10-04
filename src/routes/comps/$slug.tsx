@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { findComp } from "@/content";
 import { DEFAULT_LEVEL, EARLY_LEVEL } from "@/features/builder/store";
 import { CompBoard } from "@/features/comps/components/comp-board";
+import { CopyTeamCodeButton } from "@/features/comps/components/copy-team-code-button";
 import { Section } from "@/components/layout/section";
 import { Carries, CompTraits } from "@/features/comps/components/comp-sections";
 import { SetGuard } from "@/features/comps/components/set-guard";
@@ -100,20 +101,30 @@ function CompGuidePage() {
             <span>Updated {comp.updatedAt}</span>
           </p>
         </div>
-        <Button
-          onClick={() =>
-            openInBuilder(
-              comp.set,
-              [
-                ...(comp.early ? [{ level: EARLY_LEVEL, units: comp.early }] : []),
-                { level: DEFAULT_LEVEL, units: comp.board },
-              ],
-              comp.name,
-            )
-          }
-        >
-          <Hammer /> Open in Team Builder
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {/* Planner codes come from the active set's champions, so only offer one for this guide's set. */}
+          <SetGuard set={comp.set} fallback={null}>
+            <CopyTeamCodeButton
+              apiNames={[...comp.board.filter((unit) => !unit.flex), ...comp.board.filter((unit) => unit.flex)].map(
+                (unit) => unit.apiName,
+              )}
+            />
+          </SetGuard>
+          <Button
+            onClick={() =>
+              openInBuilder(
+                comp.set,
+                [
+                  ...(comp.early ? [{ level: EARLY_LEVEL, units: comp.early }] : []),
+                  { level: DEFAULT_LEVEL, units: comp.board },
+                ],
+                comp.name,
+              )
+            }
+          >
+            <Hammer /> Open in Team Builder
+          </Button>
+        </div>
       </header>
 
       <p className="max-w-3xl text-muted-foreground">{comp.summary}</p>
