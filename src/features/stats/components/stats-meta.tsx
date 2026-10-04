@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RANK_FLOORS, type Region } from "@/lib/data/constants";
+import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
 import { count, RANK_FLOOR_LABEL, REGION_LABEL, timeAgo } from "../format";
@@ -113,6 +114,7 @@ function RegionLabel({ region, choice }: { region?: Region; choice?: RegionChoic
 
 /** Where the numbers come from, plus notes when the data is thinner than usual. */
 export function StatsMeta({ stats, rank, region }: { stats: SetStats; rank?: RankChoice; region?: RegionChoice }) {
+  const defaultStats = useStats();
   if (stats.status === "collecting") {
     return (
       <p className="mb-6 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
@@ -126,8 +128,9 @@ export function StatsMeta({ stats, rank, region }: { stats: SetStats; rank?: Ran
   const notes = [
     stats.previousPatch &&
       `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`,
-    // Only a fallback below the usual floor needs explaining; Master+ is a floor users pick.
-    RANK_FLOORS.indexOf(stats.rankFloor as (typeof RANK_FLOORS)[number]) > 0 &&
+    // Only the automatic fallback below the usual floor needs explaining, not a lower floor someone picked.
+    stats.rankFloor === defaultStats?.rankFloor &&
+      RANK_FLOORS.indexOf(stats.rankFloor as (typeof RANK_FLOORS)[number]) > 0 &&
       `Early in the set, few players have reached Diamond, so this includes ${RANK_FLOOR_LABEL[stats.rankFloor]} games.`,
   ].filter(Boolean);
 
