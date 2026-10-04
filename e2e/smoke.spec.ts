@@ -92,7 +92,7 @@ test("a comp guide copies a team code for the in-game planner", async ({ page })
   await page.goto("comps/set18-blossom-spellweaver");
   await page.getByRole("button", { name: "Copy team code" }).click();
   await expect(page.getByText(/^Team code copied/)).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/TFTSet\d+$/);
+  expect(await page.evaluate("navigator.clipboard.readText()")).toMatch(/TFTSet\d+$/);
 });
 
 test("the guide editor turns the board into a comp file", async ({ page }) => {
