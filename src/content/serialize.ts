@@ -1,5 +1,13 @@
 import type { Board } from "@/lib/game/board";
-import type { CompUnit, Difficulty, Playstyle, Tier } from "./types";
+import {
+  type CompUnit,
+  type Difficulty,
+  type Playstyle,
+  type Tier,
+  type TierList,
+  type TierRows,
+  TIERS,
+} from "./types";
 
 const slugify = (text: string) =>
   text
@@ -72,7 +80,7 @@ interface CompSourceOptions {
 
 /**
  * Renders a `src/content/comps/set{N}/{slug}.ts` module for a board and its guide details. Run it through
- * `formatCompSource` before committing so it matches the repository's formatting.
+ * `formatContentSource` before committing so it matches the repository's formatting.
  */
 export function compSource({
   guide,
@@ -105,9 +113,49 @@ ${formatUnits(board, guide.carries)}
 `;
 }
 
-/** Formats a comp module the way `npm run format` does, so a guide submitted from the site passes CI as is. */
-export async function formatCompSource(source: string): Promise<string> {
-  // Loaded on demand: Prettier is large and only the guide editor needs it.
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+
+/** A plain value as TypeScript source, objects expanded one key per line; Prettier settles the layout. */
+function literal(value: unknown, indent = ""): string {
+  if (Array.isArray(value)) return `[${value.map((entry) => literal(entry, indent)).join(", ")}]`;
+  if (value && typeof value === "object") {
+    const inner = `${indent}  `;
+    const fields = Object.entries(value)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => `${inner}${IDENTIFIER.test(key) ? key : JSON.stringify(key)}: ${literal(entry, inner)},`);
+    return fields.length ? `{\n${fields.join("\n")}\n${indent}}` : "{}";
+  }
+  return JSON.stringify(value);
+}
+
+/** Tiers in S-to-X order, leaving out empty ones; undefined when nothing is left. */
+function tierRows(rows: TierRows | undefined): TierRows | undefined {
+  const kept = TIERS.flatMap((tier) => (rows?.[tier]?.length ? [[tier, rows[tier]] as const] : []));
+  return kept.length ? Object.fromEntries(kept) : undefined;
+}
+
+/** Renders a `src/content/tierlists/set{N}.ts` module; run it through `formatContentSource` before committing. */
+export function tierListSource(list: TierList): string {
+  const fallback = {
+    champions: tierRows(list.fallback?.champions),
+    items: tierRows(list.fallback?.items),
+    traits: tierRows(list.fallback?.traits),
+  };
+  const ordered = {
+    set: list.set,
+    champions: tierRows(list.champions),
+    items: tierRows(list.items),
+    traits: tierRows(list.traits),
+    fallback: Object.values(fallback).some(Boolean) ? fallback : undefined,
+    augments: tierRows(list.augments) ?? {},
+    updatedAt: list.updatedAt,
+  };
+  return `import type { TierList } from "../types";\n\nexport default ${literal(ordered)} satisfies TierList;\n`;
+}
+
+/** Formats a content module the way `npm run format` does, so a file submitted from the site passes CI as is. */
+export async function formatContentSource(source: string): Promise<string> {
+  // Loaded on demand: Prettier is large and only the content editors need it.
   const [prettier, typescript, estree] = await Promise.all([
     import("prettier/standalone"),
     import("prettier/plugins/typescript"),

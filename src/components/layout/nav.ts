@@ -41,6 +41,7 @@ export const NAV: (NavLink | NavGroup)[] = [
       { label: "Compare", to: "/compare", description: "Two champions, items or comps side by side" },
       { label: "Roll Odds", to: "/tools/rolling", description: "Your chance to hit a 2★ or 3★" },
       { label: "Component Planner", to: "/tools/components", description: "What your components build into" },
+      { label: "Tier List Maker", to: "/tools/tier-list", description: "Rank things your way and share it" },
     ],
   },
 ];

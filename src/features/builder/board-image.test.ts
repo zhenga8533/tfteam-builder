@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Champion, Trait } from "@/lib/data/schema";
 import { BOARD_COLS, type BoardUnit } from "@/lib/game/board";
 import type { TraitState, TraitStyle } from "@/lib/game/traits";
-import { boardTitle, colorStops, hexCenter, imageFileName } from "./board-image";
+import { colorStops, imageFileName } from "@/lib/canvas";
+import { boardTitle, hexCenter } from "./board-image";
 
 const champion = (apiName: string, cost: number) => [apiName, { apiName, name: apiName, cost } as Champion] as const;
 const championsByApi = new Map([champion("Ahri", 4), champion("Sett", 2), champion("Karma", 4)]);
@@ -49,6 +50,6 @@ describe("board image", () => {
 
   it("names the file after the title", () => {
     expect(imageFileName("Set 18 · Level 8")).toBe("set-18-level-8.png");
-    expect(imageFileName("···")).toBe("team.png");
+    expect(imageFileName("···")).toBe("image.png");
   });
 });
