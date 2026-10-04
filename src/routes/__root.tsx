@@ -4,11 +4,16 @@ import { GameHoverCardHost } from "@/components/game/game-hover-card";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
+import { prefetchActiveSet } from "@/lib/data/active-set";
 import { manifestQuery } from "@/lib/data/queries";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({ meta: [{ title: "TFTeam" }] }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(manifestQuery),
+  loader: async ({ context: { queryClient } }) => {
+    const manifest = await queryClient.ensureQueryData(manifestQuery);
+    // Not awaited, so the layout renders meanwhile; it saves pages a round trip after their code loads.
+    void prefetchActiveSet(queryClient, manifest);
+  },
   component: RootLayout,
   notFoundComponent: NotFound,
 });

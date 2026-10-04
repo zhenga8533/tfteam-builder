@@ -1,5 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useDeferredValue } from "react";
 import { useSettings } from "@/stores/settings";
+import { resolveActiveSet } from "./active-set";
 import type { Region } from "./constants";
 import {
   autoCompsQuery,
@@ -20,14 +22,16 @@ export function useManifest() {
   return useSuspenseQuery(manifestQuery).data;
 }
 
-/** Resolves the persisted patch/set selection against what the manifest actually contains. */
+/**
+ * The patch and set the site shows. Deferred: after switching, pages keep showing the current set while the new one's
+ * data loads, instead of suspending back to the page skeleton.
+ */
 export function useActiveSet() {
   const manifest = useManifest();
   const { patch, set } = useSettings();
-  const patchInfo = manifest.patches[patch];
-  const setNumber = set !== null && patchInfo.sets.includes(set) ? set : patchInfo.sets[0];
-  if (setNumber === undefined) throw new Error(`No sets available for patch "${patch}"`);
-  return { patch, set: setNumber, label: patchInfo.label, sets: patchInfo.sets };
+  const shownPatch = useDeferredValue(patch);
+  const shownSet = useDeferredValue(set);
+  return resolveActiveSet(manifest, shownPatch, shownSet);
 }
 
 export interface GameData extends SetData {
@@ -67,14 +71,25 @@ export function useStats() {
 }
 
 /**
+ * `rank` when it has its own stats, otherwise null (the default floor). Deferred, like the region in `useTierStats`:
+ * switching keeps the current stats on screen while the new ones load, instead of suspending back to the page skeleton.
+ */
+function useOfferedFloor(rank: RankFloor | undefined) {
+  const deferred = useDeferredValue(rank);
+  const base = useStats();
+  return deferred && base?.ranks?.includes(deferred) ? deferred : null;
+}
+
+/**
  * Stats for the tier lists at `rank` when that floor has its own stats, otherwise the default stats.
  * Detail pages and detected comps always use the default floor.
  */
 export function useTierStats(rank: RankFloor | undefined, region?: Region) {
   const { patch, set } = useActiveSet();
   const base = useStats();
-  const floor = rank && base?.ranks?.includes(rank) ? rank : null;
-  const area = region && base?.regions?.includes(region) ? region : null;
+  const floor = useOfferedFloor(rank);
+  const deferredRegion = useDeferredValue(region);
+  const area = deferredRegion && base?.regions?.includes(deferredRegion) ? deferredRegion : null;
   const ranked = useSuspenseQuery(rankStatsQuery(patch, set, floor)).data;
   const regional = useSuspenseQuery(regionStatsQuery(patch, set, area)).data;
   // Regional stats exist at the default floor only, so a region wins over a rank.
@@ -114,15 +129,13 @@ export function useLittleLegends() {
 /** Comps detected from match data (at `rank` when it has its own), best first; null when not published (or on PBE). */
 export function useAutoComps(rank?: RankFloor) {
   const { patch, set } = useActiveSet();
-  const base = useStats();
-  const floor = rank && base?.ranks?.includes(rank) ? rank : null;
+  const floor = useOfferedFloor(rank);
   return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data?.comps ?? null;
 }
 
 /** The patch detected comps' `trend` compares with; undefined until a previous patch has comps. */
 export function useCompTrendPatch(rank?: RankFloor) {
   const { patch, set } = useActiveSet();
-  const base = useStats();
-  const floor = rank && base?.ranks?.includes(rank) ? rank : null;
+  const floor = useOfferedFloor(rank);
   return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data?.trendPatch;
 }

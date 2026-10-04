@@ -20,12 +20,15 @@ export type WorkerResponse =
   | { type: "result"; id: number; result: ExplorerResult }
   | { type: "similar"; id: number; result: SimilarBoards | null };
 
-let data: ExplorerData | null = null;
+let loading: Promise<ExplorerData | null> = Promise.resolve(null);
 const post = (message: WorkerResponse) => self.postMessage(message);
 
-async function load(url: string) {
+async function load(url: string): Promise<ExplorerData | null> {
   const response = await fetch(url);
-  if (response.status === 404) return post({ type: "missing" });
+  if (response.status === 404) {
+    post({ type: "missing" });
+    return null;
+  }
   if (!response.ok) throw new Error(`Failed to load the sample (${response.status})`);
   let buffer = await response.arrayBuffer();
   const bytes = new Uint8Array(buffer, 0, Math.min(4, buffer.byteLength));
@@ -34,21 +37,30 @@ async function load(url: string) {
     buffer = await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
   } else if (String.fromCharCode(...bytes) !== "TFTX") {
     // The dev server answers missing files with index.html.
-    return post({ type: "missing" });
+    post({ type: "missing" });
+    return null;
   }
-  data = decodeExplorer(buffer);
+  const data = decodeExplorer(buffer);
   post({ type: "ready", boards: data.boards });
+  return data;
 }
 
 self.onmessage = (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
   if (request.type === "load") {
-    load(request.url).catch((error: unknown) =>
-      post({ type: "error", message: error instanceof Error ? error.message : String(error) }),
-    );
-  } else if (data && request.type === "query") {
-    post({ type: "result", id: request.id, result: runQuery(data, request.filters, undefined, request.floor) });
-  } else if (data && request.type === "similar") {
-    post({ type: "similar", id: request.id, result: similarBoards(data, request.units) });
+    loading = load(request.url).catch((error: unknown) => {
+      post({ type: "error", message: error instanceof Error ? error.message : String(error) });
+      return null;
+    });
+    return;
   }
+  // A question can arrive before the sample has loaded: a page hidden by Suspense and shown again gets a new worker.
+  void loading.then((data) => {
+    if (!data) return;
+    if (request.type === "query") {
+      post({ type: "result", id: request.id, result: runQuery(data, request.filters, undefined, request.floor) });
+    } else {
+      post({ type: "similar", id: request.id, result: similarBoards(data, request.units) });
+    }
+  });
 };
