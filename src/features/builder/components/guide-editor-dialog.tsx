@@ -1,4 +1,4 @@
-import { ClipboardCopy, Download, Send, X } from "lucide-react";
+import { ClipboardCopy, Download, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EntityPicker } from "@/components/game/entity-picker";
@@ -21,7 +21,7 @@ import {
   compFileName,
   compSource,
   EMPTY_GUIDE,
-  formatCompSource,
+  formatContentSource,
   type GuideDetails,
 } from "@/content/serialize";
 import { type Difficulty, type Playstyle, PLAYSTYLES, type Tier, TIERS } from "@/content/types";
@@ -30,13 +30,11 @@ import { TierBadge } from "@/features/comps/components/tier-badge";
 import { useGameData } from "@/lib/data/hooks";
 import { boardUnits } from "@/lib/game/board";
 import { pickCarries } from "@/lib/game/comp-signature";
-import { REPOSITORY } from "@/lib/site";
+import { downloadBlob } from "@/lib/canvas";
 import { useBuilder } from "../use-builder";
 import { TipsInput } from "./tips-input";
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
-/** GitHub rejects longer URLs; past this the file is copied and pasted into an empty new-file page instead. */
-const MAX_URL_LENGTH = 8000;
 
 interface GuideEditorDialogProps {
   open: boolean;
@@ -56,7 +54,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 /**
  * Turns the Team Builder's board into a comp guide: the details are filled in here, and the result is a
- * formatted `src/content/comps` module to download, copy or submit as a pull request on GitHub.
+ * formatted `src/content/comps` module to download or copy into the repository.
  */
 export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDialogProps) {
   const { set, boards } = useBuilder();
@@ -92,7 +90,7 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
   const [formatted, setFormatted] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
-    formatCompSource(source).then(
+    formatContentSource(source).then(
       (result) => current && setFormatted(result),
       (error: unknown) => {
         console.error("Couldn't format the comp file.", error);
@@ -112,33 +110,12 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
     try {
       await navigator.clipboard.writeText(text);
       toast.success(message);
-      return true;
     } catch {
       toast.error("Couldn't access the clipboard.");
-      return false;
     }
   };
 
-  const download = () => {
-    if (!formatted) return;
-    const url = URL.createObjectURL(new Blob([formatted], { type: "text/typescript" }));
-    const link = Object.assign(document.createElement("a"), { href: url, download: fileName });
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const submit = async () => {
-    if (!formatted) return;
-    const page = `${REPOSITORY}/new/main/src/content/comps/set${set}?filename=${encodeURIComponent(fileName)}`;
-    const prefilled = `${page}&value=${encodeURIComponent(formatted)}`;
-    if (prefilled.length <= MAX_URL_LENGTH) {
-      window.open(prefilled, "_blank", "noopener");
-      return;
-    }
-    if (await copy(formatted, "Comp file copied. Paste it into the GitHub page that just opened.")) {
-      window.open(page, "_blank", "noopener");
-    }
-  };
+  const download = () => formatted && downloadBlob(new Blob([formatted], { type: "text/typescript" }), fileName);
 
   const augmentOptions = augments
     .filter((augment) => !guide.augments.includes(augment.apiName))
@@ -155,8 +132,8 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
           <DialogTitle>Write a comp guide</DialogTitle>
           <DialogDescription>
             The board comes from the Team Builder
-            {early ? ", with the lowest level as the early board" : ""}. Submitting opens GitHub with the file ready to
-            propose as a pull request.
+            {early ? ", with the lowest level as the early board" : ""}. Copy or download the finished file into{" "}
+            <code className="text-foreground">src/content/comps/set{set}/</code>.
           </DialogDescription>
         </DialogHeader>
 
@@ -328,11 +305,8 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
           <Button variant="outline" onClick={download} disabled={!ready}>
             <Download /> Download
           </Button>
-          <Button variant="outline" onClick={() => formatted && copy(formatted, "Comp file copied.")} disabled={!ready}>
+          <Button onClick={() => formatted && copy(formatted, "Comp file copied.")} disabled={!ready}>
             <ClipboardCopy /> Copy
-          </Button>
-          <Button onClick={submit} disabled={!ready}>
-            <Send /> Submit on GitHub
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,8 +1,17 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as prettier from "prettier";
 import { describe, expect, it } from "vitest";
 import { createBoard } from "@/lib/game/board";
-import { boardToCompUnits, compFileName, compSource, EMPTY_GUIDE, formatCompSource } from "./serialize";
+import set18 from "./tierlists/set18";
+import {
+  boardToCompUnits,
+  compFileName,
+  compSource,
+  EMPTY_GUIDE,
+  formatContentSource,
+  tierListSource,
+} from "./serialize";
 
 const board = createBoard();
 board[3] = { apiName: "DA_18_Sett", star: 2, items: ["TFT_Item_WarmogsArmor"] };
@@ -70,10 +79,30 @@ describe("comp serialization", () => {
       set: 18,
       board,
     });
-    const formatted = await formatCompSource(source);
+    const formatted = await formatContentSource(source);
     const file = join(import.meta.dirname, "comps", "set18", "long.ts");
     const config = await prettier.resolveConfig(file);
     expect(await prettier.check(formatted, { ...config, filepath: file })).toBe(true);
     expect(formatted).toContain("summary:\n    ");
+  });
+});
+
+describe("tier list serialization", () => {
+  it("reproduces a tier list file exactly", async () => {
+    const file = readFileSync(join(import.meta.dirname, "tierlists", "set18.ts"), "utf8");
+    expect(await formatContentSource(tierListSource(set18))).toBe(file.replace(/\r\n/g, "\n"));
+  });
+
+  it("orders tiers and drops empty rows and sections", () => {
+    const source = tierListSource({
+      set: 19,
+      items: { B: ["b"], S: ["s"], A: [] },
+      fallback: { champions: {} },
+      augments: {},
+      updatedAt: "2026-10-03",
+    });
+    expect(source).toContain('items: {\n    S: ["s"],\n    B: ["b"],\n  },');
+    expect(source).not.toContain("fallback");
+    expect(source).toContain("augments: {},");
   });
 });
