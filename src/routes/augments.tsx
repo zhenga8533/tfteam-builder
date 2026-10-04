@@ -1,38 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AugmentFilterBar } from "@/components/game/filters";
+import { type AugmentFilters, matchesAugmentFilters, parseAugmentFilters } from "@/components/game/filter-params";
 import { AugmentCard } from "@/components/game/cards";
-import { AugmentTierFilter } from "@/components/game/filters";
-import { isAugmentTier } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
-import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGameData } from "@/lib/data/hooks";
-import type { AugmentTier } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches, numberParam, stringParam } from "@/lib/search";
-
-interface AugmentSearch {
-  q?: string;
-  tier?: AugmentTier;
-}
 
 export const Route = createFileRoute("/augments")({
   head: () => ({ meta: [{ title: "Augments · TFTeam Builder" }] }),
-  validateSearch: (search: Record<string, unknown>): AugmentSearch => {
-    const tier = numberParam(search.tier);
-    return { q: stringParam(search.q), tier: isAugmentTier(tier) ? tier : undefined };
-  },
+  validateSearch: parseAugmentFilters,
   component: AugmentsPage,
 });
 
 function AugmentsPage() {
   const { augments } = useGameData();
   const search = Route.useSearch();
-  const filtered = augments.filter(
-    (augment) => matches(augment.name, search.q) && (search.tier === undefined || augment.tier === search.tier),
-  );
+  const filtered = augments.filter((augment) => matchesAugmentFilters(augment, search));
 
-  const update = useUpdateSearch<AugmentSearch>();
+  const update = useUpdateSearch<AugmentFilters>();
 
   return (
     <>
@@ -41,12 +28,7 @@ function AugmentsPage() {
         description={`${augments.length} silver, gold and prismatic augments available this set.`}
       />
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <SearchInput
-          value={search.q ?? ""}
-          onChange={(q) => update({ q: q || undefined })}
-          placeholder="Search augments"
-        />
-        <AugmentTierFilter value={search.tier} onChange={(tier) => update({ tier })} />
+        <AugmentFilterBar value={search} onChange={update} />
       </div>
 
       {filtered.length === 0 ? (

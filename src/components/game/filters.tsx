@@ -1,7 +1,9 @@
+import { SearchInput } from "@/components/layout/search-input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useGameData } from "@/lib/data/hooks";
 import { traitStyle } from "@/lib/game/traits";
 import type { AugmentTier, ItemKind } from "@/lib/data/schema";
+import type { AugmentFilters, ChampionFilters } from "./filter-params";
 import { cn } from "@/lib/utils";
 import { EntityPicker } from "./entity-picker";
 import { ChampionIcon, TraitIcon } from "./icons";
@@ -135,5 +137,44 @@ export function AugmentTierFilter({
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
+  );
+}
+
+export function ChampionFilterBar({
+  value,
+  onChange,
+}: {
+  value: ChampionFilters;
+  onChange: (changes: ChampionFilters) => void;
+}) {
+  return (
+    <>
+      <SearchInput
+        value={value.q ?? ""}
+        onChange={(q) => onChange({ q: q || undefined })}
+        placeholder="Search champions"
+      />
+      <CostFilter value={value.cost} onChange={(cost) => onChange({ cost })} />
+      <TraitFilter value={value.trait} onChange={(trait) => onChange({ trait })} />
+    </>
+  );
+}
+
+export function AugmentFilterBar({
+  value,
+  onChange,
+}: {
+  value: AugmentFilters;
+  onChange: (changes: AugmentFilters) => void;
+}) {
+  return (
+    <>
+      <SearchInput
+        value={value.q ?? ""}
+        onChange={(q) => onChange({ q: q || undefined })}
+        placeholder="Search augments"
+      />
+      <AugmentTierFilter value={value.tier} onChange={(tier) => onChange({ tier })} />
+    </>
   );
 }

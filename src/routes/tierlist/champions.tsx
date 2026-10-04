@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChampionCard } from "@/components/game/cards";
-import { CostFilter, TraitFilter } from "@/components/game/filters";
+import { ChampionFilterBar } from "@/components/game/filters";
+import { type ChampionFilters, matchesChampionFilters, parseChampionFilters } from "@/components/game/filter-params";
 import { ChampionIcon } from "@/components/game/icons";
-import { SearchInput } from "@/components/layout/search-input";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
 import { parseStatsScope, scopeChoices, type StatsScope } from "@/features/stats/scope";
@@ -10,21 +10,14 @@ import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches, numberParam, stringParam } from "@/lib/search";
 
-interface ChampionTierSearch extends StatsScope {
-  q?: string;
-  cost?: number;
-  trait?: string;
-}
+interface ChampionTierSearch extends StatsScope, ChampionFilters {}
 
 export const Route = createFileRoute("/tierlist/champions")({
   head: () => ({ meta: [{ title: "Champion Tier List · TFTeam Builder" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionTierSearch => ({
     ...parseStatsScope(search),
-    q: stringParam(search.q),
-    cost: numberParam(search.cost),
-    trait: stringParam(search.trait),
+    ...parseChampionFilters(search),
   }),
   component: ChampionTierListPage,
 });
@@ -38,12 +31,7 @@ function ChampionTierListPage() {
   const update = useUpdateSearch<ChampionTierSearch>();
   const visible = (apiName: string) => {
     const champion = championsByApi.get(apiName);
-    return (
-      !!champion &&
-      matches(champion.name, search.q) &&
-      (search.cost === undefined || champion.cost === search.cost) &&
-      (!search.trait || champion.traits.includes(search.trait))
-    );
+    return !!champion && matchesChampionFilters(champion, search);
   };
 
   return (
@@ -57,17 +45,7 @@ function ChampionTierListPage() {
       visible={visible}
       stats={stats}
       {...scopeChoices(search, update)}
-      toolbar={
-        <>
-          <SearchInput
-            value={search.q ?? ""}
-            onChange={(q) => update({ q: q || undefined })}
-            placeholder="Search champions"
-          />
-          <CostFilter value={search.cost} onChange={(cost) => update({ cost })} />
-          <TraitFilter value={search.trait} onChange={(trait) => update({ trait })} />
-        </>
-      }
+      toolbar={<ChampionFilterBar value={search} onChange={update} />}
       renderEntry={(apiName, line) => {
         const champion = championsByApi.get(apiName);
         if (!champion) return null;
