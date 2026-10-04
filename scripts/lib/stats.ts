@@ -117,6 +117,32 @@ export interface BuildResult {
   unknown: { units: Map<string, number>; items: Map<string, number>; traits: Map<string, number> };
 }
 
+/** A rank floor is only worth offering when its game count differs this much from the floors next to it. */
+const MIN_FLOOR_DIFFERENCE = 0.1;
+
+/**
+ * The floors to offer besides the default, given each floor's game count, highest floor first. Walking away from
+ * the default in both directions, a floor is kept only if its count differs by at least 10% from the last kept one,
+ * so near-duplicates (e.g. an Emerald+ that adds a handful of games) aren't offered.
+ */
+export function distinctFloors<T extends { matches: number }>(
+  floors: (T | null | undefined)[],
+  defaultIndex: number,
+): T[] {
+  const differs = (a: number, b: number) => Math.abs(a - b) >= MIN_FLOOR_DIFFERENCE * Math.max(a, b);
+  const kept = new Set<T>();
+  for (const step of [-1, 1]) {
+    let last = floors[defaultIndex]?.matches ?? 0;
+    for (let i = defaultIndex + step; i >= 0 && i < floors.length; i += step) {
+      const floor = floors[i];
+      if (!floor || !differs(floor.matches, last)) continue;
+      kept.add(floor);
+      last = floor.matches;
+    }
+  }
+  return floors.filter((floor): floor is T => !!floor && kept.has(floor));
+}
+
 /**
  * Stats for one chosen rank floor on the patch `buildSetStats` picked, for the tier lists' rank filter.
  * Null when that floor has too few games.

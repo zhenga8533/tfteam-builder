@@ -1,8 +1,10 @@
+import { appendFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { fetchTftPatches, mergeTimelines, patchAt } from "../lib/tft-patches.ts";
 import { isRankedStandard, matchToRows } from "./aggregate.ts";
 import { type Platform, REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./regions.ts";
-import { BudgetExceededError, RiotClient } from "./riot.ts";
+import { renderCrawlReport } from "./crawl-report.ts";
+import { ApiKeyRejectedError, BudgetExceededError, RiotClient } from "./riot.ts";
 import { seedPlayers } from "./seed.ts";
 import { createStatsStore, runStamp } from "./state.ts";
 import { type BoardRow, RANK_BUCKETS, type RankBucket, type TrackedPlayer } from "./types.ts";
@@ -171,10 +173,40 @@ async function main() {
     console.log(`set ${key.replace("/", " patch ")}: ${count} new boards`);
   }
 
-  // One region's outage shouldn't discard the others' progress or block the deploy; only fail
-  // when nothing worked (e.g. an invalid or expired API key).
-  const failure = results.find((result) => result.status === "rejected");
-  if (failure && results.every((result) => result.status === "rejected")) throw failure.reason;
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const summary = renderCrawlReport({
+      minutesUsed: (Date.now() - startedAt) / 60_000,
+      budgetMinutes: Number(args["budget-minutes"]),
+      regions: results.map((result, index) =>
+        result.status === "fulfilled"
+          ? { region: regions[index]!, ...result.value }
+          : {
+              region: regions[index]!,
+              error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+            },
+      ),
+      pools: platforms.map((platform) => ({
+        platform: platform.id,
+        byBucket: Object.fromEntries(
+          Object.entries(Object.groupBy(states.get(platform.id)!.players, (player) => player.bucket)).map(
+            ([bucket, players]) => [bucket, players!.length],
+          ),
+        ),
+      })),
+      newBoards: [...newBoards].map(([key, entries]) => [
+        `set ${key.replace("/", " patch ")}`,
+        entries.reduce((total, [, rows]) => total + rows.length, 0),
+      ]),
+    });
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
+  }
+
+  // The key is shared by every region, so a rejected key fails the run with its own message. Otherwise one region's
+  // outage shouldn't discard the others' progress or block the deploy; only fail when nothing worked.
+  const failures = results.flatMap((result) => (result.status === "rejected" ? [result.reason as unknown] : []));
+  const rejectedKey = failures.find((reason) => reason instanceof ApiKeyRejectedError);
+  if (rejectedKey) throw rejectedKey;
+  if (failures.length && failures.length === results.length) throw failures[0];
 }
 
 main().catch((error: unknown) => {

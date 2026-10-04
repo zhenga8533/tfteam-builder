@@ -26,7 +26,7 @@ import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
 import { type FileSize, renderReport, type SetReport } from "./lib/report.ts";
 import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
-import { buildFloorStats, buildRegionStats, buildSetStats, FLOOR_BUCKETS } from "./lib/stats.ts";
+import { buildFloorStats, buildRegionStats, buildSetStats, distinctFloors, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
@@ -232,20 +232,12 @@ async function publishSavedSummary(store: StatsStore, set: number) {
   console.log(`set ${set}: saved summary from patch ${last.patch} (no stored boards)`);
 }
 
-/**
- * Other rank floors that get their own tier list stats: each with enough games, and with games the floors above it
- * don't already cover.
- */
+/** Other rank floors that get their own tier list stats: those with enough games that differ meaningfully. */
 function floorStatsFor(data: SetData, patches: PatchCounters[], stats: SetStats): SetStats[] {
-  const floors: SetStats[] = [];
-  let previous = -1;
-  for (const floor of RANK_OPTIONS) {
-    const floorLines = floor === stats.rankFloor ? stats : buildFloorStats(data, patches, floor);
-    if (!floorLines || floorLines.matches === previous) continue;
-    previous = floorLines.matches;
-    if (floor !== stats.rankFloor) floors.push(floorLines);
-  }
-  return floors;
+  const floors = RANK_OPTIONS.map((floor) =>
+    floor === stats.rankFloor ? stats : buildFloorStats(data, patches, floor),
+  );
+  return distinctFloors(floors, RANK_OPTIONS.indexOf(stats.rankFloor)).filter((floor) => floor !== stats);
 }
 
 /** Tier list stats for each region with boards, at the same patch and rank floor as `stats`. */
