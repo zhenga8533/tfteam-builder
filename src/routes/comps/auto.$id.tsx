@@ -23,7 +23,7 @@ import { stageRound } from "@/lib/game/rounds";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 
 export const Route = createFileRoute("/comps/auto/$id")({
-  head: () => ({ meta: [{ title: "Comp Stats · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Comp Stats · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } =>
     isRankFloor(search.rank) ? { rank: search.rank } : {},
   component: AutoCompPage,

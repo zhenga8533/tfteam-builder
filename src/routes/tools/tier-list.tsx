@@ -51,7 +51,7 @@ const TITLE: Record<MakerKind, string> = {
 };
 
 export const Route = createFileRoute("/tools/tier-list")({
-  head: () => ({ meta: [{ title: "Tier List Maker · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Tier List Maker · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): TierListMakerSearch => ({
     kind: isMakerKind(search.kind) ? search.kind : undefined,
     list: stringParam(search.list),

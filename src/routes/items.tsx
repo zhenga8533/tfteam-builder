@@ -24,7 +24,7 @@ interface ItemSearch {
 const isItemKind = (value: unknown): value is ItemKind => ITEM_KINDS.includes(value as ItemKind);
 
 export const Route = createFileRoute("/items")({
-  head: () => ({ meta: [{ title: "Items · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Items · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ItemSearch => ({
     q: stringParam(search.q),
     kind: isItemKind(search.kind) ? search.kind : undefined,

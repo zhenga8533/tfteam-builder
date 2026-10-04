@@ -94,7 +94,7 @@ export function Footer() {
           </p>
         </div>
         <p className="mx-auto max-w-7xl px-4 pb-6 text-[11px] text-muted-foreground/70">
-          TFTeam Builder isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone
+          TFTeam isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone
           officially involved in producing or managing Riot Games properties. Riot Games and all associated properties
           are trademarks or registered trademarks of Riot Games, Inc.
         </p>

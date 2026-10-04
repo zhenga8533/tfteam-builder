@@ -43,7 +43,7 @@ const hasFilters = ({ q, champion, trait }: CompFilters) => Boolean(q || champio
 const isPlaystyle = (value: unknown): value is Playstyle => PLAYSTYLES.includes(value as Playstyle);
 
 export const Route = createFileRoute("/tierlist/comps")({
-  head: () => ({ meta: [{ title: "Comp Tier List · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Comp Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): CompSearch => ({
     q: stringParam(search.q),
     champion: stringParam(search.champion),

@@ -45,7 +45,7 @@ const formatChance = (chance: number) =>
 const CHART_GOLD = 100;
 
 export const Route = createFileRoute("/tools/rolling")({
-  head: () => ({ meta: [{ title: "Roll Odds · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Roll Odds · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): RollingSearch => {
     const star = numberParam(search.star);
     return {

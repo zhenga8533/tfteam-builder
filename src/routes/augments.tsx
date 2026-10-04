@@ -9,7 +9,7 @@ import { useGameData } from "@/lib/data/hooks";
 import { useUpdateSearch } from "@/lib/use-update-search";
 
 export const Route = createFileRoute("/augments")({
-  head: () => ({ meta: [{ title: "Augments · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Augments · TFTeam" }] }),
   validateSearch: parseAugmentFilters,
   component: AugmentsPage,
 });

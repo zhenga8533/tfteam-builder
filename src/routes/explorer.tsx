@@ -31,7 +31,7 @@ function parseFilters(value: unknown): ExplorerFilter[] {
 }
 
 export const Route = createFileRoute("/explorer")({
-  head: () => ({ meta: [{ title: "Explorer · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Explorer · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): { filters?: ExplorerFilter[] } => {
     const filters = parseFilters(search.filters);
     return filters.length ? { filters } : {};

@@ -138,7 +138,7 @@ export function buildTimeline(articles: PatchArticle[], midPatches: Map<string, 
 
 async function fetchPage(url: string) {
   const response = await fetch(url, {
-    headers: { "User-Agent": "tfteam-builder (+https://github.com/zhenga8533/tfteam-builder)" },
+    headers: { "User-Agent": "tfteam (+https://github.com/zhenga8533/tfteam)" },
   });
   if (!response.ok) throw new Error(`GET ${url} failed: ${response.status}`);
   return nextData(await response.text());

@@ -23,7 +23,7 @@ interface ChampionSearch extends ChampionFilters {
 }
 
 export const Route = createFileRoute("/champions")({
-  head: () => ({ meta: [{ title: "Champions · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Champions · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionSearch => ({
     ...parseChampionFilters(search),
     sort: search.sort === "avg" ? "avg" : undefined,

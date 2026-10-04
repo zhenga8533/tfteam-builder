@@ -1,9 +1,9 @@
 {
-  "name": "tfteam-builder",
+  "name": "tfteam",
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "homepage": "https://zhenga8533.github.io/tfteam-builder/",
+  "homepage": "https://zhenga8533.github.io/tfteam/",
   "engines": {
     "node": ">=22"
   },

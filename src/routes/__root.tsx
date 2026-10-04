@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { manifestQuery } from "@/lib/data/queries";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({ meta: [{ title: "TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "TFTeam" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(manifestQuery),
   component: RootLayout,
   notFoundComponent: NotFound,

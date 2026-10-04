@@ -1,6 +1,6 @@
 <a id="readme-top"></a>
 
-<h1 align="center">TFTeam Builder</h1>
+<h1 align="center">TFTeam</h1>
 
 <div align="center">
 
@@ -10,14 +10,14 @@
 
 <div>
   <p align="center">
-    TFTeam Builder is a Teamfight Tactics (TFT) companion site: plan boards in a drag-and-drop team builder, follow the comp, item and augment tier lists, and browse every champion, trait, item and augment for the current and previous sets.
+    TFTeam is a Teamfight Tactics (TFT) companion site: plan boards in a drag-and-drop team builder, follow the comp, item and augment tier lists, and browse every champion, trait, item and augment for the current and previous sets.
     <br />
     <br />
-    <a href="https://zhenga8533.github.io/tfteam-builder">View Demo</a>
+    <a href="https://zhenga8533.github.io/tfteam">View Demo</a>
     &middot;
-    <a href="https://github.com/zhenga8533/tfteam-builder/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/zhenga8533/tfteam/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     &middot;
-    <a href="https://github.com/zhenga8533/tfteam-builder/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/zhenga8533/tfteam/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
 
@@ -59,7 +59,7 @@
 
 ## About The Project
 
-TFTeam Builder was created to simplify planning team compositions in Teamfight Tactics. Whether you're strategizing before a match or exploring trait combinations, it makes it easy to visualize a board and see how each unit contributes to your synergies.
+TFTeam was created to simplify planning team compositions in Teamfight Tactics. Whether you're strategizing before a match or exploring trait combinations, it makes it easy to visualize a board and see how each unit contributes to your synergies.
 
 - **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Plan a board per level, mark flex units and alternatives, follow the trait ladder or autofill to your level, see how similar ranked boards place, find the emblem that adds the most traits, and equip a champion's best build in one click. Save teams locally and import/export in-game Team Planner codes.
 - **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters. Tier lists, detected comps and Patch Changes can switch rank (Master+, Diamond+, …), and the champion, item and trait tier lists can narrow to a region. Pages show placement distributions, comps show placement by final level, and the home page highlights comps rising since the last patch. Open any comp in the Team Builder with one click.
@@ -99,8 +99,8 @@ To get a local copy up and running, follow these simple steps.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/zhenga8533/tfteam-builder.git
-cd tfteam-builder
+git clone https://github.com/zhenga8533/tfteam.git
+cd tfteam
 ```
 
 2. Install dependencies:
@@ -115,7 +115,7 @@ npm install
 npm run data
 ```
 
-4. Run the development server and open http://localhost:5173/tfteam-builder/:
+4. Run the development server and open http://localhost:5173/tfteam/:
 
 ```bash
 npm run dev
@@ -246,8 +246,8 @@ Don't forget to give the project a star! Thanks again!
 
 ### Top contributors:
 
-<a href="https://github.com/zhenga8533/tfteam-builder/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=zhenga8533/tfteam-builder" alt="contrib.rocks image" />
+<a href="https://github.com/zhenga8533/tfteam/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=zhenga8533/tfteam" alt="contrib.rocks image" />
 </a>
 
 <!-- LICENSE -->
@@ -264,7 +264,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 Allen Zheng - zhenga8533@gmail.com
 
-Project Link: [https://github.com/zhenga8533/tfteam-builder](https://github.com/zhenga8533/tfteam-builder)
+Project Link: [https://github.com/zhenga8533/tfteam](https://github.com/zhenga8533/tfteam)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -283,16 +283,16 @@ Special thanks to the following resources and individuals who made this project 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/zhenga8533/tfteam-builder.svg?style=for-the-badge
-[contributors-url]: https://github.com/zhenga8533/tfteam-builder/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/zhenga8533/tfteam-builder.svg?style=for-the-badge
-[forks-url]: https://github.com/zhenga8533/tfteam-builder/network/members
-[stars-shield]: https://img.shields.io/github/stars/zhenga8533/tfteam-builder.svg?style=for-the-badge
-[stars-url]: https://github.com/zhenga8533/tfteam-builder/stargazers
-[issues-shield]: https://img.shields.io/github/issues/zhenga8533/tfteam-builder.svg?style=for-the-badge
-[issues-url]: https://github.com/zhenga8533/tfteam-builder/issues
-[license-shield]: https://img.shields.io/github/license/zhenga8533/tfteam-builder.svg?style=for-the-badge
-[license-url]: https://github.com/zhenga8533/tfteam-builder/blob/master/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/zhenga8533/tfteam.svg?style=for-the-badge
+[contributors-url]: https://github.com/zhenga8533/tfteam/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/zhenga8533/tfteam.svg?style=for-the-badge
+[forks-url]: https://github.com/zhenga8533/tfteam/network/members
+[stars-shield]: https://img.shields.io/github/stars/zhenga8533/tfteam.svg?style=for-the-badge
+[stars-url]: https://github.com/zhenga8533/tfteam/stargazers
+[issues-shield]: https://img.shields.io/github/issues/zhenga8533/tfteam.svg?style=for-the-badge
+[issues-url]: https://github.com/zhenga8533/tfteam/issues
+[license-shield]: https://img.shields.io/github/license/zhenga8533/tfteam.svg?style=for-the-badge
+[license-url]: https://github.com/zhenga8533/tfteam/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/zhenga8533
 

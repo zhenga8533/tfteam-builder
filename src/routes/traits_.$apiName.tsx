@@ -18,7 +18,7 @@ import type { Trait, TraitStats } from "@/lib/data/schema";
 import { traitKey, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/traits_/$apiName")({
-  head: () => ({ meta: [{ title: "Trait Stats · TFTeam Builder" }] }),
+  head: () => ({ meta: [{ title: "Trait Stats · TFTeam" }] }),
   component: TraitPage,
 });
 
