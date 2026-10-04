@@ -1,5 +1,5 @@
 import { ClipboardCopy, Download } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { tierListForSet } from "@/content";
-import { formatContentSource, tierListSource } from "@/content/serialize";
+import { tierListSource } from "@/content/serialize";
 import type { TierRows } from "@/content/types";
 import { downloadBlob } from "@/lib/canvas";
+import { useFormattedSource } from "@/lib/use-formatted-source";
 import { useActiveSet } from "@/lib/data/hooks";
 import { type ExportMode, exportTierList, type MakerKind } from "../model";
 import type { MakerSource } from "../use-maker-source";
@@ -48,20 +49,7 @@ export function ExportDialog({ open, onOpenChange, kind, rows, source }: ExportD
   });
   const path = `src/content/tierlists/set${set}.ts`;
   const raw = tierListSource(list);
-  const [formatted, setFormatted] = useState<string | null>(null);
-  useEffect(() => {
-    let current = true;
-    formatContentSource(raw).then(
-      (result) => current && setFormatted(result),
-      (error: unknown) => {
-        console.error("Couldn't format the tier list file.", error);
-        if (current) setFormatted(raw);
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [raw]);
+  const formatted = useFormattedSource(raw, open);
 
   const copy = async (text: string, message: string) => {
     try {
