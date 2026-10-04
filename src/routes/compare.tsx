@@ -12,6 +12,7 @@ import { StatTrend } from "@/features/stats/components/patch-trend";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count, percent } from "@/features/stats/format";
 import { useAutoComps, useGameData, useStats } from "@/lib/data/hooks";
+import { bestHolders } from "@/features/stats/builds";
 import type { StatLine } from "@/lib/data/schema";
 import { traitStyle } from "@/lib/game/traits";
 import { stringParam } from "@/lib/search";
@@ -180,14 +181,7 @@ function ItemCompare({ a, b }: { a?: string; b?: string }) {
   const side = (apiName?: string): Side | undefined => {
     const item = apiName ? itemsByApi.get(apiName) : undefined;
     if (!item) return undefined;
-    const holders = Object.entries(stats?.bestItems ?? {})
-      .flatMap(([unit, lines]) => {
-        const line = lines.find((entry) => entry.item === item.apiName);
-        const champion = championsByApi.get(unit);
-        return line && champion ? [{ champion, score: line.score }] : [];
-      })
-      .sort((x, y) => x.score - y.score)
-      .slice(0, 4);
+    const holders = bestHolders(item.apiName, stats?.bestItems ?? {}, championsByApi, 4);
     return {
       key: item.apiName,
       header: <ItemLink item={item} iconClassName="size-10" className="text-base font-semibold" />,

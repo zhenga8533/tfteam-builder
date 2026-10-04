@@ -49,6 +49,25 @@ export function ChampionStats({ champion, className }: { champion: Champion; cla
   );
 }
 
+/** The ability's name and description, with values for `star` (all star levels when unset). */
+export function ChampionAbility({
+  champion,
+  resolve,
+  star,
+}: {
+  champion: Champion;
+  resolve: ReturnType<typeof createResolver>;
+  star?: number;
+}) {
+  if (!champion.ability.name) return null;
+  return (
+    <div className="space-y-1 border-t pt-3">
+      <p className="text-sm font-semibold">{champion.ability.name}</p>
+      <GameText desc={champion.ability.desc} resolve={resolve} star={star} className="text-xs" />
+    </div>
+  );
+}
+
 export function ChampionTraitList({ champion }: { champion: Champion }) {
   const { traitsByApi } = useGameData();
   return (
@@ -83,12 +102,7 @@ export function ChampionCard({ champion, star }: { champion: Champion; star?: nu
         }
       />
       <ChampionTraitList champion={champion} />
-      {champion.ability.name && (
-        <div className="space-y-1 border-t pt-3">
-          <p className="text-sm font-semibold">{champion.ability.name}</p>
-          <GameText desc={champion.ability.desc} resolve={resolve} star={star} className="text-xs" />
-        </div>
-      )}
+      <ChampionAbility champion={champion} resolve={resolve} star={star} />
       <ChampionStats champion={champion} className="border-t pt-3" />
     </div>
   );
