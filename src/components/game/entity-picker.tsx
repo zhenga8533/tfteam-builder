@@ -46,21 +46,21 @@ export function EntityPicker({
   ];
   const highlighted = Math.min(active, shown.length - 1);
 
+  // Every open starts from a blank search, however the last one closed.
+  const setOpenFresh = (next: boolean) => {
+    setOpen(next);
+    setQuery("");
+    setActive(0);
+  };
+
   const pick = (option: EntityOption | null | undefined) => {
     if (option === undefined) return;
     onChange(option?.key);
-    setOpen(false);
+    setOpenFresh(false);
   };
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        setQuery("");
-        setActive(0);
-      }}
-    >
+    <Popover open={open} onOpenChange={setOpenFresh}>
       <div className={cn("relative flex w-48", className)}>
         <PopoverTrigger asChild>
           <Button

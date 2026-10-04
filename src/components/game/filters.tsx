@@ -1,12 +1,10 @@
 import { SearchInput } from "@/components/layout/search-input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useGameData } from "@/lib/data/hooks";
-import { traitStyle } from "@/lib/game/traits";
 import type { AugmentTier, ItemKind } from "@/lib/data/schema";
 import type { AugmentFilters, ChampionFilters } from "./filter-params";
 import { cn } from "@/lib/utils";
 import { EntityPicker } from "./entity-picker";
-import { ChampionIcon, TraitIcon } from "./icons";
+import { useChampionOptions, useTraitOptions } from "./entity-options";
 import { AUGMENT_TIER_LABEL, AUGMENT_TIER_TEXT, AUGMENT_TIERS, COST_TEXT, COSTS, ITEM_KIND_LABELS } from "./styles";
 
 /** Shop cost toggles; pressing the selected cost again clears the filter. */
@@ -30,14 +28,7 @@ function CostFilter({ value, onChange }: { value?: number; onChange: (cost: numb
 
 /** A searchable picker of the set's champion traits, with their badges; "All traits" for no filter. */
 export function TraitFilter({ value, onChange }: { value?: string; onChange: (trait: string | undefined) => void }) {
-  const { traits } = useGameData();
-  const options = traits
-    .filter((trait) => trait.source === "champion")
-    .map((trait) => ({
-      key: trait.apiName,
-      label: trait.name,
-      icon: <TraitIcon trait={trait} style={traitStyle(trait.breakpoints[0]?.style ?? 1)} />,
-    }));
+  const options = useTraitOptions();
   return (
     <EntityPicker
       options={options}
@@ -64,15 +55,7 @@ export function ChampionFilter({
   placeholder?: string;
   className?: string;
 }) {
-  const { champions } = useGameData();
-  const options = champions
-    .filter((champion) => !only || only.includes(champion.apiName))
-    .map((champion) => ({
-      key: champion.apiName,
-      label: champion.name,
-      icon: <ChampionIcon champion={champion} />,
-      hint: `${champion.cost}`,
-    }));
+  const options = useChampionOptions(only);
   return (
     <EntityPicker
       options={options}
