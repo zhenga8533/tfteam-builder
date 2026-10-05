@@ -27,7 +27,7 @@ export interface ExplorerResult {
   items: Record<string, ExplorerRow[]>;
 }
 
-/** Below this many games a breakdown row is hidden; the sample is too small to say anything. */
+/** Below this many games a breakdown row is hidden; there are too few boards to say anything. */
 const MIN_ROW_GAMES = 30;
 
 interface Compiled {
@@ -36,7 +36,7 @@ interface Compiled {
   minLevel: number;
 }
 
-/** Resolves names to dictionary indices; returns null if a filter names something absent from the sample. */
+/** Resolves names to dictionary indices; returns null if a filter names something absent from the file. */
 function compile(data: ExplorerData, filters: ExplorerFilter[]): Compiled | null {
   const index = (names: string[]) => new Map(names.map((name, i) => [name, i]));
   const units = index(data.units);
@@ -109,7 +109,7 @@ export function runQuery(
   const filtered = new Set(compiled.units.map((filter) => filter.unit));
   const matchedRows: number[] = [];
 
-  // Shares are of the boards at this floor, not the whole sample (which can hold lower floors too).
+  // Shares are of the boards at this floor, not the whole file (which can hold lower floors too).
   let atFloor = 0;
   for (let board = 0; board < data.boards; board++) {
     if (data.rank[board]! > floor) continue;
@@ -226,8 +226,9 @@ export interface SimilarBoards {
 const MIN_SHARED = 3;
 
 /**
- * Stats for sample boards that share as many of `units` as possible: the largest overlap with at least
- * `minGames` boards. Null when no overlap of `MIN_SHARED` or more units has enough boards.
+ * Stats for boards that share as many of `units` as possible: the largest overlap with at least `minGames` boards.
+ * Null when no overlap of `MIN_SHARED` or more units has enough boards. Given a champion's file, every board has
+ * that champion.
  */
 export function similarBoards(
   data: ExplorerData,
@@ -257,7 +258,10 @@ export function similarBoards(
   const total = emptyCounter();
   for (let shared = wanted.size; shared >= MIN_SHARED; shared--) {
     addCounter(total, byOverlap[shared]!);
-    if (total[0] >= minGames) return { shared, total: wanted.size, line: statLine(total, atFloor) };
+    if (total[0] >= minGames) {
+      const boards = data.population ? boardsAtFloor(data.population, floor) : atFloor;
+      return { shared, total: wanted.size, line: statLine(total, boards) };
+    }
   }
   return null;
 }

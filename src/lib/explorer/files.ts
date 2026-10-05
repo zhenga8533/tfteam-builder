@@ -2,14 +2,12 @@ import type { ExplorerFilter } from "./engine";
 
 /**
  * The Explorer's files in a set's stats folder. Every query reads all of the patch's boards it's about: a champion's
- * or trait's file holds every board with them, and the totals answer queries without either exactly. The sample is
- * only a rough comparison for the builder's board.
+ * or trait's file holds every board with them, and the totals answer queries without either exactly.
  */
 export const EXPLORER_FILES = {
   champion: (apiName: string) => `explorer/champions/${apiName}.bin.gz`,
   trait: (apiName: string) => `explorer/traits/${apiName}.bin.gz`,
   totals: "explorer/totals.json",
-  sample: "explorer/sample.bin.gz",
 };
 
 /** What a query reads: its first champion's file, else its first trait's, else the totals. */
