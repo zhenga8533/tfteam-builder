@@ -109,7 +109,7 @@ function ExplorerPage() {
           </div>
           {result ? (
             <div className={cn("transition-opacity", pending && "opacity-60")}>
-              <ExplorerResults result={result} filters={filters} onChange={setFilters} />
+              <ExplorerResults result={result} filters={filters} onChange={setFilters} trend={floorStats?.trend} />
             </div>
           ) : (
             <EmptyState>No boards match these filters.</EmptyState>
