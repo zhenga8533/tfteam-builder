@@ -163,14 +163,14 @@ export function StatsMeta({
           </TooltipTrigger>
           <TooltipContent className="max-w-72">
             Ranked games from {stats.region ? REGION_LABEL[stats.region].servers : "every server"}, collected every few
-            hours from Riot's match API. Placements are averaged per board; entries with fewer than {LOW_SAMPLE_GAMES}{" "}
-            games are marked low sample.
+            hours from Riot's match API. Each player in a match counts as one game; entries with fewer than{" "}
+            {LOW_SAMPLE_GAMES} games are marked low sample.
           </TooltipContent>
         </Tooltip>
         <span>
-          Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
-          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked matches (
-          {count(stats.matches * BOARDS_PER_MATCH)} boards)
+          Based on <span className="font-medium text-foreground">{count(stats.matches * BOARDS_PER_MATCH)}</span>{" "}
+          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games (
+          {count(stats.matches)} matches)
           <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch {stats.patch} ·{" "}
           <time
             dateTime={stats.updatedAt}
