@@ -114,7 +114,7 @@ function AutoCompPage() {
 
 function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
   const { set } = useActiveSet();
-  const units = useAutoCompUnits(comp);
+  const { units, guide } = useAutoCompUnits(comp);
   const openInBuilder = useOpenInBuilder();
 
   return (
@@ -155,7 +155,17 @@ function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
         <div className="space-y-6">
           <CompBoard units={units} className="max-w-2xl" />
           <p className="text-xs text-muted-foreground">
-            Match data doesn't include positions; units are placed by range, with carries in the back corners.
+            {guide ? (
+              <>
+                Positioned like the{" "}
+                <Link to="/comps/$slug" params={{ slug: guide.slug }} className="underline hover:text-foreground">
+                  {guide.name}
+                </Link>{" "}
+                guide; units it doesn&apos;t include are placed by attack range.
+              </>
+            ) : (
+              "Match data doesn't include positions, so units are placed by attack range: melee in front, mid-range behind them, ranged at the back, with ranged carries in the corners."
+            )}
           </p>
           <Section title="Core units">
             <UnitFrequencies units={comp.units} />

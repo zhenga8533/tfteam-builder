@@ -167,7 +167,7 @@ export const CompCard = memo(function CompCard({ comp, preview = false }: { comp
 export const AutoCompCard = memo(function AutoCompCard({ comp, rank }: { comp: AutoComp; rank?: RankFloor }) {
   const trendPatch = useCompTrendPatch(rank);
   // Stable across renders, so the card's trait calculation (memoized on the units) isn't redone each time.
-  const units = useAutoCompUnits(comp);
+  const { units } = useAutoCompUnits(comp);
   return (
     <CompCardView
       title={comp.name}
