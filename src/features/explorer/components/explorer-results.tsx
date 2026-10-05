@@ -20,7 +20,7 @@ function AddButton({ label, onClick, children }: { label: string; onClick: () =>
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full items-center gap-2 text-left"
+      className="group flex w-full min-w-0 items-center gap-2 text-left"
       aria-label={label}
     >
       <Plus className="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
