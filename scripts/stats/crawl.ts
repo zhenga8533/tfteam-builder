@@ -21,7 +21,9 @@ const { values: args } = parseArgs({
     "max-matches": { type: "string" },
     "min-tier": { type: "string", default: "gold" },
     "reseed-hours": { type: "string", default: "24" },
-    "lookback-days": { type: "string", default: "2" },
+    // How far back a player's first crawl reaches. Kept short, so newly added players add about as many games per run
+    // as returning ones (whose games since the last run are fetched) and the boards follow the pool's rank shares.
+    "lookback-hours": { type: "string", default: "6" },
     "dry-run": { type: "boolean", default: false },
   },
 });
@@ -92,7 +94,7 @@ async function main() {
         const ids = await client.matchIds(
           region,
           player.puuid,
-          player.lastCrawledAt ?? nowSeconds - Number(args["lookback-days"]) * DAY,
+          player.lastCrawledAt ?? nowSeconds - Number(args["lookback-hours"]) * HOUR,
         );
         for (const id of ids ?? []) {
           const platformSeen = seen.get(id.split("_")[0]!.toLowerCase());
