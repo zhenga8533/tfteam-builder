@@ -65,7 +65,7 @@ export interface ExplorerBoard {
   placement: number;
   level: number;
   /** The rank tier the board counts toward, as an index into `RANK_BUCKETS` (0 = Master+); higher is lower. */
-  rank?: number;
+  rank: number;
   units: { apiName: string; star: number; items: string[] }[];
   traits: { apiName: string; minUnits: number }[];
 }
@@ -106,7 +106,7 @@ export function encodeExplorer(boards: ExplorerBoard[], defaultRank = 0, populat
   boards.forEach((board, b) => {
     data.placement[b] = board.placement;
     data.level[b] = board.level;
-    data.rank[b] = board.rank ?? 0;
+    data.rank[b] = board.rank;
     data.unitStart[b] = unitRow;
     data.traitStart[b] = traitRow;
     for (const unit of board.units) {

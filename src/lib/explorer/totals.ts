@@ -29,7 +29,7 @@ export class TotalsAccumulator {
   private readonly groups = new Map<string, { rank: number; level: number; group: Group }>();
 
   add(board: ExplorerBoard) {
-    const rank = board.rank ?? 0;
+    const { rank } = board;
     const key = `${rank}/${board.level}`;
     let entry = this.groups.get(key);
     if (!entry) {

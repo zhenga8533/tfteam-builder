@@ -13,8 +13,8 @@ const STATS_DIR = join(import.meta.dirname, "..", "public", "data", "stats");
 
 async function main() {
   const { R2_PUBLIC_BUCKET, EXPLORER_PUBLIC_URL, GITHUB_RUN_ID, GITHUB_ENV, GITHUB_STEP_SUMMARY } = process.env;
-  const r2 = r2ConfigFromEnv();
-  if (!r2 || !R2_PUBLIC_BUCKET || !EXPLORER_PUBLIC_URL || !GITHUB_RUN_ID) {
+  const r2 = r2ConfigFromEnv(R2_PUBLIC_BUCKET);
+  if (!r2 || !EXPLORER_PUBLIC_URL || !GITHUB_RUN_ID) {
     console.log("No public R2 bucket configured; the Explorer's files stay in the site.");
     return;
   }
@@ -35,7 +35,7 @@ async function main() {
     return;
   }
 
-  const bucket = new R2BlobStore({ ...r2, bucket: R2_PUBLIC_BUCKET });
+  const bucket = new R2BlobStore(r2);
   let bytes = 0;
   for (const file of files) {
     const path = relative(STATS_DIR, file).split(sep).join("/");

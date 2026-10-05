@@ -18,7 +18,7 @@ const DIVISION_TIER: Partial<Record<RankBucket, string>> = {
  * the apex ladder filling big platforms' pools. Space a bucket can't fill (e.g. a thin Master+ early in a set) passes
  * down; buckets without a share (Platinum, Gold) only get what's left, as an early-set fallback.
  */
-export const TIER_SHARES: Partial<Record<RankBucket, number>> = { master_plus: 0.4, diamond: 0.35, emerald: 0.25 };
+const TIER_SHARES: Partial<Record<RankBucket, number>> = { master_plus: 0.4, diamond: 0.35, emerald: 0.25 };
 
 /** Active players in a bucket, a league page at a time, from its top down. */
 async function* ladder(client: RiotClient, platform: string, bucket: RankBucket): AsyncGenerator<string[]> {

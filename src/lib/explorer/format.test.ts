@@ -5,13 +5,14 @@ const boards: ExplorerBoard[] = [
   {
     placement: 1,
     level: 9,
+    rank: 0,
     units: [
       { apiName: "Ahri", star: 2, items: ["JG", "BB", "Rab"] },
       { apiName: "Sett", star: 1, items: [] },
     ],
     traits: [{ apiName: "Blossom", minUnits: 5 }],
   },
-  { placement: 8, level: 7, units: [{ apiName: "Sett", star: 3, items: ["BB"] }], traits: [] },
+  { placement: 8, level: 7, rank: 1, units: [{ apiName: "Sett", star: 3, items: ["BB"] }], traits: [] },
 ];
 
 describe("explorer format", () => {
