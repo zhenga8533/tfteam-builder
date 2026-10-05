@@ -50,10 +50,10 @@ export class R2BlobStore implements BlobStore {
   }
 
   /** Signs and sends a request, retrying network errors and 5xx responses with backoff. */
-  private async request(method: string, path: string, body?: Uint8Array | string) {
+  private async request(method: string, path: string, body?: Uint8Array | string, headers?: Record<string, string>) {
     for (let attempt = 1; ; attempt++) {
       try {
-        const response = await this.fetch(await this.signer.sign(`${this.base}${path}`, { method, body }));
+        const response = await this.fetch(await this.signer.sign(`${this.base}${path}`, { method, body, headers }));
         if (response.ok || response.status === 404) return response;
         if (response.status < 500 || attempt === MAX_ATTEMPTS) {
           throw new Error(`R2 ${method} ${path} failed: ${response.status} ${await response.text()}`);
@@ -70,8 +70,9 @@ export class R2BlobStore implements BlobStore {
     return response.status === 404 ? null : new Uint8Array(await response.arrayBuffer());
   }
 
-  async put(key: string, data: Uint8Array | string) {
-    await this.request("PUT", `/${encodeKey(key)}`, data);
+  /** `headers` are stored with the object and served with it, e.g. `Content-Type` for a public bucket. */
+  async put(key: string, data: Uint8Array | string, headers?: Record<string, string>) {
+    await this.request("PUT", `/${encodeKey(key)}`, data, headers);
   }
 
   async list(prefix: string) {

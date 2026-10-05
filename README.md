@@ -209,6 +209,18 @@ To enable crawling:
    `CRAWL_ENABLED` set to `true`.
 4. Start the **Crawl** workflow manually, or wait for the next scheduled run.
 
+To serve the Explorer's files from R2 instead of the site (they grow with the data; GitHub Pages sites are limited to
+1 GB):
+
+1. Create a second R2 bucket for public files only (the stats bucket holds crawler state and must stay private), and
+   turn on its public **r2.dev** URL (or connect a custom domain).
+2. Add a CORS policy to it allowing `GET` from the site's origin (and `http://localhost:5173` for local testing).
+3. Give the R2 API token **Object Read & Write** on this bucket too.
+4. Add repository variables `R2_PUBLIC_BUCKET` (the bucket name) and `EXPLORER_PUBLIC_URL` (its public URL).
+
+Each deploy then uploads the Explorer's files to a folder named after its workflow run and builds the site to read
+from there; folders from older deploys are deleted. Without these variables, the files are bundled into the site.
+
 A development key works for test crawls, but it expires 24 hours after it's generated: crawls then fail with
 "Riot rejected the API key" until `RIOT_API_KEY` is updated (`gh secret set RIOT_API_KEY` prompts for it). Riot meant
 development keys for development, so use a personal or production key for the live site's stats.
