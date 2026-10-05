@@ -73,7 +73,7 @@ function LiveStats({ units }: { units: CompUnit[] }) {
       className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border bg-card px-3 py-2 text-sm hover:border-primary/50"
     >
       <span className="font-medium">Live stats</span>
-      <StatSummary line={match} play="of boards" />
+      <StatSummary line={match} play="of games" />
       <span className="text-xs text-muted-foreground">as &ldquo;{match.name}&rdquo; →</span>
     </Link>
   );

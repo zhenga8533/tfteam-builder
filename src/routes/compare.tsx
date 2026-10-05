@@ -8,11 +8,13 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AutoCompCard } from "@/features/comps/components/comp-card";
 import { NoStats } from "@/features/stats/components/no-stats";
-import { StatTrend } from "@/features/stats/components/patch-trend";
+import { StatTrend, TrendBadge } from "@/features/stats/components/patch-trend";
+import { LOW_SAMPLE_HINT } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count, percent, share } from "@/features/stats/format";
 import { parseRank } from "@/features/stats/scope";
-import { useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
+import { useAutoComps, useCompTrendPatch, useGameData, useTierStats } from "@/lib/data/hooks";
+import { isLowSample } from "@/lib/game/stat-line";
 import { findComp } from "@/lib/game/comp-signature";
 import type { RankFloor } from "@/lib/data/schema";
 import { bestHolders } from "@/features/stats/builds";
@@ -51,56 +53,60 @@ interface Side {
   key: string;
   header: ReactNode;
   line?: StatLine;
+  /** Change since the previous patch, for the stats shown. */
+  trend: ReactNode;
   /** Extra rows below the stats, e.g. cost and traits for a champion. */
   details: { label: string; value: ReactNode }[];
 }
 
-/** Metric rows; `better` says which direction wins, so the stronger side is highlighted (play rate and games just inform). */
+/**
+ * Metric rows; `better` says which direction wins, so the stronger side is highlighted (play rate and games just
+ * inform). A low-sample side never wins, and its average is marked as such.
+ */
 const METRICS: {
   label: string;
   value: (line: StatLine) => number;
   format: (value: number) => string;
   better?: "low" | "high";
+  /** Muted, with a hint, for a low-sample side. */
+  sampled?: boolean;
 }[] = [
-  { label: "Avg place", value: (line) => line.avg, format: (value) => value.toFixed(2), better: "low" },
+  { label: "Avg place", value: (line) => line.avg, format: (value) => value.toFixed(2), better: "low", sampled: true },
   { label: "Top 4", value: (line) => line.top4, format: percent, better: "high" },
   { label: "Win rate", value: (line) => line.win, format: percent, better: "high" },
   { label: "Play rate", value: (line) => line.play, format: share },
   { label: "Games", value: (line) => line.games, format: count },
 ];
 
-function CompareTable({
-  sides,
-  trendKind,
-}: {
-  sides: [Side | undefined, Side | undefined];
-  trendKind?: "units" | "items";
-}) {
+function CompareTable({ sides }: { sides: [Side | undefined, Side | undefined] }) {
   const [a, b] = sides;
   const winner = (value: (line: StatLine) => number, better: "low" | "high"): 0 | 1 | null => {
-    if (!a?.line || !b?.line) return null;
+    if (!a?.line || !b?.line || isLowSample(a.line) || isLowSample(b.line)) return null;
     const left = value(a.line);
     const right = value(b.line);
     if (left === right) return null;
     return (better === "low" ? left < right : left > right) ? 0 : 1;
   };
   const rows: { label: string; cells: [ReactNode, ReactNode]; best?: 0 | 1 | null }[] = [
-    ...METRICS.map(({ label, value, format, better }) => ({
+    ...METRICS.map(({ label, value, format, better, sampled }) => ({
       label,
-      cells: sides.map((side) => (side?.line ? format(value(side.line)) : "–")) as [ReactNode, ReactNode],
+      cells: sides.map((side) => {
+        if (!side?.line) return "–";
+        const text = format(value(side.line));
+        return sampled && isLowSample(side.line) ? (
+          <span className="text-muted-foreground" title={LOW_SAMPLE_HINT}>
+            {text} · low sample
+          </span>
+        ) : (
+          text
+        );
+      }) as [ReactNode, ReactNode],
       best: better ? winner(value, better) : null,
     })),
-    ...(trendKind
-      ? [
-          {
-            label: "Since last patch",
-            cells: sides.map((side) => (side ? <StatTrend kind={trendKind} entry={side.key} /> : null)) as [
-              ReactNode,
-              ReactNode,
-            ],
-          },
-        ]
-      : []),
+    {
+      label: "Since last patch",
+      cells: sides.map((side) => side?.trend ?? null) as [ReactNode, ReactNode],
+    },
     ...(a?.details ?? b?.details ?? []).map((detail, index) => ({
       label: detail.label,
       cells: sides.map((side) => side?.details[index]?.value ?? "–") as [ReactNode, ReactNode],
@@ -153,6 +159,7 @@ function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFl
       key: champion.apiName,
       header: <ChampionLink champion={champion} iconClassName="size-10" className={HEADER_CLASS} />,
       line: stats?.units[champion.apiName],
+      trend: <StatTrend trend={stats?.trend} kind="units" entry={champion.apiName} />,
       details: [
         { label: "Cost", value: <span className={COST_TEXT[champion.cost]}>{champion.cost}</span> },
         { label: "Role", value: champion.role ?? "–" },
@@ -185,7 +192,7 @@ function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFl
       ],
     };
   };
-  return <CompareTable sides={[side(a), side(b)]} trendKind="units" />;
+  return <CompareTable sides={[side(a), side(b)]} />;
 }
 
 function ItemCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
@@ -199,6 +206,7 @@ function ItemCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
       key: item.apiName,
       header: <ItemLink item={item} iconClassName="size-10" className={HEADER_CLASS} />,
       line: stats?.items[item.apiName],
+      trend: <StatTrend trend={stats?.trend} kind="items" entry={item.apiName} />,
       details: [
         { label: "Type", value: ITEM_KIND_LABELS[item.kind] },
         {
@@ -216,11 +224,12 @@ function ItemCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
       ],
     };
   };
-  return <CompareTable sides={[side(a), side(b)]} trendKind="items" />;
+  return <CompareTable sides={[side(a), side(b)]} />;
 }
 
 function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
   const comps = useAutoComps(rank) ?? [];
+  const trendPatch = useCompTrendPatch(rank);
   const { traitsByApi } = useGameData();
   const side = (id?: string): Side | undefined => {
     const comp = id ? findComp(comps, id) : undefined;
@@ -229,6 +238,7 @@ function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
       key: comp.id,
       header: <span className="text-base font-semibold">{comp.name}</span>,
       line: comp,
+      trend: <TrendBadge delta={comp.trend} patch={trendPatch} />,
       details: [
         { label: "Tier", value: comp.tier ?? "–" },
         { label: "Level", value: comp.level },
@@ -264,7 +274,7 @@ function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
       {chosen.length > 0 && (
         <div className="grid gap-2 xl:grid-cols-2">
           {chosen.map((comp) => (
-            <AutoCompCard key={comp.id} comp={comp} />
+            <AutoCompCard key={comp.id} comp={comp} rank={rank} />
           ))}
         </div>
       )}

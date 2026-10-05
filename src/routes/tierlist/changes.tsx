@@ -32,7 +32,7 @@ interface Mover {
   label: ReactNode;
 }
 
-function MoverList({ title, movers }: { title: string; movers: Mover[] }) {
+function MoverList({ title, movers, patch }: { title: string; movers: Mover[]; patch: string }) {
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{title}</p>
@@ -44,7 +44,7 @@ function MoverList({ title, movers }: { title: string; movers: Mover[] }) {
             <li key={mover.key} className="flex items-center gap-2 text-sm">
               <span className="min-w-0 flex-1">{mover.label}</span>
               <AvgPlacement line={mover.line} className="w-10 text-right" />
-              <TrendBadge delta={mover.delta} className="w-12 justify-end" />
+              <TrendBadge delta={mover.delta} patch={patch} className="w-12 justify-end" />
             </li>
           ))}
         </ul>
@@ -54,14 +54,16 @@ function MoverList({ title, movers }: { title: string; movers: Mover[] }) {
 }
 
 /** The biggest improvements and drops in one category, by change in average placement. */
-function Movers({ title, movers }: { title: string; movers: Mover[] }) {
+/** `patch`: the earlier patch the changes are measured from. */
+function Movers({ title, movers, patch }: { title: string; movers: Mover[]; patch: string }) {
   const sorted = movers.filter((mover) => Math.abs(mover.delta) >= MIN_TREND).toSorted((a, b) => a.delta - b.delta);
   return (
     <Section title={title}>
       <div className="grid gap-6 sm:grid-cols-2">
-        <MoverList title="Better" movers={sorted.filter((mover) => mover.delta < 0).slice(0, SHOWN)} />
+        <MoverList title="Better" patch={patch} movers={sorted.filter((mover) => mover.delta < 0).slice(0, SHOWN)} />
         <MoverList
           title="Worse"
+          patch={patch}
           movers={sorted
             .filter((mover) => mover.delta > 0)
             .reverse()
@@ -115,10 +117,10 @@ function Changes({ trend, stats }: { trend: PatchTrend; stats: SetStats }) {
   const { units, items, traits } = useMovers(trend, stats);
   return (
     <div className="space-y-6">
-      <Movers title="Champions" movers={units} />
+      <Movers title="Champions" movers={units} patch={trend.patch} />
       <div className="grid gap-6 xl:grid-cols-2">
-        <Movers title="Items" movers={items} />
-        <Movers title="Traits" movers={traits} />
+        <Movers title="Items" movers={items} patch={trend.patch} />
+        <Movers title="Traits" movers={traits} patch={trend.patch} />
       </div>
     </div>
   );

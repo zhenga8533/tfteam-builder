@@ -6,7 +6,7 @@ import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { StatTable } from "@/features/stats/components/stat-table";
-import { count, percent } from "@/features/stats/format";
+import { count, percent, share } from "@/features/stats/format";
 import { TrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { useGameData } from "@/lib/data/hooks";
@@ -204,7 +204,7 @@ export function ExplorerResults({ result, filters, onChange, trend }: ExplorerRe
           ],
           ["Top 4", percent(summary.top4)],
           ["Win rate", percent(summary.win)],
-          ["Of boards", percent(summary.play)],
+          ["Of boards", share(summary.play)],
         ].map(([label, value]) => (
           <div key={String(label)}>
             <dt className="text-xs text-muted-foreground">{label}</dt>

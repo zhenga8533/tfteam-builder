@@ -94,9 +94,9 @@ function TraitTierListPage() {
             icon={<TraitIcon trait={trait} style={traitStyle(breakpoint.style)} decorative className="size-12" />}
             label={`${breakpoint.minUnits} ${trait.name}`}
             line={line}
-            play="of boards"
+            play="of games"
             link={{ to: "/traits/$apiName", params: { apiName: trait.apiName } }}
-            trend={<StatTrend kind="traits" entry={key} />}
+            trend={<StatTrend trend={stats?.trend} kind="traits" entry={key} />}
             card={<TraitCard trait={trait} count={breakpoint.minUnits} />}
           />
         );

@@ -49,11 +49,11 @@ function LittleLegendsPage() {
         title="Little Legends"
         description="The Little Legends and Chibis players bring to ranked games, most popular first."
       />
+      {stats && <StatsMeta stats={stats} />}
       {stats?.status !== "ready" || !legends ? (
         <NoStats subject="Little Legends" />
       ) : (
         <>
-          <StatsMeta stats={stats} />
           <div className="mb-6 flex flex-wrap items-center gap-2">
             <SearchInput
               value={search.q ?? ""}
