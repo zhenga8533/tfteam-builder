@@ -243,7 +243,10 @@ export const autoCompSchema = statLineSchema.extend({
   id: z.string(),
   /** `carries|coreTraits`, as produced by `compSignature`; used to match hand-written guides. */
   signature: z.string(),
-  /** Signatures of variants merged into this comp (same carries and main trait, a different second trait). */
+  /**
+   * Signatures of variants merged into this comp: the same carries and main trait with a different second trait,
+   * or the same board with its items on other carries (see `progression`).
+   */
   variants: z.array(z.string()),
   name: z.string(),
   carries: z.array(z.string()),
@@ -263,6 +266,11 @@ export const autoCompSchema = statLineSchema.extend({
   knockoutRound: z.number().int().optional(),
   /** Placement by the player's final level, for levels with enough games; `play` is the share of the comp's games. */
   byLevel: z.array(statLineSchema.extend({ level: z.number().int() })),
+  /**
+   * Placement by who held the items at the end, when that varies: boards that go out early still have them on
+   * earlier carries. Worst average first; `play` is the share of the comp's games. Empty when the carries don't vary.
+   */
+  progression: z.array(statLineSchema.extend({ carries: z.array(z.string()) })).default([]),
 });
 export type AutoComp = z.infer<typeof autoCompSchema>;
 

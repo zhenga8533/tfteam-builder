@@ -4,6 +4,7 @@ import type { CompUnit } from "@/content/types";
 import { useGameData } from "@/lib/data/hooks";
 import { cn } from "@/lib/utils";
 import { useCompTraits } from "../use-comp-traits";
+import { CarryBadge } from "./carry-badge";
 
 export function CompTraits({ units }: { units: CompUnit[] }) {
   const traits = useCompTraits(units);
@@ -34,7 +35,8 @@ export function Carries({ units }: { units: CompUnit[] }) {
             <ChampionLink
               champion={champion}
               className="flex-1 text-sm font-medium"
-              iconClassName={cn("size-10", unit.carry && "ring-primary")}
+              iconClassName="size-10"
+              badge={unit.carry && <CarryBadge />}
             />
             <span className="flex gap-1">
               {(unit.items ?? []).map((apiName, index) => {

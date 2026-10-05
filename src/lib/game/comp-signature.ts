@@ -59,3 +59,8 @@ export function compId(signature: string): string {
   }
   return (hash >>> 0).toString(36);
 }
+
+/** The comp with this ID, or the one a comp with this ID has since merged into, so older links keep working. */
+export function findComp<T extends { id: string; variants: string[] }>(comps: T[], id: string): T | undefined {
+  return comps.find((comp) => comp.id === id) ?? comps.find((comp) => comp.variants.some((v) => compId(v) === id));
+}

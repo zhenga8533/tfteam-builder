@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { GuideDetails } from "@/content/serialize";
 import { guideFromComp } from "@/features/comps/guide-from-comp";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
+import { findComp } from "@/lib/game/comp-signature";
 import { autoCompsQuery } from "@/lib/data/queries";
 import { cn } from "@/lib/utils";
 import { imageFileName } from "@/lib/canvas";
@@ -68,7 +69,7 @@ function useGuideFromSearch(): GuideStart | undefined {
   const { guide } = useSearch({ from: "/builder" });
   const { set } = useBuilder();
   const comps = useQuery({ ...autoCompsQuery(patch, set), enabled: Boolean(guide) }).data?.comps;
-  const comp = guide ? comps?.find((entry) => entry.id === guide) : undefined;
+  const comp = guide && comps ? findComp(comps, guide) : undefined;
   return comp && { key: comp.id, initial: guideFromComp(comp) };
 }
 

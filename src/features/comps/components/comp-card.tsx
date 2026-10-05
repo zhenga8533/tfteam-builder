@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { autoCompUnits } from "../auto-place";
 import { DIFFICULTY_TEXT } from "../styles";
 import { useCompTraits } from "../use-comp-traits";
+import { CarryBadge } from "./carry-badge";
 import { TrendBadge } from "./tier-badge";
 
 const MAX_TRAITS = 8;
@@ -105,7 +106,8 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
               <ChampionLink
                 champion={champion}
                 label={null}
-                iconClassName={unit.carry ? "size-12 ring-3 ring-primary" : "size-10"}
+                iconClassName={unit.carry ? "size-12" : "size-10"}
+                badge={unit.carry && <CarryBadge />}
               />
               {unit.items && unit.items.length > 0 && (
                 // Too small to be good touch targets, so they're images with hover cards rather than links; the
