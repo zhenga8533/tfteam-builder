@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { isStale, RANK_FLOORS, RANK_OPTIONS, type Region } from "@/lib/data/constants";
+import { BOARDS_PER_MATCH, isStale, RANK_FLOORS, RANK_OPTIONS, type Region } from "@/lib/data/constants";
 import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
@@ -131,7 +131,7 @@ export function StatsMeta({
     return (
       <p className="mb-6 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
         <Activity className="size-4 shrink-0 text-primary" />
-        Collecting match data for Set {stats.set}: {count(stats.matches)} ranked games so far. Stats appear once there
+        Collecting match data for Set {stats.set}: {count(stats.matches)} ranked matches so far. Stats appear once there
         are enough games.
       </p>
     );
@@ -169,7 +169,8 @@ export function StatsMeta({
         </Tooltip>
         <span>
           Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
-          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games
+          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked matches (
+          {count(stats.matches * BOARDS_PER_MATCH)} boards)
           <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch {stats.patch} ·{" "}
           <time
             dateTime={stats.updatedAt}

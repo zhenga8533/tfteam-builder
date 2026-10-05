@@ -14,7 +14,7 @@ const byScore = (a: StatLine, b: StatLine) => a.score - b.score;
 
 /** Accumulates the item and trait detail pages from boards in the selected sample. */
 export class DatabaseAccumulator {
-  /** Per unit instance holding the item. */
+  /** Per board building the item, and per board building both items on one unit. */
   private readonly items = new Map<string, Counter>();
   private readonly pairs = new Map<string, Counter>();
   /** Per board with the trait active (any breakpoint). */
@@ -23,13 +23,12 @@ export class DatabaseAccumulator {
 
   add(board: ResolvedBoard) {
     const { placement } = board;
+    const pairs = new Set<string>();
     for (const { items } of board.units) {
-      const held = [...new Set(items)];
-      for (const item of held) {
-        bump(this.items, item, placement);
-        for (const other of held) if (other !== item) bump(this.pairs, `${item}|${other}`, placement);
-      }
+      for (const item of items) for (const other of items) if (other !== item) pairs.add(`${item}|${other}`);
     }
+    for (const item of new Set(board.units.flatMap(({ items }) => items))) bump(this.items, item, placement);
+    for (const pair of pairs) bump(this.pairs, pair, placement);
     const units = [...new Set(board.units.map(({ apiName }) => apiName))];
     for (const trait of new Set(board.traits.map(({ apiName }) => apiName))) {
       bump(this.traits, trait, placement);

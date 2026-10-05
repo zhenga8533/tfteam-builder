@@ -44,7 +44,7 @@ function Pairs({ stats }: { stats: ItemStats }) {
   return (
     <StatTable
       deltaBaseline="this item's average placement"
-      playBaseline="the times this item was built"
+      playBaseline="boards building this item"
       search="Search items"
       rows={stats.pairs.flatMap((pair) => {
         const item = itemsByApi.get(pair.item);
@@ -94,7 +94,7 @@ function ItemHeader({ item }: { item: Item }) {
         </p>
         {line && (
           <span className="flex items-center gap-2">
-            <StatSummary line={line} />
+            <StatSummary line={line} play="of boards" />
             <StatTrend kind="items" entry={item.apiName} />
           </span>
         )}
