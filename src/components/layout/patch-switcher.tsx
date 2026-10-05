@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PATCHES } from "@/lib/data/constants";
+import { resolveActiveSet } from "@/lib/data/active-set";
 import { useActiveSet, useManifest } from "@/lib/data/hooks";
 import type { Patch } from "@/lib/data/schema";
 import { useSettings } from "@/stores/settings";
@@ -23,8 +24,12 @@ const PATCH_NAMES: Record<Patch, { name: string; hint: string }> = {
 export function PatchSwitcher() {
   const manifest = useManifest();
   const { patch, set, sets, label } = useActiveSet();
-  const { setPatch, setSet } = useSettings();
+  const settings = useSettings();
+  const { setPatch, setSet } = settings;
   const newest = sets[0];
+  // `useActiveSet` lags behind a switch until the new set's data has loaded.
+  const chosen = resolveActiveSet(manifest, settings.patch, settings.set);
+  const loading = chosen.patch !== patch || chosen.set !== set;
 
   return (
     <DropdownMenu>
@@ -34,6 +39,7 @@ export function PatchSwitcher() {
           size="sm"
           className="gap-1.5"
           aria-label={`Set ${set}, ${PATCH_NAMES[patch].name} ${label}`}
+          aria-busy={loading}
         >
           <span className="font-semibold">Set {set}</span>
           <span className="text-muted-foreground max-sm:hidden">· {label}</span>
@@ -42,7 +48,11 @@ export function PatchSwitcher() {
               PBE
             </span>
           )}
-          <ChevronDown className="size-3.5 opacity-60" />
+          {loading ? (
+            <Loader2 className="size-3.5 animate-spin opacity-60" />
+          ) : (
+            <ChevronDown className="size-3.5 opacity-60" />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">

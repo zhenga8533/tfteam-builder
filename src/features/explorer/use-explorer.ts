@@ -49,7 +49,7 @@ function useSampleWorker<Q extends Question>(url: string | null, question: Q | n
           : message.type === "missing"
             ? { state: "missing" }
             : { state: "error", message: message.message };
-      setLoaded({ url, status: next, answer: null });
+      setLoaded((state) => ({ url, status: next, answer: state?.url === url ? state.answer : null }));
     };
     instance.postMessage({ type: "load", url } satisfies WorkerRequest);
     return () => {

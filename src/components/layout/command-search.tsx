@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { type LinkProps, useNavigate } from "@tanstack/react-router";
 import { FileText, Search } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, Suspense, useEffect, useMemo, useState } from "react";
 import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
 import { ITEM_KIND_LABELS } from "@/components/game/styles";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { compsForSet } from "@/content";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { autoCompsQuery } from "@/lib/data/queries";
@@ -218,7 +219,10 @@ export function CommandSearch() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl" showCloseButton={false}>
           <DialogTitle className="sr-only">Search</DialogTitle>
-          {open && <Palette onClose={() => setOpen(false)} />}
+          {/* Its own boundary: the header's has no fallback, so suspending there would hide the search button. */}
+          <Suspense fallback={<Skeleton className="m-3 h-9" />}>
+            {open && <Palette onClose={() => setOpen(false)} />}
+          </Suspense>
         </DialogContent>
       </Dialog>
     </>

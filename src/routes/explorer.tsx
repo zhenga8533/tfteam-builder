@@ -7,9 +7,11 @@ import { FilterBar } from "@/features/explorer/components/filter-bar";
 import { useExplorer } from "@/features/explorer/use-explorer";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
+import { prefetchActiveSet } from "@/lib/data/active-set";
 import { RANK_OPTIONS } from "@/lib/data/constants";
 import { parseRank } from "@/features/stats/scope";
 import { useActiveSet, useStats, useTierStats } from "@/lib/data/hooks";
+import { manifestQuery } from "@/lib/data/queries";
 import type { RankFloor } from "@/lib/data/schema";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
 
@@ -38,6 +40,9 @@ export const Route = createFileRoute("/explorer")({
     const filters = parseFilters(search.filters);
     return { ...(filters.length && { filters }), rank: parseRank(search.rank) };
   },
+  // The filter bar reads game data only once the sample loads; without it cached, the page would suspend after appearing.
+  loader: async ({ context: { queryClient } }) =>
+    prefetchActiveSet(queryClient, await queryClient.ensureQueryData(manifestQuery)),
   component: ExplorerPage,
 });
 
