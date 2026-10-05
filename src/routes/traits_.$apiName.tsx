@@ -57,9 +57,12 @@ function BestUnits({ stats }: { stats: TraitStats }) {
   return (
     <StatTable
       deltaBaseline="the average placement of boards running this trait"
+      search="Search champions"
       rows={stats.units.flatMap((entry) => {
         const champion = championsByApi.get(entry.unit);
-        return champion ? [{ key: entry.unit, label: <ChampionLink champion={champion} />, line: entry }] : [];
+        return champion
+          ? [{ key: entry.unit, name: champion.name, label: <ChampionLink champion={champion} />, line: entry }]
+          : [];
       })}
     />
   );

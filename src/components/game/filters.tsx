@@ -1,7 +1,7 @@
 import { SearchInput } from "@/components/layout/search-input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { AugmentTier, ItemKind } from "@/lib/data/schema";
-import type { AugmentFilters, ChampionFilters } from "./filter-params";
+import type { AugmentFilters, ChampionFilters, ItemFilters } from "./filter-params";
 import { cn } from "@/lib/utils";
 import { EntityPicker } from "./entity-picker";
 import { useChampionOptions, useTraitOptions } from "./entity-options";
@@ -159,5 +159,30 @@ export function AugmentFilterBar({
       />
       <AugmentTierFilter value={value.tier} onChange={(tier) => onChange({ tier })} />
     </>
+  );
+}
+
+/** Item search plus category toggles (shown when there's more than one category); pressing a category again clears it. */
+export function ItemFilterBar({
+  value,
+  onChange,
+  kinds,
+}: {
+  value: ItemFilters;
+  onChange: (value: ItemFilters) => void;
+  kinds: ItemKind[];
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <SearchInput
+        value={value.q ?? ""}
+        onChange={(q) => onChange({ ...value, q: q || undefined })}
+        placeholder="Search items"
+        className="max-w-xs"
+      />
+      {kinds.length > 1 && (
+        <ItemKindFilter kinds={kinds} value={value.kind} onChange={(kind) => onChange({ ...value, kind })} allowNone />
+      )}
+    </div>
   );
 }

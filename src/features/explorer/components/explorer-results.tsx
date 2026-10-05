@@ -1,7 +1,10 @@
 import { Plus } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { itemKindsIn, type ItemFilters, matchesItemFilters } from "@/components/game/filter-params";
+import { ItemFilterBar } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { count, percent } from "@/features/stats/format";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
@@ -10,6 +13,7 @@ import type { ExplorerFilter, ExplorerResult, ExplorerRow } from "@/lib/explorer
 import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 const BASELINE = "the average of the boards matching your filters";
+const LIMIT = 20;
 
 function AddButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
   return (
@@ -25,6 +29,84 @@ function AddButton({ label, onClick, children }: { label: string; onClick: () =>
   );
 }
 
+type UnitFilter = Extract<ExplorerFilter, { type: "unit" }>;
+
+interface UnitItemsProps {
+  /** The champion filters, each with its position in the full filter list. */
+  units: { filter: UnitFilter; index: number }[];
+  result: ExplorerResult;
+  onRequire: (index: number, item: string) => void;
+}
+
+/**
+ * Items held by one of the filtered champions, picked from their icons (the latest added by default). Picking an item
+ * requires it; items already required aren't listed, since every matching board has them.
+ */
+function UnitItems({ units, result, onRequire }: UnitItemsProps) {
+  const { championsByApi, itemsByApi } = useGameData();
+  const [selected, setSelected] = useState<string>();
+  const [filters, setFilters] = useState<ItemFilters>({});
+  const active = units.find(({ filter }) => filter.unit === selected) ?? units.at(-1)!;
+  const required = active.filter.items ?? [];
+  const rows = required.length >= 3 ? [] : (result.items[active.filter.unit] ?? []);
+  const held = rows.flatMap((row) => {
+    const item = itemsByApi.get(row.key);
+    return item && !required.includes(row.key) ? [{ row, item }] : [];
+  });
+  // Like the tables' own search: only offered when there are more rows than the table shows at first.
+  const filterable = held.length > LIMIT;
+  return (
+    <div className="space-y-3">
+      {units.length > 1 && (
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={active.filter.unit}
+          onValueChange={(unit) => unit && setSelected(unit)}
+          className="flex-wrap"
+          aria-label="Champion"
+        >
+          {units.map(({ filter, index }) => {
+            const champion = championsByApi.get(filter.unit);
+            return (
+              <ToggleGroupItem key={index} value={filter.unit} className="gap-2 px-2" aria-label={champion?.name}>
+                {champion && <ChampionIcon champion={champion} className="size-6" decorative />}
+                <span className="max-sm:sr-only">{champion?.name ?? filter.unit}</span>
+              </ToggleGroupItem>
+            );
+          })}
+        </ToggleGroup>
+      )}
+      {filterable && (
+        <ItemFilterBar value={filters} onChange={setFilters} kinds={itemKindsIn(held.map(({ item }) => item))} />
+      )}
+      <StatTable
+        deltaBaseline={BASELINE}
+        limit={LIMIT}
+        empty={
+          required.length >= 3
+            ? "This champion already holds three required items."
+            : filterable
+              ? "No items match these filters."
+              : undefined
+        }
+        rows={held
+          .filter(({ item }) => !filterable || matchesItemFilters([item], filters))
+          .map(({ row, item }) => ({
+            key: row.key,
+            line: row.line,
+            label: (
+              <AddButton label={`Require ${item.name}`} onClick={() => onRequire(active.index, row.key)}>
+                <ItemIcon item={item} className="size-7" decorative />
+                <span className="truncate">{item.name}</span>
+              </AddButton>
+            ),
+          }))}
+      />
+    </div>
+  );
+}
+
 interface ExplorerResultsProps {
   result: ExplorerResult;
   filters: ExplorerFilter[];
@@ -33,12 +115,15 @@ interface ExplorerResultsProps {
 
 /** Summary of matching boards, plus what to add next: units, traits, and items on each filtered unit. */
 export function ExplorerResults({ result, filters, onChange }: ExplorerResultsProps) {
-  const { championsByApi, itemsByApi, traitsByApi } = useGameData();
+  const { championsByApi, traitsByApi } = useGameData();
+  const [tab, setTab] = useState("units");
   const { summary } = result;
   if (!summary)
     return <p className="py-16 text-center text-muted-foreground">No boards in the sample match these filters.</p>;
 
   const unitFilters = filters.flatMap((filter, index) => (filter.type === "unit" ? [{ filter, index }] : []));
+  // Removing the last champion filter removes the Items tab, so fall back to Champions.
+  const shownTab = tab === "items" && unitFilters.length === 0 ? "units" : tab;
   const add = (filter: ExplorerFilter) => onChange([...filters, filter]);
 
   const unitRows = result.units.flatMap((row: ExplorerRow) => {
@@ -47,6 +132,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
     return [
       {
         key: row.key,
+        name: champion.name,
         line: row.line,
         label: (
           <AddButton label={`Filter by ${champion.name}`} onClick={() => add({ type: "unit", unit: row.key })}>
@@ -65,6 +151,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
     return [
       {
         key: row.key,
+        name: trait.name,
         line: row.line,
         label: (
           <AddButton
@@ -98,57 +185,35 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
         ))}
       </dl>
 
-      <Tabs defaultValue="units">
-        <TabsList className="flex-wrap">
+      <Tabs value={shownTab} onValueChange={setTab}>
+        <TabsList>
           <TabsTrigger value="units">Champions</TabsTrigger>
           <TabsTrigger value="traits">Traits</TabsTrigger>
-          {unitFilters.map(({ filter, index }) => (
-            <TabsTrigger key={index} value={`items-${index}`}>
-              Items on {championsByApi.get(filter.unit)?.name ?? filter.unit}
-            </TabsTrigger>
-          ))}
+          {unitFilters.length > 0 && <TabsTrigger value="items">Items</TabsTrigger>}
         </TabsList>
         <TabsContent value="units" className="pt-3">
-          <StatTable rows={unitRows} deltaBaseline={BASELINE} limit={20} />
+          <StatTable rows={unitRows} deltaBaseline={BASELINE} limit={LIMIT} search="Search champions" />
         </TabsContent>
         <TabsContent value="traits" className="pt-3">
-          <StatTable rows={traitRows} deltaBaseline={BASELINE} limit={20} />
+          <StatTable rows={traitRows} deltaBaseline={BASELINE} limit={LIMIT} search="Search traits" />
         </TabsContent>
-        {unitFilters.map(({ filter, index }) => (
-          <TabsContent key={index} value={`items-${index}`} className="pt-3">
-            <StatTable
-              deltaBaseline={BASELINE}
-              limit={20}
-              rows={(result.items[filter.unit] ?? []).flatMap((row) => {
-                const item = itemsByApi.get(row.key);
-                if (!item || (filter.items?.length ?? 0) >= 3) return [];
-                return [
-                  {
-                    key: row.key,
-                    line: row.line,
-                    label: (
-                      <AddButton
-                        label={`Require ${item.name}`}
-                        onClick={() =>
-                          onChange(
-                            filters.map((current, i) =>
-                              i === index && current.type === "unit"
-                                ? { ...current, items: [...(current.items ?? []), row.key] }
-                                : current,
-                            ),
-                          )
-                        }
-                      >
-                        <ItemIcon item={item} className="size-7" decorative />
-                        <span className="truncate">{item.name}</span>
-                      </AddButton>
-                    ),
-                  },
-                ];
-              })}
+        {unitFilters.length > 0 && (
+          <TabsContent value="items" className="pt-3">
+            <UnitItems
+              units={unitFilters}
+              result={result}
+              onRequire={(index, item) =>
+                onChange(
+                  filters.map((current, i) =>
+                    i === index && current.type === "unit"
+                      ? { ...current, items: [...(current.items ?? []), item] }
+                      : current,
+                  ),
+                )
+              }
             />
           </TabsContent>
-        ))}
+        )}
       </Tabs>
     </div>
   );
