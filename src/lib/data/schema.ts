@@ -191,6 +191,8 @@ export const setStatsSchema = z.object({
   bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),
   /** Movement since the previous patch with saved stats; absent until there is one. */
   trend: patchTrendSchema.optional(),
+  /** Final stats of a finished set, published from its archive rather than rebuilt. */
+  frozen: z.boolean().optional(),
 });
 export type SetStats = z.infer<typeof setStatsSchema>;
 export type RankFloor = SetStats["rankFloor"];

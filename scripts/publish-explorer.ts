@@ -2,7 +2,8 @@
  * Moves the Explorer's built files (see `EXPLORER_FILES`) from `public/data/stats` to the public R2 bucket, so they're
  * served from there rather than bundled into the site. Each build gets its own folder, so a deployed site only ever
  * reads its own build's files; older folders are deleted. Hands the folder's URL to the site build as
- * `VITE_EXPLORER_BASE` through `GITHUB_ENV`. Without the public bucket configured, the files stay in the site.
+ * `VITE_EXPLORER_BASE` through `GITHUB_ENV`, along with `VITE_EXPLORER_ARCHIVE_BASE` for frozen sets' files (uploaded
+ * once by the stats build, see `freezeSet`). Without the public bucket configured, the files stay in the site.
  */
 import { appendFile, readdir, readFile, rm } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
@@ -18,6 +19,9 @@ async function main() {
     console.log("No public R2 bucket configured; the Explorer's files stay in the site.");
     return;
   }
+
+  const publicUrl = EXPLORER_PUBLIC_URL.replace(/\/$/, "");
+  if (GITHUB_ENV) await appendFile(GITHUB_ENV, `VITE_EXPLORER_ARCHIVE_BASE=${publicUrl}/archive/\n`);
 
   const sets = (await readdir(STATS_DIR, { withFileTypes: true })).filter((entry) => entry.isDirectory());
   const folders = sets.map((set) => join(STATS_DIR, set.name, "explorer"));
@@ -47,7 +51,7 @@ async function main() {
   for (const key of stale) await bucket.delete(key);
   for (const folder of folders) await rm(folder, { recursive: true, force: true });
 
-  const base = `${EXPLORER_PUBLIC_URL.replace(/\/$/, "")}/${GITHUB_RUN_ID}/`;
+  const base = `${publicUrl}/${GITHUB_RUN_ID}/`;
   if (GITHUB_ENV) await appendFile(GITHUB_ENV, `VITE_EXPLORER_BASE=${base}\n`);
   const summary =
     `Published ${files.length} Explorer files (${(bytes / 1e6).toFixed(1)} MB) to ${base}` +

@@ -35,13 +35,15 @@ jobs:
       - run: npm run lint
       - run: npm run data
       - run: npm test
-      # Reads stored boards from R2; without credentials (or boards) it skips and the site hides stats.
+      # Reads stored boards from R2; without credentials (or boards) it skips and the site hides stats. Finished sets
+      # are frozen: their Explorer files go to the public bucket's archive once, and later deploys publish the archive.
       - run: npm run stats
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_BUCKET: ${{ vars.R2_PUBLIC_BUCKET }}
       # Serves the Explorer's files from the public bucket instead of bundling them; without it, they stay in the site.
       - run: npm run publish-explorer
         env:

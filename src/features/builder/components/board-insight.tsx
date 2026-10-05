@@ -37,7 +37,7 @@ export function BoardInsight() {
   const carry = core[0] && championsByApi.get(core[0].apiName);
   const url =
     patch === "latest" && stats?.status === "ready" && carry
-      ? explorerUrl(set, EXPLORER_FILES.champion(carry.apiName))
+      ? explorerUrl(set, EXPLORER_FILES.champion(carry.apiName), stats.frozen)
       : null;
   const { status, similar } = useSimilarBoards(url, names.length >= MIN_UNITS ? names : null);
   // Requiring every unit would usually match nothing, so the Explorer starts from the main item holders.

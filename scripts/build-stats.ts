@@ -26,12 +26,13 @@ import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { compTrends, patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
-import { type FileSize, renderReport, type SetReport } from "./lib/report.ts";
+import { createArchiveBucket, freezeSet, restoreArchive, shouldFreeze } from "./lib/freeze.ts";
+import { type FileSize, type FrozenSet, renderReport, type SetReport } from "./lib/report.ts";
 import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
 import { buildFloorStats, buildRegionStats, buildSetStats, distinctFloors, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { CachingBlobStore } from "./stats/blob.ts";
-import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
+import { type BoardChunk, chunkTime, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
 import type { BoardRow, PatchCounters } from "./stats/types.ts";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
@@ -39,7 +40,15 @@ const OUT_DIR = join(DATA_DIR, "stats");
 /** The site shows the newest patch, falling back to the previous one right after a patch. */
 const PATCHES_PER_SET = 2;
 
-const { values: args } = parseArgs({ options: { stats: { type: "string" } } });
+const { values: args } = parseArgs({
+  options: {
+    stats: { type: "string" },
+    // Local stand-in for the public bucket, where frozen sets' Explorer files go.
+    "public-stats": { type: "string" },
+    // Overrides the live set (the newest in the game data), e.g. to try freezing locally.
+    "live-set": { type: "string" },
+  },
+});
 
 const readJson = async <T>(path: string) => JSON.parse(await readFile(path, "utf8")) as T;
 
@@ -49,10 +58,6 @@ const top = (names: Map<string, number>) =>
     .slice(0, 10)
     .map(([name, games]) => `${name} (${games})`)
     .join(", ");
-
-/** `20261001T120000Z-americas` → `2026-10-01T12:00:00Z` */
-const chunkTime = (name: string) =>
-  name.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z.*$/, "$1-$2-$3T$4:$5:$6Z");
 
 type ReadBoards = (chunk: BoardChunk) => Promise<BoardRow[]>;
 
@@ -398,12 +403,29 @@ async function main() {
   const manifest = await readJson<Manifest>(join(DATA_DIR, "manifest.json"));
   await mkdir(OUT_DIR, { recursive: true });
 
+  const now = new Date();
+  const liveSet = Number(args["live-set"] ?? manifest.patches.latest.sets[0]);
+  const bucket = createArchiveBucket(args["public-stats"]);
   const reports: SetReport[] = [];
+  const frozen: FrozenSet[] = [];
   for (const set of manifest.patches.latest.sets) {
+    const archived = await restoreArchive(source.blobs, OUT_DIR, set);
+    if (archived) {
+      console.log(`set ${set}: frozen at patch ${archived.patch}, published from the archive`);
+      frozen.push({ set, patch: archived.patch, frozenAt: archived.frozenAt });
+      continue;
+    }
+    const freezing = bucket !== null && shouldFreeze(set, liveSet, chunks, now);
     const report = await buildSet(store, chunks, set);
-    if (report) reports.push(report);
+    if (!report) continue;
+    reports.push(report);
+    if (freezing && report.status === "ready") {
+      const { files, explorerFiles } = await freezeSet(source.blobs, bucket, OUT_DIR, set, report.patch, now);
+      console.log(`set ${set}: frozen at patch ${report.patch} (${files} files, ${explorerFiles} Explorer files)`);
+      frozen.push({ set, patch: report.patch, frozenAt: now.toISOString() });
+    }
   }
-  await publishReport(renderReport({ sets: reports, files: await statsFiles(), now: new Date() }));
+  await publishReport(renderReport({ sets: reports, frozen, files: await statsFiles(), now }));
 }
 
 main().catch((error: unknown) => {
