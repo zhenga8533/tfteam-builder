@@ -39,8 +39,7 @@ const LARGE_FILE_BYTES = 2_000_000;
 const LARGEST_SHOWN = 5;
 /** The Explorer's files download only there (a champion's when they're picked), so they get more room. */
 const LARGE_EXPLORER_FILE_BYTES = 10_000_000;
-const EXPLORER_SAMPLE = /(^|\/)explorer\.bin\.gz$/;
-const EXPLORER_CHAMPION = /(^|\/)explorer\//;
+const EXPLORER = /(^|\/)explorer\//;
 
 const count = (value: number) => value.toLocaleString("en-US");
 const percent = (part: number, total: number) => (total ? `${Math.round((part / total) * 100)}%` : "–");
@@ -55,19 +54,29 @@ function age(updatedAt: string, now: Date) {
 
 const explorerSize = (file: FileSize) => `${size(file.bytes)}${file.bytes > LARGE_EXPLORER_FILE_BYTES ? " ⚠️" : ""}`;
 
-/** The Explorer's sample and champion files in one line, with the largest champion file. */
+/** The Explorer's files in one line: each kind's count, total and largest (see `EXPLORER_FILES`). */
 function explorerSummary(files: FileSize[]) {
-  const sample = files.find((file) => EXPLORER_SAMPLE.test(file.path));
-  const champions = files.filter((file) => EXPLORER_CHAMPION.test(file.path));
-  if (!sample && champions.length === 0) return null;
-  const parts = sample ? [`sample ${explorerSize(sample)}`] : [];
-  if (champions.length) {
-    const largest = champions.reduce((a, b) => (b.bytes > a.bytes ? b : a));
-    const all = champions.reduce((sum, file) => sum + file.bytes, 0);
-    parts.push(
-      `${count(champions.length)} champion files, ${size(all)} in all, largest ${explorerSize(largest)} (${largest.path})`,
-    );
-  }
+  const explorer = files.filter((file) => EXPLORER.test(file.path));
+  if (explorer.length === 0) return null;
+  const kind = (label: string, folder: string) => {
+    const matching = explorer.filter((file) => file.path.includes(`/explorer/${folder}/`));
+    if (matching.length === 0) return [];
+    const largest = matching.reduce((a, b) => (b.bytes > a.bytes ? b : a));
+    const all = matching.reduce((sum, file) => sum + file.bytes, 0);
+    return [
+      `${count(matching.length)} ${label} file${matching.length === 1 ? "" : "s"}, ${size(all)} in all, largest ${explorerSize(largest)} (${largest.path})`,
+    ];
+  };
+  const single = (label: string, name: string) => {
+    const file = explorer.find((entry) => entry.path.endsWith(`/explorer/${name}`));
+    return file ? [`${label} ${explorerSize(file)}`] : [];
+  };
+  const parts = [
+    ...kind("champion", "champions"),
+    ...kind("trait", "traits"),
+    ...single("totals", "totals.json"),
+    ...single("sample", "sample.bin.gz"),
+  ];
   return `**Explorer:** ${parts.join("; ")}`;
 }
 
@@ -103,9 +112,8 @@ export function renderReport({ sets, files, now, skipped }: Report): string {
   }
 
   const total = files.reduce((sum, file) => sum + file.bytes, 0);
-  const isExplorer = (file: FileSize) => EXPLORER_SAMPLE.test(file.path) || EXPLORER_CHAMPION.test(file.path);
   const largest = files
-    .filter((file) => !isExplorer(file))
+    .filter((file) => !EXPLORER.test(file.path))
     .toSorted((a, b) => b.bytes - a.bytes)
     .slice(0, LARGEST_SHOWN);
   lines.push("", `### Files: ${count(files.length)}, ${size(total)}`, "", "| File | Size |", "| --- | ---: |");

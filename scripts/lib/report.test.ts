@@ -25,9 +25,11 @@ describe("renderReport", () => {
       files: [
         { path: "set18.json", bytes: 300_000 },
         { path: "set18/history.json", bytes: 2_500_000 },
-        { path: "set18/explorer.bin.gz", bytes: 4_000_000 },
-        { path: "set18/explorer/Ahri.bin.gz", bytes: 1_000_000 },
-        { path: "set18/explorer/Amumu.bin.gz", bytes: 12_000_000 },
+        { path: "set18/explorer/sample.bin.gz", bytes: 4_000_000 },
+        { path: "set18/explorer/totals.json", bytes: 200_000 },
+        { path: "set18/explorer/champions/Ahri.bin.gz", bytes: 1_000_000 },
+        { path: "set18/explorer/champions/Amumu.bin.gz", bytes: 12_000_000 },
+        { path: "set18/explorer/traits/Blossom.bin.gz", bytes: 3_000_000 },
       ],
       now,
     });
@@ -36,13 +38,14 @@ describe("renderReport", () => {
     expect(markdown).toContain("Knockout round on 40% of boards, Little Legends on 40%\n");
     expect(markdown).toContain("| master+ | 2,100 | 12 |");
     expect(markdown).toContain("| americas | 2,500 |");
-    expect(markdown).toContain("### Files: 5, 19.8 MB");
+    expect(markdown).toContain("### Files: 7, 23.0 MB");
     expect(markdown.indexOf("history.json")).toBeLessThan(markdown.indexOf("set18.json"));
     expect(markdown).toContain("| set18/history.json | 2.5 MB ⚠️ |");
     // The Explorer's files get their own line and a higher bar, since they only download there.
     expect(markdown).not.toContain("| set18/explorer");
     expect(markdown).toContain(
-      "**Explorer:** sample 4.0 MB; 2 champion files, 13.0 MB in all, largest 12.0 MB ⚠️ (set18/explorer/Amumu.bin.gz)",
+      "**Explorer:** 2 champion files, 13.0 MB in all, largest 12.0 MB ⚠️ (set18/explorer/champions/Amumu.bin.gz); " +
+        "1 trait file, 3.0 MB in all, largest 3.0 MB (set18/explorer/traits/Blossom.bin.gz); totals 200 KB; sample 4.0 MB",
     );
   });
 

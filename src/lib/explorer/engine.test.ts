@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { runQuery, similarBoards } from "./engine";
+import { runQuery, runTotalsQuery, similarBoards } from "./engine";
+import { TotalsAccumulator } from "./totals";
 import { decodeExplorer, encodeExplorer, type ExplorerBoard } from "./format";
 
 const board = (placement: number, units: [string, number, string[]][], traits: [string, number][], level = 8) => ({
@@ -110,5 +111,19 @@ describe("explorer rank floors", () => {
     const result = runQuery(shard, [{ type: "unit", unit: "Ahri" }], 1);
     expect(result.summary?.games).toBe(20);
     expect(result.summary?.play).toBe(0.1);
+  });
+
+  it("answers from the totals exactly as from the boards, without a champion or trait", () => {
+    const ranked = boards.map((entry, i) => ({ ...entry, rank: i % 2 }));
+    const accumulator = new TotalsAccumulator();
+    for (const entry of ranked) accumulator.add(entry);
+    const totals = accumulator.results(1);
+    const all = decodeExplorer(encodeExplorer(ranked, 1).slice().buffer);
+    for (const filters of [[], [{ type: "level" as const, min: 9 }]]) {
+      for (const floor of [0, 1]) {
+        expect(runTotalsQuery(totals, filters, 1, floor)).toEqual(runQuery(all, filters, 1, floor));
+      }
+    }
+    expect(() => runTotalsQuery(totals, [{ type: "unit", unit: "Ahri" }])).toThrow();
   });
 });

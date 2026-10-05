@@ -1,6 +1,7 @@
 import type { DeltaStat, StatLine } from "@/lib/data/schema";
 import { addCounter, bump, type Counter, counterFor, emptyCounter, round, statLine } from "@/lib/game/stat-line";
 import { type ExplorerData, ITEM_SLOTS } from "./format";
+import type { ExplorerTotals } from "./totals";
 
 export type ExplorerFilter =
   /** A unit on the board, optionally at a minimum star level and holding the given items (duplicates allowed). */
@@ -172,6 +173,44 @@ export function runQuery(
     items: Object.fromEntries(
       [...itemCounters].map(([unit, counters]) => [unit, rows(counters, line.avg, summary[0], minGames)]),
     ),
+  };
+}
+
+/**
+ * `runQuery` for the totals, which have every board's counts by rank and level, so it takes level filters only (see
+ * `explorerSource`).
+ */
+export function runTotalsQuery(
+  totals: ExplorerTotals,
+  filters: ExplorerFilter[],
+  minGames = MIN_ROW_GAMES,
+  floor = totals.defaultRank,
+): ExplorerResult {
+  let minLevel = 0;
+  for (const filter of filters) {
+    if (filter.type !== "level") throw new Error("The totals only answer level filters");
+    minLevel = Math.max(minLevel, filter.min);
+  }
+  const summary = emptyCounter();
+  const unitCounters = new Map<string, Counter>();
+  const traitCounters = new Map<string, Counter>();
+  let atFloor = 0;
+  for (const group of totals.groups) {
+    if (group.rank > floor) continue;
+    atFloor += group.summary[0];
+    if (group.level < minLevel) continue;
+    addCounter(summary, group.summary);
+    for (const [unit, counter] of Object.entries(group.units)) addCounter(counterFor(unitCounters, unit), counter);
+    for (const [trait, counter] of Object.entries(group.traits)) addCounter(counterFor(traitCounters, trait), counter);
+  }
+
+  if (summary[0] === 0) return { summary: null, units: [], traits: [], items: {} };
+  const line = statLine(summary, atFloor);
+  return {
+    summary: line,
+    units: rows(unitCounters, line.avg, summary[0], minGames),
+    traits: rows(traitCounters, line.avg, summary[0], minGames),
+    items: {},
   };
 }
 

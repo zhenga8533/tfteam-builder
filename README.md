@@ -193,10 +193,10 @@ match data, so the augment tier list and comp guides stay hand-written.
 - **Patches:** stats are split by TFT patch, b patches included (18.3, 18.3b), using the release dates in
   [Riot's patch notes](https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/), because match data no
   longer reports a version. Right after a patch or b patch, the previous one is shown until there are enough games.
-- **Explorer** (`/explorer`): boards queried in the browser (in a Web Worker). With a champion filter it loads that
-  champion's file, which holds every board with them on the patch; without one, a sample of the 150,000 newest boards
-  in the patch's rank mix. Filter by champions (star level, items), traits and level, and see which champions, traits
-  and items do best with them.
+- **Explorer** (`/explorer`): every board of the patch, queried in the browser (in a Web Worker). A query loads its
+  first champion's file, else its first trait's (each holds every board with them), else the totals (every board's
+  counts by rank and level). Filter by champions (star level, items), traits and level, and see which champions,
+  traits and items do best with them. The builder compares its board with a sample of the 150,000 newest boards.
 
 To enable crawling:
 

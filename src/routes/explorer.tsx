@@ -14,6 +14,7 @@ import { useActiveSet, useGameData, useStats, useTierStats } from "@/lib/data/ho
 import { manifestQuery } from "@/lib/data/queries";
 import type { RankFloor } from "@/lib/data/schema";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
+import { explorerFile, explorerSource } from "@/lib/explorer/files";
 import { cn } from "@/lib/utils";
 
 const isString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
@@ -53,19 +54,20 @@ function ExplorerPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const filters = search.filters ?? [];
-  // The sample holds every offered rank floor; the chosen one (or the default) picks its boards.
+  // The Explorer's files hold every offered rank floor; the chosen one (or the default) picks their boards.
   const floorStats = useTierStats(search.rank);
-  const { championsByApi } = useGameData();
-  // Every board with the first filtered champion is in their file, so the other filters narrow that; without a
-  // champion, the newest boards' sample stands in for all of them.
-  const champion = filters.find((filter) => filter.type === "unit")?.unit;
-  const championName = champion && (championsByApi.get(champion)?.name ?? champion);
-  const base = `${import.meta.env.BASE_URL}data/stats/set${set}/`;
+  const { championsByApi, traitsByApi } = useGameData();
+  const source = explorerSource(filters);
+  // Who the boards are about ("Ahri", "Blossom"); null for every board.
+  const subject =
+    source.type === "champion"
+      ? (championsByApi.get(source.apiName)?.name ?? source.apiName)
+      : source.type === "trait"
+        ? (traitsByApi.get(source.apiName)?.name ?? source.apiName)
+        : null;
   const url =
     patch === "latest" && stats?.status === "ready"
-      ? champion
-        ? `${base}explorer/${encodeURIComponent(champion)}.bin.gz`
-        : `${base}explorer.bin.gz`
+      ? `${import.meta.env.BASE_URL}data/stats/set${set}/${explorerFile(source)}`
       : null;
   const floor = floorStats ? RANK_OPTIONS.indexOf(floorStats.rankFloor) : undefined;
   const { status, result, pending } = useExplorer(url, filters, floor);
@@ -85,7 +87,7 @@ function ExplorerPage() {
           onRankChange={(rank) => navigate({ search: (previous) => ({ ...previous, rank }), replace: true })}
         />
       )}
-      {!url || (status.state === "missing" && !champion) ? (
+      {!url || (status.state === "missing" && source.type === "totals") ? (
         <NoStats subject={`Set ${set}`} />
       ) : status.state === "error" ? (
         <EmptyState>Couldn't load the boards: {status.message}</EmptyState>
@@ -100,13 +102,10 @@ function ExplorerPage() {
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {pending && status.state === "loading" ? (
                 <>
-                  <Loader2 className="size-3 animate-spin" /> Loading {championName ? `${championName}'s` : "the"}{" "}
-                  boards…
+                  <Loader2 className="size-3 animate-spin" /> Loading the boards{subject && ` with ${subject}`}…
                 </>
-              ) : championName ? (
-                `Results include every ranked board with ${championName}.`
               ) : (
-                "Without a champion, results come from a sample of the most recent boards. Add one to see all of their boards."
+                `Results include every ranked board${subject ? ` with ${subject}` : ""}.`
               )}
             </p>
           </div>
