@@ -102,4 +102,13 @@ describe("explorer rank floors", () => {
     expect(runQuery(sample, [], 1).summary?.play).toBe(1);
     expect(runQuery(sample, [], 1, 0).summary?.play).toBe(1);
   });
+
+  it("gives shares of the whole patch for a file holding every board of a champion", () => {
+    // These 20 Ahri boards are all of the patch's Ahri boards, out of 200 boards in all.
+    const ahriBoards = boards.filter((entry) => entry.units.some((unit) => unit.apiName === "Ahri"));
+    const shard = decodeExplorer(encodeExplorer(ahriBoards, 0, [200]).slice().buffer);
+    const result = runQuery(shard, [{ type: "unit", unit: "Ahri" }], 1);
+    expect(result.summary?.games).toBe(20);
+    expect(result.summary?.play).toBe(0.1);
+  });
 });

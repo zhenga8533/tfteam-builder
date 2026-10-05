@@ -16,7 +16,7 @@ export interface ExplorerRow {
 }
 
 export interface ExplorerResult {
-  /** Boards matching every filter; `play` is their share of the sample. Null when nothing matches. */
+  /** Boards matching every filter; `play` is their share of all boards at the floor. Null when nothing matches. */
   summary: StatLine | null;
   /** Units on matching boards, other than filtered ones. */
   units: ExplorerRow[];
@@ -86,6 +86,9 @@ function rows(counters: Map<string, Counter>, baseline: number, total: number, m
     })
     .sort((a, b) => a.line.score - b.line.score);
 }
+
+const boardsAtFloor = (population: number[], floor: number) =>
+  population.slice(0, floor + 1).reduce((total, boards) => total + boards, 0);
 
 /** `floor`: include boards at this rank index or above (see `ExplorerBoard.rank`); the sample's default floor if unset. */
 export function runQuery(
@@ -161,7 +164,7 @@ export function runQuery(
   }
 
   if (summary[0] === 0) return empty;
-  const line = statLine(summary, atFloor);
+  const line = statLine(summary, data.population ? boardsAtFloor(data.population, floor) : atFloor);
   return {
     summary: line,
     units: rows(unitCounters, line.avg, summary[0], minGames),

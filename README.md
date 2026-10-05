@@ -64,7 +64,7 @@ TFTeam was created to simplify planning team compositions in Teamfight Tactics. 
 - **Team Builder** – drag champions and items onto a hex board (mouse, touch or keyboard), set star levels, and watch traits update live. Plan a board per level, mark flex units and alternatives, follow the trait ladder or autofill to your level, see how similar ranked boards place, find the emblem that adds the most traits, and equip a champion's best build in one click. Save teams locally and import/export in-game Team Planner codes.
 - **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters. Tier lists, detected comps and Patch Changes can switch rank (Master+, Diamond+, …), and the champion, item and trait tier lists can narrow to a region. Pages show placement distributions, comps show placement by final level, and the home page highlights comps rising since the last patch. Open any comp in the Team Builder with one click.
 - **Stats pages** – every champion, item and trait has a page: item builds and a best-next-item finder, best holders and partners, breakpoints and the comps that use it.
-- **Explorer** – filter a sample of recent ranked boards by champions, items, traits and level, and see what else does well with them.
+- **Explorer** – filter ranked boards by champions, items, traits and level, and see what else does well with them.
 - **Patch Changes** – what got better or worse since the last patch.
 - **Tools** – Explorer, Compare (two champions, items or comps side by side), Roll Odds (your chance to hit a 2★ or 3★, from the set's shop odds and pool) and a Component Planner (what your components build into, ranked for your carry).
 - **Database** – searchable champions, traits, items (with a crafting table) and augments, with filters kept in the URL so views can be shared.
@@ -193,9 +193,10 @@ match data, so the augment tier list and comp guides stay hand-written.
 - **Patches:** stats are split by TFT patch, b patches included (18.3, 18.3b), using the release dates in
   [Riot's patch notes](https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/), because match data no
   longer reports a version. Right after a patch or b patch, the previous one is shown until there are enough games.
-- **Explorer** (`/explorer`): a sample of the 150,000 most recent boards, queried in the browser (in a Web Worker).
-  Filter by champions (star level, items), traits and level, and see which champions, traits and items do best with
-  them.
+- **Explorer** (`/explorer`): boards queried in the browser (in a Web Worker). With a champion filter it loads that
+  champion's file, which holds every board with them on the patch; without one, a sample of the 150,000 newest boards
+  in the patch's rank mix. Filter by champions (star level, items), traits and level, and see which champions, traits
+  and items do best with them.
 
 To enable crawling:
 

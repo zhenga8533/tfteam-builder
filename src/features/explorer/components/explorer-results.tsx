@@ -118,8 +118,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
   const { championsByApi, traitsByApi } = useGameData();
   const [tab, setTab] = useState("units");
   const { summary } = result;
-  if (!summary)
-    return <p className="py-16 text-center text-muted-foreground">No boards in the sample match these filters.</p>;
+  if (!summary) return <p className="py-16 text-center text-muted-foreground">No boards match these filters.</p>;
 
   const unitFilters = filters.flatMap((filter, index) => (filter.type === "unit" ? [{ filter, index }] : []));
   // Removing the last champion filter removes the Items tab, so fall back to Champions.
@@ -176,7 +175,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
           ["Avg placement", <AvgPlacement key="avg" line={summary} />],
           ["Top 4", percent(summary.top4)],
           ["Win rate", percent(summary.win)],
-          ["Of sample", percent(summary.play)],
+          ["Of boards", percent(summary.play)],
         ].map(([label, value]) => (
           <div key={String(label)}>
             <dt className="text-xs text-muted-foreground">{label}</dt>
