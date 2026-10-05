@@ -2,7 +2,7 @@
  * Builds whose Explorer folders stay in the public bucket: this one, the live site's (until this deploy replaces it,
  * and for visitors still on it), and one more in case a deploy uploaded its files but never went live.
  */
-export const KEPT_BUILDS = 3;
+const KEPT_BUILDS = 3;
 
 /** Keys in folders of builds older than the newest `keep`; folders are named by GitHub Actions run IDs. */
 export function staleKeys(keys: string[], keep = KEPT_BUILDS): string[] {

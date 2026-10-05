@@ -66,10 +66,9 @@ export class StatsStore {
     return this.blobs.put(`seen/${platform}.txt`, lines.join("\n") + "\n");
   }
 
-  /** The last known TFT patch timeline; entries in an older format (game versions) are dropped. */
+  /** The last known TFT patch timeline. */
   async patchTimeline(): Promise<TftPatch[]> {
-    const stored = (await this.readJson<TftPatch[]>("patches.json")) ?? [];
-    return stored.filter((patch) => typeof patch.label === "string" && typeof patch.set === "number");
+    return (await this.readJson<TftPatch[]>("patches.json")) ?? [];
   }
 
   savePatchTimeline(timeline: TftPatch[]) {

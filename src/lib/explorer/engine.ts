@@ -91,7 +91,7 @@ function rows(counters: Map<string, Counter>, baseline: number, total: number, m
 const boardsAtFloor = (population: number[], floor: number) =>
   population.slice(0, floor + 1).reduce((total, boards) => total + boards, 0);
 
-/** `floor`: include boards at this rank index or above (see `ExplorerBoard.rank`); the sample's default floor if unset. */
+/** `floor`: include boards at this rank index or above (see `ExplorerBoard.rank`); the file's default floor if unset. */
 export function runQuery(
   data: ExplorerData,
   filters: ExplorerFilter[],

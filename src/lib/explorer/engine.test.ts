@@ -6,6 +6,7 @@ import { decodeExplorer, encodeExplorer, type ExplorerBoard } from "./format";
 const board = (placement: number, units: [string, number, string[]][], traits: [string, number][], level = 8) => ({
   placement,
   level,
+  rank: 0,
   units: units.map(([apiName, star, items]) => ({ apiName, star, items })),
   traits: traits.map(([apiName, minUnits]) => ({ apiName, minUnits })),
 });

@@ -8,16 +8,14 @@ export interface R2Config {
   bucket: string;
 }
 
-/** Reads R2 credentials from `R2_*` environment variables; null unless all four are set. */
-export function r2ConfigFromEnv(env: NodeJS.ProcessEnv = process.env): R2Config | null {
-  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET } = env;
-  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET) return null;
-  return {
-    accountId: R2_ACCOUNT_ID,
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-    bucket: R2_BUCKET,
-  };
+/**
+ * Reads R2 credentials from the `R2_*` environment variables, for `bucket` (the stats bucket, `R2_BUCKET`, by default);
+ * null unless the credentials and a bucket are set.
+ */
+export function r2ConfigFromEnv(bucket = process.env.R2_BUCKET): R2Config | null {
+  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
+  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !bucket) return null;
+  return { accountId: R2_ACCOUNT_ID, accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY, bucket };
 }
 
 const encodeKey = (key: string) => key.split("/").map(encodeURIComponent).join("/");
