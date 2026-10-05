@@ -57,7 +57,7 @@ function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: ()
           <AvgPlacement line={line} className="text-sm" />
           <span
             className="text-[11px] text-muted-foreground tabular-nums"
-            title="Share of boards fielding this champion"
+            title="Share of games fielding this champion"
           >
             {share(line.play)} played
           </span>
@@ -168,7 +168,7 @@ function ChampionsPage() {
               <ChampionCard champion={selected} />
               <ChampionForms champion={selected} title="Other forms" className="border-t pt-3" />
               {stats?.units[selected.apiName] && (
-                <StatSummary line={stats.units[selected.apiName]!} play="of boards" className="border-t pt-3" />
+                <StatSummary line={stats.units[selected.apiName]!} play="of games" className="border-t pt-3" />
               )}
               <Button asChild variant="secondary" className="w-full">
                 <Link to="/champions/$apiName" params={{ apiName: selected.apiName }}>

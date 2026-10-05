@@ -62,7 +62,7 @@ export function BoardInsight() {
             <AvgPlacement line={similar.line} /> avg
           </span>
           <span className="text-muted-foreground">
-            {percent(similar.line.top4)} top 4 · {count(similar.line.games)} games
+            {percent(similar.line.top4)} top 4 · {count(similar.line.games)} boards
           </span>
           <Link
             to="/explorer"

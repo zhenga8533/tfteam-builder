@@ -1,10 +1,15 @@
 import { EmptyState } from "@/components/layout/empty-state";
-import { useActiveSet } from "@/lib/data/hooks";
+import { useActiveSet, useStats } from "@/lib/data/hooks";
 
-/** Why a page has no match stats: PBE, a set from before collection started, or a set still collecting. */
+/**
+ * Why a page has no match stats: PBE, or a set from before collection started. Nothing while the set is still
+ * collecting, since every page's stats line (`StatsMeta`) already says so.
+ */
 export function NoStats({ subject }: { subject?: string }) {
   const { patch, set, sets } = useActiveSet();
+  const collecting = useStats()?.status === "collecting";
   const newest = sets[0];
+  if (collecting) return null;
   return (
     <EmptyState>
       {patch === "pbe"

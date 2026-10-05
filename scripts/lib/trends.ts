@@ -29,7 +29,10 @@ export function patchTrend(current: SetStats, summaries: SetStats[]): PatchTrend
   return {
     patch: previous.patch,
     units: differences(current.units, previous.units, MIN_GAMES.unit),
-    items: differences(current.items, previous.items, MIN_GAMES.item),
+    items:
+      current.itemsPerBoard === previous.itemsPerBoard
+        ? differences(current.items, previous.items, MIN_GAMES.item)
+        : {},
     traits: differences(traitLines(current), traitLines(previous), MIN_GAMES.trait),
   };
 }
@@ -51,10 +54,12 @@ export function patchHistory(summaries: SetStats[]): PatchHistory {
       ]),
     );
   };
+  // Patches whose items were counted differently from the newest's are left out of the item history.
+  const itemCounting = ready.at(-1)?.itemsPerBoard;
   return {
     patches: ready.map((stats) => stats.patch),
     units: series((stats) => stats.units, MIN_GAMES.unit),
-    items: series((stats) => stats.items, MIN_GAMES.item),
+    items: series((stats) => (stats.itemsPerBoard === itemCounting ? stats.items : {}), MIN_GAMES.item),
     traits: series(traitLines, MIN_GAMES.trait),
   };
 }

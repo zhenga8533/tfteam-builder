@@ -7,7 +7,7 @@ import { ChampionLink, TraitLink } from "@/components/game/links";
 import type { Comp, CompUnit } from "@/content/types";
 import { TrendBadge as PatchTrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
-import { count, percent } from "@/features/stats/format";
+import { count, percent, share } from "@/features/stats/format";
 import { useCompTrendPatch, useGameData } from "@/lib/data/hooks";
 import type { AutoComp, RankFloor, StatLine } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,7 @@ function CompStats({ line, trend }: { line: StatLine; trend?: ReactNode }) {
   const rows = [
     ["Top 4", percent(line.top4)],
     ["Win", percent(line.win)],
+    ["Play", share(line.play)],
     ["Games", count(line.games)],
   ];
   return (

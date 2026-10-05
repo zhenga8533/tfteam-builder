@@ -42,7 +42,10 @@ export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
   });
 }
 
-/** Adds one stored board; unit and trait rates are per board (boards can field duplicates), items per instance. */
+/**
+ * Adds one stored board. Units, traits, items and a unit's items all count once per board: a board can field
+ * duplicate units or build an item several times.
+ */
 export function addBoard(counters: Counters, row: BoardRow) {
   const [, , , placement, , units, traits] = row;
   // Every standard match has exactly one winner, so counting first places counts matches.
@@ -50,11 +53,9 @@ export function addBoard(counters: Counters, row: BoardRow) {
   counters.boards += 1;
   for (const unit of new Set(units.map(([unit]) => unit))) bump(counters.units, unit, placement);
   for (const key of new Set(units.map(([unit, star]) => `${unit}|${star}`))) bump(counters.unitStars, key, placement);
-  for (const [unit, , items] of units) {
-    for (const item of items) {
-      bump(counters.items, item, placement);
-      bump(counters.unitItems, `${unit}|${item}`, placement);
-    }
+  for (const item of new Set(units.flatMap(([, , items]) => items))) bump(counters.items, item, placement);
+  for (const key of new Set(units.flatMap(([unit, , items]) => items.map((item) => `${unit}|${item}`)))) {
+    bump(counters.unitItems, key, placement);
   }
   for (const [trait, tier] of traits) bump(counters.traits, `${trait}|${tier}`, placement);
 }

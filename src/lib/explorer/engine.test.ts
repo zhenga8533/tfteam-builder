@@ -61,6 +61,13 @@ describe("explorer engine", () => {
     ]);
   });
 
+  it("counts an item built twice on the filtered unit once", () => {
+    const doubled = decodeExplorer(encodeExplorer([board(1, [["Ahri", 2, ["BB", "BB"]]], [])]).slice().buffer);
+    expect(runQuery(doubled, [{ type: "unit", unit: "Ahri" }], 1).items["Ahri"]).toMatchObject([
+      { key: "BB", line: { games: 1 } },
+    ]);
+  });
+
   it("hides rows below the minimum games and handles unknown names", () => {
     expect(runQuery(data, [{ type: "unit", unit: "Ahri" }], 15).units.map((row) => row.key)).toEqual(["Sett"]);
     expect(runQuery(data, [{ type: "unit", unit: "Nobody" }]).summary).toBeNull();

@@ -27,6 +27,7 @@ function Holders({ stats }: { stats: ItemStats }) {
   return (
     <StatTable
       deltaBaseline="the champion's own average placement"
+      playBaseline="each champion's games"
       search="Search champions"
       rows={stats.holders.flatMap((holder) => {
         const champion = championsByApi.get(holder.unit);
@@ -43,6 +44,7 @@ function Pairs({ stats }: { stats: ItemStats }) {
   return (
     <StatTable
       deltaBaseline="this item's average placement"
+      playBaseline="games building this item"
       search="Search items"
       rows={stats.pairs.flatMap((pair) => {
         const item = itemsByApi.get(pair.item);
@@ -78,7 +80,8 @@ function BuildsInto({ item }: { item: Item }) {
 
 function ItemHeader({ item }: { item: Item }) {
   const { traitsByApi } = useGameData();
-  const line = useStats()?.items[item.apiName];
+  const stats = useStats();
+  const line = stats?.items[item.apiName];
   const trait = item.trait ? traitsByApi.get(item.trait) : undefined;
   return (
     <header className="flex flex-wrap items-center gap-4">
@@ -92,8 +95,8 @@ function ItemHeader({ item }: { item: Item }) {
         </p>
         {line && (
           <span className="flex items-center gap-2">
-            <StatSummary line={line} />
-            <StatTrend kind="items" entry={item.apiName} />
+            <StatSummary line={line} play="of games" />
+            <StatTrend trend={stats?.trend} kind="items" entry={item.apiName} />
           </span>
         )}
       </div>

@@ -50,6 +50,15 @@ describe("patch trends", () => {
     expect(history.units["Ahri"]).toEqual([4.6, 4.35]);
     expect(history.units["Rare"]).toEqual([null, null]);
   });
+
+  it("doesn't compare items counted per board with items counted per copy", () => {
+    const items = (avg: number) => ({ Gauntlet: line(avg, MIN_GAMES.item) });
+    const perCopy = { ...stats("18.3", {}), items: items(4.2) };
+    const perBoard = { ...stats("18.3b", {}), items: items(4), itemsPerBoard: true };
+    expect(patchTrend(perBoard, [perCopy])?.items).toEqual({});
+    expect(patchHistory([perCopy, perBoard]).items["Gauntlet"]).toEqual([null, 4]);
+    expect(patchTrend({ ...perBoard, patch: "18.4" }, [perBoard])?.items).toEqual({ Gauntlet: 0 });
+  });
 });
 
 describe("comp trends", () => {

@@ -20,10 +20,11 @@ import { StatTable } from "@/features/stats/components/stat-table";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { percent } from "@/features/stats/format";
+import { percent, share } from "@/features/stats/format";
 import { findComp } from "@/lib/game/comp-signature";
 import { stageRound } from "@/lib/game/rounds";
-import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
+import { useActiveSet, useAutoComps, useCompTrendPatch, useGameData, useTierStats } from "@/lib/data/hooks";
+import { TrendBadge } from "@/features/stats/components/patch-trend";
 
 export const Route = createFileRoute("/comps/auto/$id")({
   head: () => ({ meta: [{ title: "Comp Stats · TFTeam" }] }),
@@ -79,6 +80,7 @@ function CarryProgression({ progression }: { progression: AutoComp["progression"
       <StatTable
         showDelta={false}
         keepOrder
+        playBaseline="this comp's games"
         rows={progression.map((stage) => ({
           key: stage.carries.join("+"),
           label: (
@@ -107,20 +109,29 @@ function AutoCompPage() {
   const comp = comps && findComp(comps, id);
 
   if (!stats) return <NoStats subject="this comp" />;
-  if (!comp)
-    return <EmptyState>This comp isn't in the current stats. It may have dropped below the thresholds.</EmptyState>;
-  return <AutoCompDetail comp={comp} stats={stats} />;
+  if (!comp) {
+    return (
+      <>
+        <StatsMeta stats={stats} />
+        <EmptyState>This comp isn't in the current stats. It may have dropped below the thresholds.</EmptyState>
+      </>
+    );
+  }
+  return <AutoCompDetail comp={comp} stats={stats} rank={rank} />;
 }
 
-function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
+function AutoCompDetail({ comp, stats, rank }: { comp: AutoComp; stats: SetStats; rank?: RankFloor }) {
   const { set } = useActiveSet();
   const { units, guide } = useAutoCompUnits(comp);
   const openInBuilder = useOpenInBuilder();
+  const navigate = Route.useNavigate();
+  const trendPatch = useCompTrendPatch(rank);
 
   return (
     <div className="space-y-6">
       <Link
         to="/tierlist/comps"
+        search={rank ? { rank } : {}}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> Comp Tier List
@@ -130,9 +141,12 @@ function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
         {comp.tier && <TierBadge tier={comp.tier} className="size-14 text-3xl" />}
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className="font-display text-3xl font-bold tracking-tight">{comp.name}</h1>
-          <StatSummary line={comp} className="text-sm" />
+          <span className="flex flex-wrap items-center gap-2">
+            <StatSummary line={comp} className="text-sm" />
+            <TrendBadge delta={comp.trend} patch={trendPatch} />
+          </span>
           <p className="text-sm text-muted-foreground">
-            Usually played at level {comp.level} · {percent(comp.play)} of boards
+            Usually played at level {comp.level} · {share(comp.play)} of games
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -143,13 +157,13 @@ function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
             <NotebookPen /> Write a guide
           </Button>
           <CopyTeamCodeButton apiNames={units.map((unit) => unit.apiName)} />
-          <ExploreCompButton signature={comp.signature} />
+          <ExploreCompButton signature={comp.signature} rank={rank} />
           <Button onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name)}>
             <Hammer /> Open in Team Builder
           </Button>
         </div>
       </header>
-      <StatsMeta stats={stats} />
+      <StatsMeta stats={stats} onRankChange={(next) => navigate({ search: { rank: next }, replace: true })} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
@@ -189,6 +203,7 @@ function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
               <StatTable
                 showDelta={false}
                 keepOrder
+                playBaseline="this comp's games"
                 rows={comp.byLevel.map((line) => ({ key: String(line.level), label: `Level ${line.level}`, line }))}
               />
             </Section>

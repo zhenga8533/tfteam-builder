@@ -236,15 +236,16 @@ describe("aggregation", () => {
     ]);
   });
 
-  it("counts units and traits per board and items per equipped instance", () => {
+  it("counts units, traits, items and a unit's items once per board", () => {
     const counters = emptyCounters();
     for (const row of matchToRows(match(), "diamond")) addBoard(counters, row);
     expect(counters.matches).toBe(1);
     expect(counters.boards).toBe(2);
     expect(counters.units["TFT18_Ahri"]).toEqual([2, 7, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0]);
     expect(counters.unitStars["TFT18_Ahri|1"]!.slice(0, 4)).toEqual([2, 7, 1, 1]);
-    expect(counters.items["TFT_Item_BlueBuff"]).toEqual([2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0]);
-    expect(counters.unitItems["TFT18_Ahri|TFT_Item_BlueBuff"]!.slice(0, 4)).toEqual([2, 2, 2, 2]);
+    // The winner built Blue Buff twice; the board counts once.
+    expect(counters.items["TFT_Item_BlueBuff"]).toEqual([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]);
+    expect(counters.unitItems["TFT18_Ahri|TFT_Item_BlueBuff"]!.slice(0, 4)).toEqual([1, 1, 1, 1]);
     expect(counters.traits).toEqual({ "TFT18_Blossom|2": [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0] });
   });
 

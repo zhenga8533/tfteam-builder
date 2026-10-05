@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
-import { usePatchHistory, useStats } from "@/lib/data/hooks";
+import { usePatchHistory } from "@/lib/data/hooks";
 import type { PatchHistory, PatchTrend } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
 import { MIN_TREND } from "../format";
@@ -29,17 +29,21 @@ export function TrendBadge({ delta, patch, className }: { delta?: number; patch?
 
 type HistoryKind = keyof Omit<PatchHistory, "patches">;
 
-/** The trend badge for one stats entry (`traits` keys are `apiName:minUnits`), when there's a previous patch. */
+/**
+ * The trend badge for one stats entry (`traits` keys are `apiName:minUnits`), from `trend`: the trend of the stats
+ * shown alongside, so a chosen rank floor or region compares like with like.
+ */
 export function StatTrend({
+  trend,
   kind,
   entry,
   className,
 }: {
+  trend: PatchTrend | undefined;
   kind: keyof Omit<PatchTrend, "patch">;
   entry: string;
   className?: string;
 }) {
-  const trend = useStats()?.trend;
   return <TrendBadge delta={trend?.[kind][entry]} patch={trend?.patch} className={className} />;
 }
 

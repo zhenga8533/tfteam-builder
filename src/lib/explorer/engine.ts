@@ -157,10 +157,10 @@ export function runQuery(
     }
     compiled.units.forEach((filter, i) => {
       const row = matchedRows[i]!;
-      for (let slot = 0; slot < ITEM_SLOTS; slot++) {
-        const item = data.unitItems[row * ITEM_SLOTS + slot]!;
+      // An item built twice on the unit counts once, so rows stay a share of boards.
+      const held = new Set(data.unitItems.subarray(row * ITEM_SLOTS, (row + 1) * ITEM_SLOTS));
+      for (const item of held)
         if (item) bump(counterFor(itemCounters.get(filter.filter)!, data.items[item - 1]!), placement);
-      }
     });
   }
 
