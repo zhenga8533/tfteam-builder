@@ -1,5 +1,5 @@
 import { parseRank } from "@/features/stats/scope";
-import type { RankFloor } from "@/lib/data/schema";
+import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Hammer, NotebookPen } from "lucide-react";
 import { ChampionCard } from "@/components/game/cards";
@@ -21,6 +21,7 @@ import { StatSummary } from "@/features/stats/components/stat-summary";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { percent } from "@/features/stats/format";
+import { findComp } from "@/lib/game/comp-signature";
 import { stageRound } from "@/lib/game/rounds";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 
@@ -65,13 +66,47 @@ function UnitFrequencies({ units }: { units: { apiName: string; frequency: numbe
   );
 }
 
+/** Placement by who held the items at the end; boards that go out early still have them on earlier carries. */
+function CarryProgression({ progression }: { progression: AutoComp["progression"] }) {
+  const { championsByApi } = useGameData();
+  if (progression.length < 2) return null;
+  return (
+    <Section title="Carry progression">
+      <p className="mb-2 text-xs text-muted-foreground">
+        Who held the items at the end. Boards that go out early still have them on earlier carries, so later carries
+        place better.
+      </p>
+      <StatTable
+        showDelta={false}
+        keepOrder
+        rows={progression.map((stage) => ({
+          key: stage.carries.join("+"),
+          label: (
+            <span className="flex items-center gap-1">
+              {stage.carries.map((apiName) => {
+                const champion = championsByApi.get(apiName);
+                return champion ? <ChampionIcon key={apiName} champion={champion} className="size-6" /> : null;
+              })}
+              <span className="ml-1 truncate">
+                {stage.carries.map((apiName) => championsByApi.get(apiName)?.name ?? apiName).join(" & ")}
+              </span>
+            </span>
+          ),
+          line: stage,
+        }))}
+      />
+    </Section>
+  );
+}
+
 function AutoCompPage() {
   const { id } = Route.useParams();
   const { set } = useActiveSet();
   const { championsByApi } = useGameData();
   const { rank } = Route.useSearch();
   const stats = useTierStats(rank);
-  const comp = useAutoComps(rank)?.find((entry) => entry.id === id);
+  const comps = useAutoComps(rank);
+  const comp = comps && findComp(comps, id);
   const openInBuilder = useOpenInBuilder();
 
   if (!stats) return <NoStats subject="this comp" />;
@@ -127,6 +162,7 @@ function AutoCompPage() {
               <UnitFrequencies units={comp.flex} />
             </Section>
           )}
+          <CarryProgression progression={comp.progression} />
         </div>
         <aside className="space-y-4">
           {comp.places && (

@@ -9,14 +9,13 @@ import { compsForSet } from "@/content";
 import { type Comp, type Playstyle, PLAYSTYLES, type Tier } from "@/content/types";
 import { AutoCompCard, CompCard } from "@/features/comps/components/comp-card";
 import { CompFilterBar } from "@/features/comps/components/comp-filter-bar";
-import { type CompFilters, parseCompFilters, passesCompFilters, tooManyCarries } from "@/features/comps/filters";
+import { type CompFilters, parseCompFilters, passesCompFilters } from "@/features/comps/filters";
 import { TierRows } from "@/features/comps/components/tier-rows";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import { parseRank } from "@/features/stats/scope";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
-import { MAX_CARRIES } from "@/lib/game/comp-signature";
 import { computeTraits } from "@/lib/game/traits";
 import { useUpdateSearch } from "@/lib/use-update-search";
 
@@ -41,15 +40,8 @@ export const Route = createFileRoute("/tierlist/comps")({
   component: CompTierListPage,
 });
 
-/** The empty state for filters that match nothing, explaining when the carry picks can't all fit. */
-function NoMatches({ filters, what }: { filters: CompFilters; what: string }) {
-  return (
-    <EmptyState>
-      {tooManyCarries(filters)
-        ? `Comps have at most ${MAX_CARRIES} carries, so none can carry all ${filters.carries!.length} picked champions.`
-        : `No ${what} match these filters.`}
-    </EmptyState>
-  );
+function NoMatches({ what }: { what: string }) {
+  return <EmptyState>No {what} match these filters.</EmptyState>;
 }
 
 const GuideRows = memo(function GuideRows({
@@ -69,7 +61,7 @@ const GuideRows = memo(function GuideRows({
       passesCompFilters(
         {
           name: comp.name,
-          units: comp.board.map((unit) => ({ apiName: unit.apiName, carry: Boolean(unit.carry) })),
+          units: comp.board.map((unit) => unit.apiName),
           traits: computeTraits(
             comp.board.map((unit) => ({ apiName: unit.apiName, items: unit.items ?? [] })),
             championsByApi,
@@ -83,7 +75,7 @@ const GuideRows = memo(function GuideRows({
         championName,
       ),
   );
-  if (filtered.length === 0) return <NoMatches filters={filters} what="guides" />;
+  if (filtered.length === 0) return <NoMatches what="guides" />;
   const rows: Partial<Record<Tier, Comp[]>> = Object.groupBy(filtered, (comp) => comp.tier);
   return (
     <TierRows
@@ -114,7 +106,7 @@ const StatRows = memo(function StatRows({
     passesCompFilters(
       {
         name: comp.name,
-        units: comp.units.map((unit) => ({ apiName: unit.apiName, carry: comp.carries.includes(unit.apiName) })),
+        units: comp.units.map((unit) => unit.apiName),
         traits: comp.traits.map((entry) => entry.trait),
       },
       filters,
@@ -122,7 +114,7 @@ const StatRows = memo(function StatRows({
     ),
   );
   const shown = useProgressiveCount(filtered.length);
-  if (filtered.length === 0) return <NoMatches filters={filters} what="comps" />;
+  if (filtered.length === 0) return <NoMatches what="comps" />;
   // Comps come best first, so the first batches fill the top tiers.
   const rows: Partial<Record<Tier, AutoComp[]>> = Object.groupBy(filtered.slice(0, shown), (comp) => comp.tier ?? "C");
   return (

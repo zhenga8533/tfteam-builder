@@ -31,11 +31,7 @@ export function Carries({ units }: { units: CompUnit[] }) {
         if (!champion) return null;
         return (
           <li key={unit.hex} className="flex items-center gap-3">
-            <ChampionLink
-              champion={champion}
-              className="flex-1 text-sm font-medium"
-              iconClassName={cn("size-10", unit.carry && "ring-primary")}
-            />
+            <ChampionLink champion={champion} className="flex-1 text-sm font-medium" iconClassName="size-10" />
             <span className="flex gap-1">
               {(unit.items ?? []).map((apiName, index) => {
                 const item = itemsByApi.get(apiName);

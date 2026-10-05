@@ -143,6 +143,55 @@ describe("CompDetector", () => {
     expect(comps[0]!.games).toBe(games + 1);
   });
 
+  it("merges a board whose items end on different carries, named after the carries it wins with most", () => {
+    const traits: [string, number, number][] = [
+      ["Blossom", 5, 5],
+      ["Spellweaver", 2, 2],
+    ];
+    const items = ["JG", "BB", "Rab"];
+    // The same board; it goes out early with the items still on Karma, and finishes well once they're on Ahri.
+    const early = (placement: number) =>
+      board(
+        placement,
+        [
+          ["Ahri", []],
+          ["Sett", []],
+          ["Karma", items],
+          ["Zyra", []],
+        ],
+        traits,
+      );
+    const late = (placement: number) =>
+      board(
+        placement,
+        [
+          ["Ahri", items],
+          ["Sett", []],
+          ["Karma", []],
+          ["Zyra", []],
+        ],
+        traits,
+      );
+    // Another board with the same core traits but mostly other units stays its own comp.
+    const other = (placement: number) => board(placement, [["Zyra", items]], traits);
+    const comps = run([
+      ...Array.from({ length: games * 2 }, (_, i) => early(i === 0 ? 1 : 7)),
+      ...Array.from({ length: games }, (_, i) => late(i % 2 ? 2 : 1)),
+      ...Array.from({ length: games }, (_, i) => other(i === 0 ? 1 : 4)),
+    ]);
+    expect(comps.map((comp) => [comp.name, comp.games])).toEqual([
+      ["Blossom Zyra", games],
+      ["Blossom Ahri", games * 3],
+    ]);
+    const merged = comps[1]!;
+    expect(merged).toMatchObject({ signature: "Ahri|Blossom+Spellweaver", variants: ["Karma|Blossom+Spellweaver"] });
+    expect(merged.progression.map((stage) => [stage.carries, stage.games])).toEqual([
+      [["Karma"], games * 2],
+      [["Ahri"], games],
+    ]);
+    expect(comps[0]!.progression).toEqual([]);
+  });
+
   it("merges qualifying variants that share carries and main trait, keeping their signatures", () => {
     const brawlerVariant = (placement: number) =>
       board(

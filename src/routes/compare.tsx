@@ -13,6 +13,7 @@ import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count, percent } from "@/features/stats/format";
 import { parseRank } from "@/features/stats/scope";
 import { useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
+import { findComp } from "@/lib/game/comp-signature";
 import type { RankFloor } from "@/lib/data/schema";
 import { bestHolders } from "@/features/stats/builds";
 import type { StatLine } from "@/lib/data/schema";
@@ -221,7 +222,7 @@ function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
   const comps = useAutoComps(rank) ?? [];
   const { traitsByApi } = useGameData();
   const side = (id?: string): Side | undefined => {
-    const comp = comps.find((entry) => entry.id === id);
+    const comp = id ? findComp(comps, id) : undefined;
     if (!comp) return undefined;
     return {
       key: comp.id,
@@ -255,7 +256,7 @@ function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
       ],
     };
   };
-  const chosen = [a, b].flatMap((id) => comps.find((comp) => comp.id === id) ?? []);
+  const chosen = [a, b].flatMap((id) => (id && findComp(comps, id)) || []);
   return (
     <div className="space-y-4">
       <CompareTable sides={[side(a), side(b)]} />

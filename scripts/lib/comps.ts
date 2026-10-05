@@ -27,6 +27,11 @@ export const COMP_THRESHOLDS = {
   /** A final level needs this many of a comp's games before its placement is shown. */
   minLevelGames: 30,
   maxFlex: 6,
+  /**
+   * Comps with the same core traits whose core boards share this much (of both boards' units) are one comp at
+   * different stages: carries are whoever holds the items at the end, so they shift as the game goes on.
+   */
+  progressionOverlap: 0.75,
 } as const;
 
 const increment = <K>(map: Map<K, number>, key: K) => map.set(key, (map.get(key) ?? 0) + 1);
@@ -49,6 +54,59 @@ interface CompDetail {
   byLevel: Map<number, Counter>;
   /** Boards by the round they were knocked out on (winners left out). */
   knockouts: Map<number, number>;
+}
+
+const emptyDetail = (): CompDetail => ({
+  counter: emptyCounter(),
+  units: new Map(),
+  stars: new Map(),
+  itemSets: new Map(),
+  instances: new Map(),
+  traits: new Map(),
+  traitBreakpoints: new Map(),
+  byLevel: new Map(),
+  knockouts: new Map(),
+});
+
+function combineDetails(details: CompDetail[]): CompDetail {
+  const combined = emptyDetail();
+  for (const detail of details) {
+    addCounter(combined.counter, detail.counter);
+    mergeCounts(combined.units, detail.units);
+    mergeCounts(combined.stars, detail.stars);
+    mergeCounts(combined.itemSets, detail.itemSets);
+    mergeCounts(combined.instances, detail.instances);
+    mergeCounts(combined.traits, detail.traits);
+    mergeCounts(combined.traitBreakpoints, detail.traitBreakpoints);
+    for (const [level, counter] of detail.byLevel) addCounter(counterFor(combined.byLevel, level), counter);
+    mergeCounts(combined.knockouts, detail.knockouts);
+  }
+  return combined;
+}
+
+/** Shared units as a share of every unit on either board. */
+function overlap(a: Set<string>, b: Set<string>) {
+  const shared = [...a].filter((unit) => b.has(unit)).length;
+  return shared / Math.max(a.size + b.size - shared, 1);
+}
+
+/** A detected signature, with what decides which comp it belongs to. */
+interface Candidate {
+  signature: string;
+  detail: CompDetail;
+  carries: string;
+  coreTraits: string;
+  /** Carries plus the main trait: the same comp whose second trait varies. */
+  key: string;
+  coreUnits: Set<string>;
+}
+
+interface MergedComp {
+  signature: string;
+  variants: string[];
+  detail: CompDetail;
+  /** Boards by carries: a comp's items end up on different carries depending on how far it gets. */
+  stages: Map<string, Counter>;
 }
 
 /** Median knockout round, once enough boards report it. */
@@ -140,20 +198,7 @@ export class CompDetector {
     const target = this.assignment.get(this.signature(board));
     if (!target) return;
     let detail = this.details.get(target);
-    if (!detail) {
-      detail = {
-        counter: emptyCounter(),
-        units: new Map(),
-        stars: new Map(),
-        itemSets: new Map(),
-        instances: new Map(),
-        traits: new Map(),
-        traitBreakpoints: new Map(),
-        byLevel: new Map(),
-        knockouts: new Map(),
-      };
-      this.details.set(target, detail);
-    }
+    if (!detail) this.details.set(target, (detail = emptyDetail()));
     bump(detail.counter, board.placement);
     bump(counterFor(detail.byLevel, board.level), board.placement);
     if (board.lastRound !== undefined && board.placement > 1) increment(detail.knockouts, board.lastRound);
@@ -181,41 +226,51 @@ export class CompDetector {
     return core.sort((a, b) => breakpoint(b) - breakpoint(a))[0];
   }
 
+  private candidate(signature: string, detail: CompDetail): Candidate {
+    const [carries = "", coreTraits = ""] = signature.split("|");
+    const games = detail.counter[0];
+    return {
+      signature,
+      detail,
+      carries,
+      coreTraits,
+      key: `${carries}|${this.mainTrait(signature, detail) ?? signature}`,
+      coreUnits: new Set(
+        [...detail.units].filter(([, count]) => count >= games * COMP_THRESHOLDS.coreFrequency).map(([unit]) => unit),
+      ),
+    };
+  }
+
   /**
-   * Signatures with the same carries and main trait are one comp whose second trait varies (Riftbeast
-   * Ashe with Hunter or with Inferno), so their boards are combined under the most played signature.
+   * Signatures are one comp when they share carries and main trait (Riftbeast Ashe with Hunter or with Inferno),
+   * or core traits and most of the core board (the same board, its items on an earlier carry when it went out
+   * early). Each joins the most played comp it matches, so loose matches can't chain unrelated comps together.
    */
-  private merged(): { signature: string; variants: string[]; detail: CompDetail }[] {
-    const groups = Map.groupBy(
-      [...this.details].sort((a, b) => b[1].counter[0] - a[1].counter[0]),
-      ([signature, detail]) => `${signature.split("|")[0]}|${this.mainTrait(signature, detail) ?? signature}`,
-    );
-    return [...groups.values()].map((group) => {
-      // Map.groupBy never makes an empty group.
-      const [[signature, first], ...rest] = group as [[string, CompDetail], ...[string, CompDetail][]];
-      const detail: CompDetail = {
-        counter: [...first.counter] as Counter,
-        units: new Map(first.units),
-        stars: new Map(first.stars),
-        itemSets: new Map(first.itemSets),
-        instances: new Map(first.instances),
-        traits: new Map(first.traits),
-        traitBreakpoints: new Map(first.traitBreakpoints),
-        byLevel: new Map([...first.byLevel].map(([level, counter]) => [level, [...counter] as Counter])),
-        knockouts: new Map(first.knockouts),
+  private merged(): MergedComp[] {
+    const groups: Candidate[][] = [];
+    const byGames = [...this.details].sort((a, b) => b[1].counter[0] - a[1].counter[0]);
+    for (const candidate of byGames.map(([signature, detail]) => this.candidate(signature, detail))) {
+      const group = groups.find(
+        ([lead]) =>
+          lead!.key === candidate.key ||
+          (lead!.coreTraits === candidate.coreTraits &&
+            overlap(lead!.coreUnits, candidate.coreUnits) >= COMP_THRESHOLDS.progressionOverlap),
+      );
+      if (group) group.push(candidate);
+      else groups.push([candidate]);
+    }
+    return groups.map((group) => {
+      const stages = new Map<string, Counter>();
+      for (const { carries, detail } of group) addCounter(counterFor(stages, carries), detail.counter);
+      // Named after the carries it wins with most: the comp in its finished form.
+      const finished = [...stages].sort((a, b) => b[1][3] - a[1][3])[0]![0];
+      const { signature } = group.find((candidate) => candidate.carries === finished)!;
+      return {
+        signature,
+        variants: group.map((candidate) => candidate.signature).filter((variant) => variant !== signature),
+        detail: combineDetails(group.map((candidate) => candidate.detail)),
+        stages,
       };
-      for (const [, other] of rest) {
-        addCounter(detail.counter, other.counter);
-        mergeCounts(detail.units, other.units);
-        mergeCounts(detail.stars, other.stars);
-        mergeCounts(detail.itemSets, other.itemSets);
-        mergeCounts(detail.instances, other.instances);
-        mergeCounts(detail.traits, other.traits);
-        mergeCounts(detail.traitBreakpoints, other.traitBreakpoints);
-        for (const [level, counter] of other.byLevel) addCounter(counterFor(detail.byLevel, level), counter);
-        mergeCounts(detail.knockouts, other.knockouts);
-      }
-      return { signature, variants: rest.map(([variant]) => variant), detail };
     });
   }
 
@@ -225,7 +280,7 @@ export class CompDetector {
     const comps: AutoComp[] = [];
     const secondary = new Map<string, string>();
 
-    for (const { signature, variants, detail } of this.merged()) {
+    for (const { signature, variants, detail, stages } of this.merged()) {
       const games = detail.counter[0];
       const [carryPart = "", traitPart = ""] = signature.split("|");
       const carries = carryPart.split("+").filter(Boolean);
@@ -296,6 +351,12 @@ export class CompDetector {
         flex,
         level: levels[Math.floor(levels.length / 2)] ?? 8,
         byLevel,
+        progression:
+          stages.size > 1
+            ? [...stages]
+                .map(([carries, counter]) => ({ carries: carries.split("+"), ...statLine(counter, games) }))
+                .sort((a, b) => b.avg - a.avg)
+            : [],
         ...knockoutRound(detail),
         ...statLine(detail.counter, this.boards, { places: true }),
       });

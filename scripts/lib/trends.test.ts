@@ -53,12 +53,19 @@ describe("patch trends", () => {
 });
 
 describe("comp trends", () => {
+  const comp = (signature: string, avg: number, games = 100, variants: string[] = []) =>
+    ({ id: signature, signature, variants, avg, games }) as AutoComp;
+
   it("compares each comp with the same comp on the previous patch", () => {
-    const comp = (id: string, avg: number) => ({ id, avg }) as AutoComp;
     const result = compTrends([comp("a", 3.5), comp("new", 4)], [comp("a", 3.9), comp("gone", 4.2)]);
     expect(result.map((entry) => [entry.id, entry.trend])).toEqual([
       ["a", -0.4],
       ["new", undefined],
     ]);
+  });
+
+  it("compares a merged comp with every previous comp it now covers, weighted by games", () => {
+    const [merged] = compTrends([comp("a", 4, 400, ["b"])], [comp("a", 3, 300), comp("b", 7, 100)]);
+    expect(merged!.trend).toBe(0);
   });
 });

@@ -59,11 +59,17 @@ export function patchHistory(summaries: SetStats[]): PatchHistory {
   };
 }
 
-/** Each comp's change in average placement since the same comp (same ID) on the previous patch. */
+/**
+ * Each comp's change in average placement since the previous patch, against every comp there that it now covers:
+ * comps merge and split between patches, so a previous comp counts when its signature is one of this comp's.
+ */
 export function compTrends(current: AutoComp[], previous: AutoComp[]): AutoComp[] {
-  const before = new Map(previous.map((comp) => [comp.id, comp]));
   return current.map((comp) => {
-    const old = before.get(comp.id);
-    return old ? { ...comp, trend: round(comp.avg - old.avg, 2) } : comp;
+    const signatures = new Set([comp.signature, ...comp.variants]);
+    const old = previous.filter((entry) => signatures.has(entry.signature));
+    const games = old.reduce((sum, entry) => sum + entry.games, 0);
+    if (!games) return comp;
+    const avg = old.reduce((sum, entry) => sum + entry.avg * entry.games, 0) / games;
+    return { ...comp, trend: round(comp.avg - avg, 2) };
   });
 }
