@@ -28,14 +28,7 @@ import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
 import { type FileSize, renderReport, type SetReport } from "./lib/report.ts";
 import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
-import {
-  buildFloorStats,
-  buildRegionStats,
-  buildSetStats,
-  distinctFloors,
-  explorerQuotas,
-  FLOOR_BUCKETS,
-} from "./lib/stats.ts";
+import { buildFloorStats, buildRegionStats, buildSetStats, distinctFloors, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
@@ -45,8 +38,6 @@ const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
 /** The site shows the newest patch, falling back to the previous one right after a patch. */
 const PATCHES_PER_SET = 2;
-/** Boards in the sample the builder compares its board with; a larger sample means a bigger download. */
-const EXPLORER_SAMPLE = 150_000;
 
 const { values: args } = parseArgs({ options: { stats: { type: "string" } } });
 
@@ -135,25 +126,13 @@ async function writeLittleLegends(dir: string, legends: LittleLegendAccumulator)
  * The Explorer's files (see `EXPLORER_FILES`), from every board behind `stats` and the other offered rank floors, each
  * with its rank so the Explorer can show any offered floor.
  */
-async function writeExplorer(
-  dir: string,
-  read: ReadBoards,
-  data: SetData,
-  stats: SetStats,
-  patches: PatchCounters[],
-  chunks: BoardChunk[],
-) {
-  // Ready stats are always from one of the loaded patches.
-  const patch = patches.find((entry) => entry.patch === stats.patch)!;
+async function writeExplorer(dir: string, read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const offered = [stats.rankFloor, ...(stats.ranks ?? [])];
   const lowest = RANK_OPTIONS.findLast((floor) => offered.includes(floor)) ?? stats.rankFloor;
   const buckets = new Set(FLOOR_BUCKETS[lowest]);
-  const collector = new ExplorerCollector(explorerQuotas(patch, lowest, EXPLORER_SAMPLE));
+  const collector = new ExplorerCollector();
   const resolver = new BoardResolver(data);
-  const newestFirst = chunks
-    .filter((chunk) => chunk.patch === stats.patch)
-    .sort((a, b) => b.name.localeCompare(a.name));
-  for (const chunk of newestFirst) {
+  for (const chunk of chunks.filter((entry) => entry.patch === stats.patch)) {
     for (const row of await read(chunk)) if (buckets.has(row[2])) collector.add(row[2], resolver.board(row));
   }
 
@@ -163,7 +142,7 @@ async function writeExplorer(
     await writeFile(join(dir, path), contents);
     return typeof contents === "string" ? Buffer.byteLength(contents) : contents.byteLength;
   };
-  const writeBoards = (path: string, boards: ExplorerBoard[], population?: number[]) =>
+  const writeBoards = (path: string, boards: ExplorerBoard[], population: number[]) =>
     write(path, gzipSync(encodeExplorer(boards, defaultRank, population), { level: 9 }));
   const writeAll = async (kind: string, files: Map<string, ExplorerBoard[]>, path: (apiName: string) => string) => {
     let bytes = 0;
@@ -174,11 +153,7 @@ async function writeExplorer(
   const champions = await writeAll("champion", collector.champions, EXPLORER_FILES.champion);
   const traits = await writeAll("trait", collector.traits, EXPLORER_FILES.trait);
   const totals = await write(EXPLORER_FILES.totals, JSON.stringify(collector.totals.results(defaultRank)));
-  const sample = await writeBoards(EXPLORER_FILES.sample, collector.sample);
-  console.log(
-    `  explorer: ${champions}, ${traits}, totals (${mb(totals)}), ` +
-      `sample of ${collector.sample.length} boards (${mb(sample)})`,
-  );
+  console.log(`  explorer: ${champions}, ${traits}, totals (${mb(totals)})`);
 }
 
 const mb = (bytes: number) => `${(bytes / 1e6).toFixed(1)} MB`;
@@ -187,14 +162,7 @@ const mb = (bytes: number) => `${(bytes / 1e6).toFixed(1)} MB`;
  * Everything beyond the tier list stats: detail pages, comps, Little Legends and the Explorer's files. Returns
  * figures for the deploy summary.
  */
-async function writeDetails(
-  store: StatsStore,
-  read: ReadBoards,
-  data: SetData,
-  stats: SetStats,
-  patches: PatchCounters[],
-  chunks: BoardChunk[],
-) {
+async function writeDetails(store: StatsStore, read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const dir = join(OUT_DIR, `set${data.number}`);
   await rm(dir, { recursive: true, force: true });
   const figures = { comps: 0, boards: 0, withRounds: 0, withCompanions: 0 };
@@ -233,7 +201,7 @@ async function writeDetails(
   );
 
   await writeLittleLegends(dir, legends);
-  await writeExplorer(dir, read, data, stats, patches, chunks);
+  await writeExplorer(dir, read, data, stats, chunks);
   return { ...figures, comps: detected.length };
 }
 
@@ -379,7 +347,7 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
   await writeFile(join(OUT_DIR, `set${set}.json`), json);
   if (ready) await store.putSummary(set, stats.patch, json);
   // Clears and rewrites the set's folder, so the region and floor files are written after it.
-  const figures = await writeDetails(store, read, data, stats, patches, setChunks);
+  const figures = await writeDetails(store, read, data, stats, setChunks);
   await writeRegionFiles(set, regionStats);
   const floors = await writeFloorFiles(store, read, data, floorStats, setChunks);
   if (ready) {
@@ -422,7 +390,7 @@ async function main() {
     );
     return;
   }
-  // Each set's boards are read in several passes (counters, champion and comp details, the Explorer sample).
+  // Each set's boards are read in several passes (counters, champion and comp details, the Explorer's files).
   const store = new StatsStore(new CachingBlobStore(source.blobs, "boards/"));
   const chunks = await store.listBoardChunks();
 

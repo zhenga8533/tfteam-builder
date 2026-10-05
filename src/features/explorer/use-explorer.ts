@@ -68,7 +68,7 @@ export function useExplorer(url: string | null, filters: ExplorerFilter[], floor
   return { status, result: answer, pending };
 }
 
-/** Stats for sample boards that share the most of `units`; `null` units skips loading the sample. */
+/** Stats for boards in the file at `url` that share the most of `units`; `null` units skips loading it. */
 export function useSimilarBoards(url: string | null, units: string[] | null) {
   const { status, answer } = useBoardWorker(url && units ? { type: "similar", url, units } : null);
   return { status, similar: answer ?? null };

@@ -71,12 +71,7 @@ function explorerSummary(files: FileSize[]) {
     const file = explorer.find((entry) => entry.path.endsWith(`/explorer/${name}`));
     return file ? [`${label} ${explorerSize(file)}`] : [];
   };
-  const parts = [
-    ...kind("champion", "champions"),
-    ...kind("trait", "traits"),
-    ...single("totals", "totals.json"),
-    ...single("sample", "sample.bin.gz"),
-  ];
+  const parts = [...kind("champion", "champions"), ...kind("trait", "traits"), ...single("totals", "totals.json")];
   return `**Explorer:** ${parts.join("; ")}`;
 }
 

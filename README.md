@@ -196,7 +196,7 @@ match data, so the augment tier list and comp guides stay hand-written.
 - **Explorer** (`/explorer`): every board of the patch, queried in the browser (in a Web Worker). A query loads its
   first champion's file, else its first trait's (each holds every board with them), else the totals (every board's
   counts by rank and level). Filter by champions (star level, items), traits and level, and see which champions,
-  traits and items do best with them. The builder compares its board with a sample of the 150,000 newest boards.
+  traits and items do best with them. The builder compares its board with every board that has its main carry.
 
 To enable crawling:
 

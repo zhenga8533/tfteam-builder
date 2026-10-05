@@ -83,6 +83,12 @@ describe("similar boards", () => {
     // Nobody fields Kayle, so the 10 Ahri + Sett + Zyra boards share 3 of the 4.
     expect(similarBoards(data, ["Ahri", "Sett", "Zyra", "Kayle"], 10)).toMatchObject({ shared: 3, total: 3 });
   });
+
+  it("gives shares of the whole patch from a champion's file", () => {
+    const ahriBoards = boards.filter((entry) => entry.units.some((unit) => unit.apiName === "Ahri"));
+    const ahri = decodeExplorer(encodeExplorer(ahriBoards, 0, [200]).slice().buffer);
+    expect(similarBoards(ahri, ["Ahri", "Sett", "Zyra"], 10)?.line).toMatchObject({ games: 10, play: 0.05 });
+  });
 });
 
 describe("explorer rank floors", () => {

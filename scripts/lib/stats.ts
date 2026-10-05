@@ -23,17 +23,6 @@ export const FLOOR_BUCKETS: Record<RankFloor, RankBucket[]> = {
   gold: [...RANK_BUCKETS],
 };
 
-/**
- * How many of the Explorer's `total` boards each rank bucket in `floor` gets: its share of the patch's boards. Taking
- * the newest boards per bucket, rather than the newest overall, keeps the sample's rank mix the same as the stats',
- * whatever ranks the latest crawls happened to favour.
- */
-export function explorerQuotas(patch: PatchCounters, floor: RankFloor, total: number): Map<RankBucket, number> {
-  const boards = FLOOR_BUCKETS[floor].map((bucket) => [bucket, patch.buckets[bucket]?.boards ?? 0] as const);
-  const all = boards.reduce((sum, [, count]) => sum + count, 0);
-  return new Map(boards.map(([bucket, count]) => [bucket, all ? Math.round((total * count) / all) : 0]));
-}
-
 function countersAtFloor(patch: PatchCounters, floor: RankFloor): Counters {
   const combined = emptyCounters();
   for (const bucket of FLOOR_BUCKETS[floor]) {

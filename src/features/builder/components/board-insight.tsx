@@ -7,7 +7,7 @@ import type { ExplorerFilter } from "@/lib/explorer/engine";
 import { EXPLORER_FILES } from "@/lib/explorer/files";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent } from "@/features/stats/format";
-import { useActiveSet } from "@/lib/data/hooks";
+import { useActiveSet, useGameData } from "@/lib/data/hooks";
 import { statsQuery } from "@/lib/data/queries";
 import { useBoardSummary } from "../use-builder";
 
@@ -16,19 +16,32 @@ const MIN_UNITS = 3;
 /** Units carried over to the Explorer when following the link. */
 const EXPLORE_UNITS = 3;
 
-/** How ranked boards like the one being built place, from the Explorer's sample of recent games. */
+/**
+ * How ranked boards like the one being built place: every board with its main carry (the unit holding the most
+ * items, then the costliest) that shares the most of its units.
+ */
 export function BoardInsight() {
   const { patch, set } = useActiveSet();
+  const { championsByApi } = useGameData();
   // Not suspending: the builder works without stats; this strip just stays hidden.
   const stats = useQuery(statsQuery(patch, set)).data;
   const { units } = useBoardSummary();
-  const names = [...new Set(units.filter((unit) => !unit.flex).map((unit) => unit.apiName))].sort();
-  const url = patch === "latest" && stats?.status === "ready" ? explorerUrl(set, EXPLORER_FILES.sample) : null;
+  const core = units
+    .filter((unit) => !unit.flex)
+    .toSorted(
+      (a, b) =>
+        b.items.length - a.items.length ||
+        (championsByApi.get(b.apiName)?.cost ?? 0) - (championsByApi.get(a.apiName)?.cost ?? 0),
+    );
+  const names = [...new Set(core.map((unit) => unit.apiName))].sort();
+  const carry = core[0] && championsByApi.get(core[0].apiName);
+  const url =
+    patch === "latest" && stats?.status === "ready" && carry
+      ? explorerUrl(set, EXPLORER_FILES.champion(carry.apiName))
+      : null;
   const { status, similar } = useSimilarBoards(url, names.length >= MIN_UNITS ? names : null);
   // Requiring every unit would usually match nothing, so the Explorer starts from the main item holders.
-  const explorerFilters: ExplorerFilter[] = units
-    .filter((unit) => !unit.flex)
-    .toSorted((a, b) => b.items.length - a.items.length)
+  const explorerFilters: ExplorerFilter[] = core
     .slice(0, EXPLORE_UNITS)
     .map((unit) => ({ type: "unit", unit: unit.apiName }));
 
@@ -42,8 +55,8 @@ export function BoardInsight() {
       ) : similar ? (
         <>
           <span className="text-muted-foreground">
-            Ranked boards with {similar.shared === similar.total ? "all" : `${similar.shared} of`} {similar.total} of
-            these units:
+            Ranked {carry?.name} boards with {similar.shared === similar.total ? "all" : `${similar.shared} of`}{" "}
+            {similar.total} of these units:
           </span>
           <span>
             <AvgPlacement line={similar.line} /> avg
