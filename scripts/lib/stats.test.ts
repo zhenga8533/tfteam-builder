@@ -3,7 +3,15 @@ import type { SetData, StatLine } from "../../src/lib/data/schema.ts";
 import { emptyCounters } from "../stats/aggregate.ts";
 import type { Counters, PatchCounters, RankBucket } from "../stats/types.ts";
 import { adjustedAverage, statLine } from "../../src/lib/game/stat-line.ts";
-import { assignTiers, buildFloorStats, buildSetStats, chooseSample, distinctFloors, MIN_GAMES } from "./stats.ts";
+import {
+  assignTiers,
+  buildFloorStats,
+  buildSetStats,
+  chooseSample,
+  distinctFloors,
+  explorerQuotas,
+  MIN_GAMES,
+} from "./stats.ts";
 
 const withMatches = (matches: number, extra: Partial<Counters> = {}): Counters => ({
   ...emptyCounters(),
@@ -176,5 +184,22 @@ describe("buildFloorStats", () => {
   it("is null for a floor without enough games", () => {
     const thin = [patch("18.3", { master_plus: withMatches(500), diamond: withMatches(1600) })];
     expect(buildFloorStats(data, thin, "master")).toBeNull();
+  });
+
+  it("splits the Explorer sample by each rank's share of the patch's boards, within the floor", () => {
+    const counters = patch("18.3", {
+      master_plus: withMatches(600),
+      diamond: withMatches(300),
+      emerald: withMatches(100),
+      platinum: withMatches(5000),
+    });
+    expect(explorerQuotas(counters, "emerald", 1000)).toEqual(
+      new Map([
+        ["master_plus", 600],
+        ["diamond", 300],
+        ["emerald", 100],
+      ]),
+    );
+    expect(explorerQuotas(counters, "master", 1000)).toEqual(new Map([["master_plus", 1000]]));
   });
 });
