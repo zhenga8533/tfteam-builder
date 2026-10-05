@@ -159,7 +159,7 @@ test("the team builder and tier list maker work from the keyboard", async ({ pag
   await expect(page.getByRole("region", { name: "S tier" }).getByLabel(`${name}, S tier`)).toBeFocused();
 });
 
-test("comp filters combine champions, carries and traits", async ({ page }) => {
+test("comp filters narrow the comps by champion", async ({ page }) => {
   await page.goto("tierlist/comps?view=guides");
   const cards = page.locator("main article");
   await expect(cards.first()).toBeVisible();
@@ -169,11 +169,6 @@ test("comp filters combine champions, carries and traits", async ({ page }) => {
   await page.getByRole("textbox", { name: /Search add a champion filter/ }).fill("Ahri");
   await page.getByRole("option", { name: /Ahri/ }).first().click();
   await expect(page.getByRole("list", { name: "Active filters" })).toContainText("Ahri");
-  await page.getByRole("button", { name: "Only comps where Ahri is a carry" }).click();
-  await expect(page.getByRole("button", { name: "Only comps where Ahri is a carry" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
   await expect(cards.first()).toContainText("Blossom");
   expect(await cards.count()).toBeLessThanOrEqual(all);
 

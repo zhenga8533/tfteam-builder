@@ -23,24 +23,11 @@ export function ChampionLink({
   label,
   className,
   iconClassName = "size-7",
-  badge,
-}: LinkProps & {
-  champion: Champion;
-  /** Shown over the icon's top-right corner. */
-  badge?: ReactNode;
-}) {
-  const icon = <ChampionIcon champion={champion} className={iconClassName} decorative={label !== null} />;
+}: LinkProps & { champion: Champion }) {
   return (
     <GameHoverCard content={<ChampionCard champion={champion} />}>
       <Link to="/champions/$apiName" params={{ apiName: champion.apiName }} className={cn(LINK_CLASS, className)}>
-        {badge ? (
-          <span className="relative shrink-0">
-            {icon}
-            <span className="absolute -top-1.5 -right-1.5">{badge}</span>
-          </span>
-        ) : (
-          icon
-        )}
+        <ChampionIcon champion={champion} className={iconClassName} decorative={label !== null} />
         {label !== null && <span className="truncate">{label ?? champion.name}</span>}
       </Link>
     </GameHoverCard>

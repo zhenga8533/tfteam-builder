@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { autoCompUnits } from "../auto-place";
 import { DIFFICULTY_TEXT } from "../styles";
 import { useCompTraits } from "../use-comp-traits";
-import { CarryBadge } from "./carry-badge";
 import { TrendBadge } from "./tier-badge";
 
 const MAX_TRAITS = 8;
@@ -56,7 +55,7 @@ function CompStats({ line, trend }: { line: StatLine; trend?: ReactNode }) {
 }
 
 /**
- * A comp's name, champions (carries first and ringed, with their items) and main traits, with stats in
+ * A comp's name, champions (carries first and larger, with their items) and main traits, with stats in
  * a column on the right; the whole card links to the comp.
  */
 function CompCardView({ title, link, units: board, badge, aside }: CompCardViewProps) {
@@ -103,12 +102,7 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
               key={unit.hex}
               className={cn("relative z-10 flex flex-col items-center gap-1", unit.carry ? "w-12" : "w-10")}
             >
-              <ChampionLink
-                champion={champion}
-                label={null}
-                iconClassName={unit.carry ? "size-12" : "size-10"}
-                badge={unit.carry && <CarryBadge />}
-              />
+              <ChampionLink champion={champion} label={null} iconClassName={unit.carry ? "size-12" : "size-10"} />
               {unit.items && unit.items.length > 0 && (
                 // Too small to be good touch targets, so they're images with hover cards rather than links; the
                 // comp's page lists the same items larger.
