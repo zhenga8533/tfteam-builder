@@ -1,3 +1,5 @@
+import { isStale } from "../../src/lib/data/constants.ts";
+
 /** What one set's stats build produced, for the deploy summary. */
 export interface SetReport {
   set: number;
@@ -32,8 +34,6 @@ interface Report {
   skipped?: string;
 }
 
-/** Data older than this suggests crawling has stopped. */
-const STALE_HOURS = 24;
 /** Files the browser downloads whole; past this they're worth a look. */
 const LARGE_FILE_BYTES = 2_000_000;
 const LARGEST_SHOWN = 5;
@@ -49,7 +49,7 @@ const size = (bytes: number) =>
 function age(updatedAt: string, now: Date) {
   const hours = (now.getTime() - new Date(updatedAt).getTime()) / 3_600_000;
   const text = hours < 48 ? `${Math.round(hours)} hours ago` : `${Math.round(hours / 24)} days ago`;
-  return { text, stale: hours > STALE_HOURS };
+  return { text, stale: isStale(updatedAt, now.getTime()) };
 }
 
 const explorerSize = (file: FileSize) => `${size(file.bytes)}${file.bytes > LARGE_EXPLORER_FILE_BYTES ? " ⚠️" : ""}`;

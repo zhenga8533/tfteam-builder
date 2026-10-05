@@ -7,10 +7,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { RANK_FLOORS, RANK_OPTIONS, type Region } from "@/lib/data/constants";
+import { isStale, RANK_FLOORS, RANK_OPTIONS, type Region } from "@/lib/data/constants";
 import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
+import { cn } from "@/lib/utils";
 import { count, RANK_FLOOR_LABEL, REGION_LABEL, timeAgo } from "../format";
 
 export interface RegionChoice {
@@ -136,7 +137,9 @@ export function StatsMeta({
     );
   }
 
+  const stale = isStale(stats.updatedAt);
   const notes = [
+    stale && "No new games have come in for over a day, so these stats may be behind; match collection may be paused.",
     stats.previousPatch &&
       `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`,
     // Only the automatic fallback below the usual floor needs explaining, not a lower floor someone picked.
@@ -168,7 +171,11 @@ export function StatsMeta({
           Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
           <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games
           <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch {stats.patch} ·{" "}
-          <time dateTime={stats.updatedAt} title={new Date(stats.updatedAt).toLocaleString()}>
+          <time
+            dateTime={stats.updatedAt}
+            title={new Date(stats.updatedAt).toLocaleString()}
+            className={cn(stale && "font-medium text-placement-worse")}
+          >
             Updated {timeAgo(stats.updatedAt)}
           </time>
         </span>
