@@ -5,7 +5,8 @@ import { dirname, join, relative, sep } from "node:path";
 export interface BlobStore {
   /** Returns null when the key doesn't exist. */
   get(key: string): Promise<Uint8Array | null>;
-  put(key: string, data: Uint8Array | string): Promise<void>;
+  /** `headers` are served with the object where the store supports it (R2), e.g. `Content-Type`. */
+  put(key: string, data: Uint8Array | string, headers?: Record<string, string>): Promise<void>;
   /** All keys starting with `prefix`, in no particular order. */
   list(prefix: string): Promise<string[]>;
   delete(key: string): Promise<void>;
@@ -74,9 +75,9 @@ export class CachingBlobStore implements BlobStore {
     return this.cache.get(key) ?? null;
   }
 
-  put(key: string, data: Uint8Array | string) {
+  put(key: string, data: Uint8Array | string, headers?: Record<string, string>) {
     this.cache.delete(key);
-    return this.inner.put(key, data);
+    return this.inner.put(key, data, headers);
   }
 
   list(prefix: string) {

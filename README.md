@@ -193,6 +193,11 @@ match data, so the augment tier list and comp guides stay hand-written.
 - **Patches:** stats are split by TFT patch, b patches included (18.3, 18.3b), using the release dates in
   [Riot's patch notes](https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/), because match data no
   longer reports a version. Right after a patch or b patch, the previous one is shown until there are enough games.
+- **Finished sets:** once a set is no longer the live set and no new boards have come in for 7 days, the next deploy
+  builds it one last time and freezes it. Its built files are archived in the stats bucket (`archive/set{N}/`) and its
+  Explorer files in the public bucket (`archive/set{N}/explorer/`), and later deploys publish the archive instead of
+  rebuilding the set; its pages say the stats are final. The set's boards stay in R2 but aren't read again. To rebuild a
+  frozen set from them, delete `archive/set{N}/complete.json` from the stats bucket; the next deploy re-freezes it.
 - **Explorer** (`/explorer`): every board of the patch, queried in the browser (in a Web Worker). A query loads its
   first champion's file, else its first trait's (each holds every board with them), else the totals (every board's
   counts by rank and level). Filter by champions (star level, items), traits and level, and see which champions,
@@ -219,7 +224,8 @@ To serve the Explorer's files from R2 instead of the site (they grow with the da
 4. Add repository variables `R2_PUBLIC_BUCKET` (the bucket name) and `EXPLORER_PUBLIC_URL` (its public URL).
 
 Each deploy then uploads the Explorer's files to a folder named after its workflow run and builds the site to read
-from there; folders from older deploys are deleted. Without these variables, the files are bundled into the site.
+from there; folders from older deploys are deleted. Frozen sets' files stay in `archive/`. Without these variables,
+the files are bundled into the site, and finished sets aren't frozen.
 
 A development key works for test crawls, but it expires 24 hours after it's generated: crawls then fail with
 "Riot rejected the API key" until `RIOT_API_KEY` is updated (`gh secret set RIOT_API_KEY` prompts for it). Riot meant
@@ -227,7 +233,8 @@ development keys for development, so use a personal or production key for the li
 
 To crawl locally: `RIOT_API_KEY=… npm run crawl -- --state .stats-local --platforms na1 --max-matches 200`, then
 `npm run stats -- --stats .stats-local`. With `--state`/`--stats` and no `R2_*` variables set, everything is stored
-in that local directory instead of R2. The stats build lists any unit, item or trait names it couldn't match to the
+in that local directory instead of R2. To try freezing locally, add `--public-stats <dir>` (standing in for the public
+bucket) and `--live-set <N>` with a newer set than the one crawled. The stats build lists any unit, item or trait names it couldn't match to the
 game data.
 
 > GitHub disables scheduled workflows in public repositories after 60 days without activity. If stats stop updating,

@@ -4,12 +4,16 @@
  */
 const KEPT_BUILDS = 3;
 
-/** Keys in folders of builds older than the newest `keep`; folders are named by GitHub Actions run IDs. */
+/**
+ * Keys in folders of builds older than the newest `keep`; build folders are named by GitHub Actions run IDs. Other
+ * folders (frozen sets' `archive/`) are never stale.
+ */
 export function staleKeys(keys: string[], keep = KEPT_BUILDS): string[] {
   const build = (key: string) => key.split("/")[0]!;
-  const builds = [...new Set(keys.map(build))].sort((a, b) => Number(b) - Number(a));
+  const buildKeys = keys.filter((key) => /^\d+$/.test(build(key)));
+  const builds = [...new Set(buildKeys.map(build))].sort((a, b) => Number(b) - Number(a));
   const kept = new Set(builds.slice(0, keep));
-  return keys.filter((key) => !kept.has(build(key)));
+  return buildKeys.filter((key) => !kept.has(build(key)));
 }
 
 /** Headers for a public Explorer file. Each build's files live in their own folder and never change, so caches keep them. */

@@ -7,6 +7,10 @@ describe("staleKeys", () => {
     expect(staleKeys(keys, 2)).toEqual(["9/set18/explorer/totals.json", "8/a"]);
     expect(staleKeys(keys)).toEqual(["8/a"]);
   });
+
+  it("never treats frozen sets' archive as a build", () => {
+    expect(staleKeys(["archive/set17/explorer/totals.json", "12/a", "11/a"], 1)).toEqual(["11/a"]);
+  });
 });
 
 describe("explorerHeaders", () => {

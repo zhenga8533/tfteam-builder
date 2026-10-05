@@ -15,6 +15,10 @@ export interface BoardChunk {
 
 const BOARD_KEY = /^boards\/set(\d+)\/([^/]+)\/([^/]+)\.jsonl\.gz$/;
 
+/** When a chunk's crawl run started: `20261001T120000Z-americas` → `2026-10-01T12:00:00Z`. */
+export const chunkTime = (name: string) =>
+  name.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z.*$/, "$1-$2-$3T$4:$5:$6Z");
+
 /**
  * Crawler state and stored boards:
  *   state/{platform}.json                          player pool and last-crawl times
@@ -24,6 +28,7 @@ const BOARD_KEY = /^boards\/set(\d+)\/([^/]+)\/([^/]+)\.jsonl\.gz$/;
  *   summaries/set{N}/{patch}.json                  built stats per patch, kept permanently
  *   summaries/set{N}/ranks/{floor}/{patch}.json    the same for other rank floors
  *   comps/set{N}/[ranks/{floor}/]{patch}.json       detected comps per patch, for comp trends
+ *   archive/set{N}/                                a finished set's final built files (see `freezeSet`)
  */
 export class StatsStore {
   readonly blobs: BlobStore;
@@ -152,6 +157,8 @@ export class StatsStore {
 
 const compsPrefix = (set: number, floor?: RankFloor) =>
   floor ? `comps/set${set}/ranks/${floor}/` : `comps/set${set}/`;
+
+export const archivePrefix = (set: number) => `archive/set${set}/`;
 
 const summaryPrefix = (set: number, floor?: RankFloor) =>
   floor ? `summaries/set${set}/ranks/${floor}/` : `summaries/set${set}/`;

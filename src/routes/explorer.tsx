@@ -66,7 +66,8 @@ function ExplorerPage() {
       : source.type === "trait"
         ? (traitsByApi.get(source.apiName)?.name ?? source.apiName)
         : null;
-  const url = patch === "latest" && stats?.status === "ready" ? explorerUrl(set, explorerFile(source)) : null;
+  const url =
+    patch === "latest" && stats?.status === "ready" ? explorerUrl(set, explorerFile(source), stats.frozen) : null;
   const floor = floorStats ? RANK_OPTIONS.indexOf(floorStats.rankFloor) : undefined;
   const { status, result, pending } = useExplorer(url, filters, floor);
 

@@ -137,7 +137,8 @@ export function StatsMeta({
     );
   }
 
-  const stale = isStale(stats.updatedAt);
+  // A finished set's stats are final, so their age isn't a warning sign.
+  const stale = !stats.frozen && isStale(stats.updatedAt);
   const notes = [
     stats.previousPatch &&
       `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`,
@@ -171,13 +172,17 @@ export function StatsMeta({
           <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games (
           {count(stats.matches)} matches)
           <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch {stats.patch} ·{" "}
-          <time
-            dateTime={stats.updatedAt}
-            title={new Date(stats.updatedAt).toLocaleString()}
-            className={cn(stale && "font-medium text-placement-worse")}
-          >
-            Updated {timeAgo(stats.updatedAt)}
-          </time>
+          {stats.frozen ? (
+            `Final stats for Set ${stats.set}`
+          ) : (
+            <time
+              dateTime={stats.updatedAt}
+              title={new Date(stats.updatedAt).toLocaleString()}
+              className={cn(stale && "font-medium text-placement-worse")}
+            >
+              Updated {timeAgo(stats.updatedAt)}
+            </time>
+          )}
         </span>
       </p>
       {stale && (

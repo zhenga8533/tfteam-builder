@@ -21,6 +21,13 @@ export interface SetReport {
   unmapped: string[];
 }
 
+/** A finished set whose final stats are published from the archive (see `freezeSet`). */
+export interface FrozenSet {
+  set: number;
+  patch: string;
+  frozenAt: string;
+}
+
 export interface FileSize {
   path: string;
   bytes: number;
@@ -28,6 +35,7 @@ export interface FileSize {
 
 interface Report {
   sets: SetReport[];
+  frozen?: FrozenSet[];
   files: FileSize[];
   now: Date;
   /** Why no stats were built, when none were. */
@@ -79,7 +87,7 @@ function explorerSummary(files: FileSize[]) {
  * The stats build's summary as Markdown, with ⚠️ on anything that needs a look. Unmapped names aren't flagged:
  * some (e.g. consumables) never map, so they'd be noise on every deploy.
  */
-export function renderReport({ sets, files, now, skipped }: Report): string {
+export function renderReport({ sets, frozen = [], files, now, skipped }: Report): string {
   const lines = ["## Match stats"];
   if (skipped) return [...lines, "", `⚠️ ${skipped}`, ""].join("\n");
 
@@ -104,6 +112,13 @@ export function renderReport({ sets, files, now, skipped }: Report): string {
       for (const region of report.regions) lines.push(`| ${region.region} | ${count(region.matches)} |`);
     }
     if (report.unmapped.length) lines.push("", `Unmapped names, left out of the stats: ${report.unmapped.join("; ")}`);
+  }
+
+  if (frozen.length) {
+    lines.push("", "### Frozen sets", "");
+    for (const entry of frozen) {
+      lines.push(`- Set ${entry.set}: final stats from patch ${entry.patch}, frozen ${entry.frozenAt.slice(0, 10)}`);
+    }
   }
 
   const total = files.reduce((sum, file) => sum + file.bytes, 0);
