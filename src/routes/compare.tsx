@@ -42,6 +42,10 @@ export const Route = createFileRoute("/compare")({
   component: ComparePage,
 });
 
+/** A side's champion or item: the icon above the name on phones, and long names wrap, so they fit the narrow columns. */
+const HEADER_CLASS =
+  "text-base font-semibold max-sm:flex-col max-sm:items-start max-sm:text-sm max-sm:[&>span]:whitespace-normal";
+
 interface Side {
   key: string;
   header: ReactNode;
@@ -103,12 +107,12 @@ function CompareTable({
 
   return (
     <div className="overflow-x-auto rounded-xl border bg-card">
-      <table className="w-full text-sm">
+      <table className="w-full table-fixed text-sm">
         <thead>
           <tr className="border-b">
-            <th className="w-32" />
+            <th className="w-24 sm:w-32" />
             {sides.map((side, index) => (
-              <th key={index} className="p-3 text-left font-normal">
+              <th key={index} className="p-2 text-left font-normal sm:p-3">
                 {side?.header ?? <span className="text-muted-foreground">Pick one above</span>}
               </th>
             ))}
@@ -117,11 +121,14 @@ function CompareTable({
         <tbody>
           {rows.map((row) => (
             <tr key={row.label} className="border-t first:border-t-0">
-              <th scope="row" className="p-3 text-left text-xs font-medium text-muted-foreground">
+              <th scope="row" className="p-2 text-left text-xs font-medium text-muted-foreground sm:p-3">
                 {row.label}
               </th>
               {row.cells.map((cell, index) => (
-                <td key={index} className={cn("p-3 tabular-nums", row.best === index && "font-semibold text-cost-2")}>
+                <td
+                  key={index}
+                  className={cn("p-2 tabular-nums sm:p-3", row.best === index && "font-semibold text-cost-2")}
+                >
                   {cell}
                 </td>
               ))}
@@ -142,7 +149,7 @@ function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFl
     const best = stats?.bestItems[champion.apiName] ?? [];
     return {
       key: champion.apiName,
-      header: <ChampionLink champion={champion} iconClassName="size-10" className="text-base font-semibold" />,
+      header: <ChampionLink champion={champion} iconClassName="size-10" className={HEADER_CLASS} />,
       line: stats?.units[champion.apiName],
       details: [
         { label: "Cost", value: <span className={COST_TEXT[champion.cost]}>{champion.cost}</span> },
@@ -163,7 +170,7 @@ function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFl
         {
           label: "Best items",
           value: best.length ? (
-            <span className="flex gap-1">
+            <span className="flex flex-wrap gap-1">
               {best.slice(0, 3).flatMap((line) => {
                 const item = itemsByApi.get(line.item);
                 return item ? [<ItemLink key={line.item} item={item} label={null} iconClassName="size-7" />] : [];
@@ -188,14 +195,14 @@ function ItemCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
     const holders = bestHolders(item.apiName, stats?.bestItems ?? {}, championsByApi, 4);
     return {
       key: item.apiName,
-      header: <ItemLink item={item} iconClassName="size-10" className="text-base font-semibold" />,
+      header: <ItemLink item={item} iconClassName="size-10" className={HEADER_CLASS} />,
       line: stats?.items[item.apiName],
       details: [
         { label: "Type", value: ITEM_KIND_LABELS[item.kind] },
         {
           label: "Best on",
           value: holders.length ? (
-            <span className="flex gap-1">
+            <span className="flex flex-wrap gap-1">
               {holders.map(({ champion }) => (
                 <ChampionLink key={champion.apiName} champion={champion} label={null} iconClassName="size-7" />
               ))}

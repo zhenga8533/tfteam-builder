@@ -23,7 +23,7 @@ const MAX_ITEMS = 3;
 function ItemLabel({ items, linked = false }: { items: string[]; linked?: boolean }) {
   const { itemsByApi } = useGameData();
   return (
-    <span className="flex items-center gap-1.5">
+    <span className="flex min-w-0 items-center gap-1.5">
       {items.map((apiName, index) => {
         const item = itemsByApi.get(apiName);
         if (item && linked) return <ItemLink key={index} item={item} label={null} />;
@@ -85,7 +85,7 @@ function BuildFinder({ stats, chosen, onChange, shown }: BuildFinderProps) {
               <button
                 type="button"
                 onClick={() => onChange([...chosen, item])}
-                className="group flex w-full items-center gap-2 text-left"
+                className="group flex w-full min-w-0 items-center gap-2 text-left"
                 aria-label={`Add ${itemsByApi.get(item)?.name ?? item}`}
               >
                 <Plus className="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />

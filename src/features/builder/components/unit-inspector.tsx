@@ -31,7 +31,10 @@ export function UnitInspector({ className }: { className?: string }) {
       >
         <MousePointerClick className="size-6" />
         <p>Select a unit on the board to set its star level and items.</p>
-        <p className="text-xs">Drag to move · Right-click or drag off to remove</p>
+        <p className="text-xs">
+          Drag to move · <span className="pointer-coarse:hidden">Right-click or drag off</span>
+          <span className="hidden pointer-coarse:inline">Drag off the board</span> to remove
+        </p>
       </div>
     );
   }
