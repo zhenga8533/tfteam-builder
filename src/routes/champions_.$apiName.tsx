@@ -30,12 +30,14 @@ function Partners({ stats }: { stats: ChampionStats }) {
   const { championsByApi } = useGameData();
   return (
     <StatTable
+      search="Search champions"
       rows={stats.partners.flatMap((partner) => {
         const champion = championsByApi.get(partner.unit);
         if (!champion) return [];
         return [
           {
             key: partner.unit,
+            name: champion.name,
             label: <ChampionLink champion={champion} />,
             line: partner,
           },
@@ -49,6 +51,7 @@ function Traits({ stats }: { stats: ChampionStats }) {
   const { traitsByApi } = useGameData();
   return (
     <StatTable
+      search="Search traits"
       rows={stats.traits.flatMap((entry) => {
         const trait = traitsByApi.get(entry.trait);
         const breakpoint = trait?.breakpoints.find((b) => b.minUnits === entry.minUnits);
@@ -56,6 +59,7 @@ function Traits({ stats }: { stats: ChampionStats }) {
         return [
           {
             key: traitKey(entry.trait, entry.minUnits),
+            name: trait.name,
             label: (
               <TraitLink
                 trait={trait}

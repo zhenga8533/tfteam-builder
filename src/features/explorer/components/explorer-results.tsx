@@ -1,5 +1,7 @@
 import { Plus } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { itemKindsIn, type ItemFilters, matchesItemFilters } from "@/components/game/filter-params";
+import { ItemFilterBar } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon, TraitIcon } from "@/components/game/icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatTable } from "@/features/stats/components/stat-table";
@@ -10,6 +12,7 @@ import type { ExplorerFilter, ExplorerResult, ExplorerRow } from "@/lib/explorer
 import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 const BASELINE = "the average of the boards matching your filters";
+const LIMIT = 20;
 
 function AddButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
   return (
@@ -25,6 +28,42 @@ function AddButton({ label, onClick, children }: { label: string; onClick: () =>
   );
 }
 
+/** Items held by a filtered unit, with item search and category filters; picking one requires it. */
+function UnitItems({ rows, onRequire }: { rows: ExplorerRow[]; onRequire: (item: string) => void }) {
+  const { itemsByApi } = useGameData();
+  const [filters, setFilters] = useState<ItemFilters>({});
+  const held = rows.flatMap((row) => {
+    const item = itemsByApi.get(row.key);
+    return item ? [{ row, item }] : [];
+  });
+  // Like the tables' own search: only offered when there are more rows than the table shows at first.
+  const filterable = held.length > LIMIT;
+  return (
+    <div className="space-y-3">
+      {filterable && (
+        <ItemFilterBar value={filters} onChange={setFilters} kinds={itemKindsIn(held.map(({ item }) => item))} />
+      )}
+      <StatTable
+        deltaBaseline={BASELINE}
+        limit={LIMIT}
+        empty={filterable ? "No items match these filters." : undefined}
+        rows={held
+          .filter(({ item }) => !filterable || matchesItemFilters([item], filters))
+          .map(({ row, item }) => ({
+            key: row.key,
+            line: row.line,
+            label: (
+              <AddButton label={`Require ${item.name}`} onClick={() => onRequire(row.key)}>
+                <ItemIcon item={item} className="size-7" decorative />
+                <span className="truncate">{item.name}</span>
+              </AddButton>
+            ),
+          }))}
+      />
+    </div>
+  );
+}
+
 interface ExplorerResultsProps {
   result: ExplorerResult;
   filters: ExplorerFilter[];
@@ -33,7 +72,7 @@ interface ExplorerResultsProps {
 
 /** Summary of matching boards, plus what to add next: units, traits, and items on each filtered unit. */
 export function ExplorerResults({ result, filters, onChange }: ExplorerResultsProps) {
-  const { championsByApi, itemsByApi, traitsByApi } = useGameData();
+  const { championsByApi, traitsByApi } = useGameData();
   const { summary } = result;
   if (!summary)
     return <p className="py-16 text-center text-muted-foreground">No boards in the sample match these filters.</p>;
@@ -47,6 +86,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
     return [
       {
         key: row.key,
+        name: champion.name,
         line: row.line,
         label: (
           <AddButton label={`Filter by ${champion.name}`} onClick={() => add({ type: "unit", unit: row.key })}>
@@ -65,6 +105,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
     return [
       {
         key: row.key,
+        name: trait.name,
         line: row.line,
         label: (
           <AddButton
@@ -109,43 +150,24 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
           ))}
         </TabsList>
         <TabsContent value="units" className="pt-3">
-          <StatTable rows={unitRows} deltaBaseline={BASELINE} limit={20} />
+          <StatTable rows={unitRows} deltaBaseline={BASELINE} limit={LIMIT} search="Search champions" />
         </TabsContent>
         <TabsContent value="traits" className="pt-3">
-          <StatTable rows={traitRows} deltaBaseline={BASELINE} limit={20} />
+          <StatTable rows={traitRows} deltaBaseline={BASELINE} limit={LIMIT} search="Search traits" />
         </TabsContent>
         {unitFilters.map(({ filter, index }) => (
           <TabsContent key={index} value={`items-${index}`} className="pt-3">
-            <StatTable
-              deltaBaseline={BASELINE}
-              limit={20}
-              rows={(result.items[filter.unit] ?? []).flatMap((row) => {
-                const item = itemsByApi.get(row.key);
-                if (!item || (filter.items?.length ?? 0) >= 3) return [];
-                return [
-                  {
-                    key: row.key,
-                    line: row.line,
-                    label: (
-                      <AddButton
-                        label={`Require ${item.name}`}
-                        onClick={() =>
-                          onChange(
-                            filters.map((current, i) =>
-                              i === index && current.type === "unit"
-                                ? { ...current, items: [...(current.items ?? []), row.key] }
-                                : current,
-                            ),
-                          )
-                        }
-                      >
-                        <ItemIcon item={item} className="size-7" decorative />
-                        <span className="truncate">{item.name}</span>
-                      </AddButton>
-                    ),
-                  },
-                ];
-              })}
+            <UnitItems
+              rows={(filter.items?.length ?? 0) >= 3 ? [] : (result.items[filter.unit] ?? [])}
+              onRequire={(item) =>
+                onChange(
+                  filters.map((current, i) =>
+                    i === index && current.type === "unit"
+                      ? { ...current, items: [...(current.items ?? []), item] }
+                      : current,
+                  ),
+                )
+              }
             />
           </TabsContent>
         ))}

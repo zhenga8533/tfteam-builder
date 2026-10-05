@@ -27,9 +27,12 @@ function Holders({ stats }: { stats: ItemStats }) {
   return (
     <StatTable
       deltaBaseline="the champion's own average placement"
+      search="Search champions"
       rows={stats.holders.flatMap((holder) => {
         const champion = championsByApi.get(holder.unit);
-        return champion ? [{ key: holder.unit, label: <ChampionLink champion={champion} />, line: holder }] : [];
+        return champion
+          ? [{ key: holder.unit, name: champion.name, label: <ChampionLink champion={champion} />, line: holder }]
+          : [];
       })}
     />
   );
@@ -40,9 +43,10 @@ function Pairs({ stats }: { stats: ItemStats }) {
   return (
     <StatTable
       deltaBaseline="this item's average placement"
+      search="Search items"
       rows={stats.pairs.flatMap((pair) => {
         const item = itemsByApi.get(pair.item);
-        return item ? [{ key: pair.item, label: <ItemLink item={item} />, line: pair }] : [];
+        return item ? [{ key: pair.item, name: item.name, label: <ItemLink item={item} />, line: pair }] : [];
       })}
     />
   );

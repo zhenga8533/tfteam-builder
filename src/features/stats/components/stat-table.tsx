@@ -1,7 +1,9 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { SearchInput } from "@/components/layout/search-input";
 import { type ReactNode, useState } from "react";
 import type { StatLine } from "@/lib/data/schema";
 import { isLowSample } from "@/lib/game/stat-line";
+import { matches } from "@/lib/search";
 import { cn } from "@/lib/utils";
 import { count, percent } from "../format";
 import { AvgPlacement, LOW_SAMPLE_HINT } from "./stat-summary";
@@ -10,6 +12,8 @@ export interface StatRow {
   key: string;
   label: ReactNode;
   line: StatLine & { delta?: number };
+  /** What the table's search matches, e.g. the champion's name. */
+  name?: string;
 }
 
 type SortKey = "delta" | "avg" | "top4" | "games";
@@ -55,6 +59,8 @@ interface StatTableProps {
   limit?: number;
   /** Keep the rows' own order until a column is picked (e.g. trait breakpoints, smallest first). */
   keepOrder?: boolean;
+  /** Adds a search box with this placeholder, matching rows' `name`, when there are more rows than `limit`. */
+  search?: string;
 }
 
 /** Sortable table of stat lines; best first by delta (or average placement without deltas), low samples last. */
@@ -65,18 +71,24 @@ export function StatTable({
   empty = "Not enough games yet.",
   limit = 15,
   keepOrder = false,
+  search,
 }: StatTableProps) {
   const [sort, setSort] = useState<SortKey | null>(keepOrder ? null : showDelta ? "delta" : "avg");
   const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState("");
   const columns = COLUMNS.filter((column) => showDelta || column.key !== "delta");
 
   if (rows.length === 0) return <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>;
 
-  const sorted = sort === null ? rows : sortRows(rows, sort);
-  const visible = expanded ? sorted : sorted.slice(0, limit);
+  const searchable = search !== undefined && rows.length > limit;
+  const found = searchable && query ? rows.filter((row) => matches(row.name ?? "", query)) : rows;
+  const sorted = sort === null ? found : sortRows(found, sort);
+  // A search shows every match rather than the first `limit`.
+  const visible = expanded || (searchable && query) ? sorted : sorted.slice(0, limit);
 
   return (
     <div className="space-y-2">
+      {searchable && <SearchInput value={query} onChange={setQuery} placeholder={search} className="max-w-xs" />}
       <table className="w-full text-sm">
         <thead>
           <tr className="text-xs text-muted-foreground">
@@ -136,7 +148,8 @@ export function StatTable({
           ))}
         </tbody>
       </table>
-      {sorted.length > limit && (
+      {sorted.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No matches.</p>}
+      {sorted.length > limit && !(searchable && query) && (
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}

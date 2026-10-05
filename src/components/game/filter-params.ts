@@ -1,4 +1,5 @@
-import type { Augment, AugmentTier, Champion } from "@/lib/data/schema";
+import { ITEM_KINDS } from "@/lib/data/constants";
+import type { Augment, AugmentTier, Champion, Item, ItemKind } from "@/lib/data/schema";
 import { matches, numberParam, stringParam } from "@/lib/search";
 import { isAugmentTier } from "./styles";
 
@@ -19,6 +20,24 @@ export const matchesChampionFilters = (champion: Champion, { q, cost, trait }: C
   matches(champion.name, q) &&
   (cost === undefined || champion.cost === cost) &&
   (!trait || champion.traits.includes(trait));
+
+/** Item search and category, for lists of items or item builds (champion pages, the Explorer). */
+export interface ItemFilters {
+  q?: string;
+  kind?: ItemKind;
+}
+
+/**
+ * Whether an item, or a build of several, passes: the search matches one of its items, and the "completed" category
+ * means only completed items (a standard build) while any other means the build includes one (e.g. an emblem).
+ */
+export const matchesItemFilters = (items: Item[], { q, kind }: ItemFilters) =>
+  (!q || items.some((item) => matches(item.name, q))) &&
+  (!kind ||
+    (kind === "completed" ? items.every((item) => item.kind === kind) : items.some((item) => item.kind === kind)));
+
+/** The categories among `items`, in the usual order. */
+export const itemKindsIn = (items: Item[]) => ITEM_KINDS.filter((kind) => items.some((item) => item.kind === kind));
 
 /** Augment search and tier filters, kept in the URL (the augment list and tier list). */
 export interface AugmentFilters {
