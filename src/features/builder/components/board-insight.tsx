@@ -3,6 +3,7 @@ import { BarChart3 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useSimilarBoards } from "@/features/explorer/use-explorer";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
+import { EXPLORER_FILES } from "@/lib/explorer/files";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent } from "@/features/stats/format";
 import { useActiveSet } from "@/lib/data/hooks";
@@ -23,7 +24,7 @@ export function BoardInsight() {
   const names = [...new Set(units.filter((unit) => !unit.flex).map((unit) => unit.apiName))].sort();
   const url =
     patch === "latest" && stats?.status === "ready"
-      ? `${import.meta.env.BASE_URL}data/stats/set${set}/explorer.bin.gz`
+      ? `${import.meta.env.BASE_URL}data/stats/set${set}/${EXPLORER_FILES.sample}`
       : null;
   const { status, similar } = useSimilarBoards(url, names.length >= MIN_UNITS ? names : null);
   // Requiring every unit would usually match nothing, so the Explorer starts from the main item holders.

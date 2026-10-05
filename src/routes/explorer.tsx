@@ -10,10 +10,12 @@ import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { prefetchActiveSet } from "@/lib/data/active-set";
 import { RANK_OPTIONS } from "@/lib/data/constants";
 import { parseRank } from "@/features/stats/scope";
-import { useActiveSet, useStats, useTierStats } from "@/lib/data/hooks";
+import { useActiveSet, useGameData, useStats, useTierStats } from "@/lib/data/hooks";
 import { manifestQuery } from "@/lib/data/queries";
 import type { RankFloor } from "@/lib/data/schema";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
+import { explorerFile, explorerSource } from "@/lib/explorer/files";
+import { cn } from "@/lib/utils";
 
 const isString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -52,14 +54,23 @@ function ExplorerPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const filters = search.filters ?? [];
-  // The sample holds every offered rank floor; the chosen one (or the default) picks its boards.
+  // The Explorer's files hold every offered rank floor; the chosen one (or the default) picks their boards.
   const floorStats = useTierStats(search.rank);
+  const { championsByApi, traitsByApi } = useGameData();
+  const source = explorerSource(filters);
+  // Who the boards are about ("Ahri", "Blossom"); null for every board.
+  const subject =
+    source.type === "champion"
+      ? (championsByApi.get(source.apiName)?.name ?? source.apiName)
+      : source.type === "trait"
+        ? (traitsByApi.get(source.apiName)?.name ?? source.apiName)
+        : null;
   const url =
     patch === "latest" && stats?.status === "ready"
-      ? `${import.meta.env.BASE_URL}data/stats/set${set}/explorer.bin.gz`
+      ? `${import.meta.env.BASE_URL}data/stats/set${set}/${explorerFile(source)}`
       : null;
   const floor = floorStats ? RANK_OPTIONS.indexOf(floorStats.rankFloor) : undefined;
-  const { status, result } = useExplorer(url, filters, floor);
+  const { status, result, pending } = useExplorer(url, filters, floor);
 
   const setFilters = (next: ExplorerFilter[]) =>
     navigate({ search: (previous) => ({ ...previous, filters: next.length ? next : undefined }), replace: true });
@@ -76,23 +87,35 @@ function ExplorerPage() {
           onRankChange={(rank) => navigate({ search: (previous) => ({ ...previous, rank }), replace: true })}
         />
       )}
-      {status.state === "missing" ? (
+      {!url || (status.state === "missing" && source.type === "totals") ? (
         <NoStats subject={`Set ${set}`} />
       ) : status.state === "error" ? (
-        <EmptyState>Couldn't load the board sample: {status.message}</EmptyState>
-      ) : status.state === "loading" ? (
+        <EmptyState>Couldn't load the boards: {status.message}</EmptyState>
+      ) : result === undefined ? (
         <p className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Loading board sample…
+          <Loader2 className="size-4 animate-spin" /> Loading boards…
         </p>
       ) : (
         <div className="space-y-6">
           <div className="space-y-2">
             <FilterBar filters={filters} onChange={setFilters} />
-            <p className="text-xs text-muted-foreground">
-              Results come from a sample of the most recent boards, so they can differ slightly from the tier lists.
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              {pending && status.state === "loading" ? (
+                <>
+                  <Loader2 className="size-3 animate-spin" /> Loading the boards{subject && ` with ${subject}`}…
+                </>
+              ) : (
+                `Results include every ranked board${subject ? ` with ${subject}` : ""}.`
+              )}
             </p>
           </div>
-          {result && <ExplorerResults result={result} filters={filters} onChange={setFilters} />}
+          {result ? (
+            <div className={cn("transition-opacity", pending && "opacity-60")}>
+              <ExplorerResults result={result} filters={filters} onChange={setFilters} />
+            </div>
+          ) : (
+            <EmptyState>No boards match these filters.</EmptyState>
+          )}
         </div>
       )}
     </>

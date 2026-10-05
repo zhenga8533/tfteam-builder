@@ -1,5 +1,5 @@
 import { appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { parseArgs } from "node:util";
 import { gzipSync } from "node:zlib";
 import {
@@ -16,8 +16,10 @@ import {
   setStatsSchema,
   traitStatsSchema,
 } from "../src/lib/data/schema.ts";
+import { EXPLORER_FILES } from "../src/lib/explorer/files.ts";
 import { encodeExplorer, type ExplorerBoard } from "../src/lib/explorer/format.ts";
 import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
+import { ExplorerCollector } from "./lib/explorer.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
@@ -37,13 +39,13 @@ import {
 import { addBoardToPatch } from "./stats/aggregate.ts";
 import { CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
-import { type BoardRow, type PatchCounters, RANK_BUCKETS } from "./stats/types.ts";
+import type { BoardRow, PatchCounters } from "./stats/types.ts";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
 /** The site shows the newest patch, falling back to the previous one right after a patch. */
 const PATCHES_PER_SET = 2;
-/** Boards in the Explorer's sample, newest first; larger samples mean a bigger download. */
+/** Boards in the sample the builder compares its board with; a larger sample means a bigger download. */
 const EXPLORER_SAMPLE = 150_000;
 
 const { values: args } = parseArgs({ options: { stats: { type: "string" } } });
@@ -131,10 +133,10 @@ async function writeLittleLegends(dir: string, legends: LittleLegendAccumulator)
 }
 
 /**
- * The newest boards of each rank behind `stats` and the other offered rank floors, in the patch's rank mix (see
- * `explorerQuotas`). Each is packed with its rank, so the Explorer can show any offered floor (the default by default).
+ * The Explorer's files (see `EXPLORER_FILES`), from every board behind `stats` and the other offered rank floors, each
+ * with its rank so the Explorer can show any offered floor.
  */
-async function writeExplorerSample(
+async function writeExplorer(
   dir: string,
   read: ReadBoards,
   data: SetData,
@@ -146,29 +148,44 @@ async function writeExplorerSample(
   const patch = patches.find((entry) => entry.patch === stats.patch)!;
   const offered = [stats.rankFloor, ...(stats.ranks ?? [])];
   const lowest = RANK_OPTIONS.findLast((floor) => offered.includes(floor)) ?? stats.rankFloor;
-  const quotas = explorerQuotas(patch, lowest, EXPLORER_SAMPLE);
+  const buckets = new Set(FLOOR_BUCKETS[lowest]);
+  const collector = new ExplorerCollector(explorerQuotas(patch, lowest, EXPLORER_SAMPLE));
   const resolver = new BoardResolver(data);
   const newestFirst = chunks
     .filter((chunk) => chunk.patch === stats.patch)
     .sort((a, b) => b.name.localeCompare(a.name));
-  const explorer: ExplorerBoard[] = [];
-  const full = () => [...quotas.values()].every((left) => left <= 0);
   for (const chunk of newestFirst) {
-    for (const row of await read(chunk)) {
-      const left = quotas.get(row[2]) ?? 0;
-      if (left <= 0) continue;
-      quotas.set(row[2], left - 1);
-      explorer.push({ ...resolver.board(row), rank: RANK_BUCKETS.indexOf(row[2]) });
-    }
-    if (full()) break;
+    for (const row of await read(chunk)) if (buckets.has(row[2])) collector.add(row[2], resolver.board(row));
   }
-  const encoded = gzipSync(encodeExplorer(explorer, RANK_OPTIONS.indexOf(stats.rankFloor)), { level: 9 });
-  await writeFile(join(dir, "explorer.bin.gz"), encoded);
-  console.log(`  explorer sample: ${explorer.length} boards, ${(encoded.byteLength / 1e6).toFixed(1)} MB`);
+
+  const defaultRank = RANK_OPTIONS.indexOf(stats.rankFloor);
+  const write = async (path: string, contents: Uint8Array | string) => {
+    await mkdir(dirname(join(dir, path)), { recursive: true });
+    await writeFile(join(dir, path), contents);
+    return typeof contents === "string" ? Buffer.byteLength(contents) : contents.byteLength;
+  };
+  const writeBoards = (path: string, boards: ExplorerBoard[], population?: number[]) =>
+    write(path, gzipSync(encodeExplorer(boards, defaultRank, population), { level: 9 }));
+  const writeAll = async (kind: string, files: Map<string, ExplorerBoard[]>, path: (apiName: string) => string) => {
+    let bytes = 0;
+    for (const [apiName, boards] of files) bytes += await writeBoards(path(apiName), boards, collector.population);
+    return `${files.size} ${kind} files (${mb(bytes)})`;
+  };
+
+  const champions = await writeAll("champion", collector.champions, EXPLORER_FILES.champion);
+  const traits = await writeAll("trait", collector.traits, EXPLORER_FILES.trait);
+  const totals = await write(EXPLORER_FILES.totals, JSON.stringify(collector.totals.results(defaultRank)));
+  const sample = await writeBoards(EXPLORER_FILES.sample, collector.sample);
+  console.log(
+    `  explorer: ${champions}, ${traits}, totals (${mb(totals)}), ` +
+      `sample of ${collector.sample.length} boards (${mb(sample)})`,
+  );
 }
 
+const mb = (bytes: number) => `${(bytes / 1e6).toFixed(1)} MB`;
+
 /**
- * Everything beyond the tier list stats: detail pages, comps, Little Legends and the Explorer sample. Returns
+ * Everything beyond the tier list stats: detail pages, comps, Little Legends and the Explorer's files. Returns
  * figures for the deploy summary.
  */
 async function writeDetails(
@@ -217,7 +234,7 @@ async function writeDetails(
   );
 
   await writeLittleLegends(dir, legends);
-  await writeExplorerSample(dir, read, data, stats, patches, chunks);
+  await writeExplorer(dir, read, data, stats, patches, chunks);
   return { ...figures, comps: detected.length };
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { runQuery, similarBoards } from "./engine";
+import { runQuery, runTotalsQuery, similarBoards } from "./engine";
+import { TotalsAccumulator } from "./totals";
 import { decodeExplorer, encodeExplorer, type ExplorerBoard } from "./format";
 
 const board = (placement: number, units: [string, number, string[]][], traits: [string, number][], level = 8) => ({
@@ -101,5 +102,28 @@ describe("explorer rank floors", () => {
   it("gives shares of the boards at the floor, not the whole sample", () => {
     expect(runQuery(sample, [], 1).summary?.play).toBe(1);
     expect(runQuery(sample, [], 1, 0).summary?.play).toBe(1);
+  });
+
+  it("gives shares of the whole patch for a file holding every board of a champion", () => {
+    // These 20 Ahri boards are all of the patch's Ahri boards, out of 200 boards in all.
+    const ahriBoards = boards.filter((entry) => entry.units.some((unit) => unit.apiName === "Ahri"));
+    const shard = decodeExplorer(encodeExplorer(ahriBoards, 0, [200]).slice().buffer);
+    const result = runQuery(shard, [{ type: "unit", unit: "Ahri" }], 1);
+    expect(result.summary?.games).toBe(20);
+    expect(result.summary?.play).toBe(0.1);
+  });
+
+  it("answers from the totals exactly as from the boards, without a champion or trait", () => {
+    const ranked = boards.map((entry, i) => ({ ...entry, rank: i % 2 }));
+    const accumulator = new TotalsAccumulator();
+    for (const entry of ranked) accumulator.add(entry);
+    const totals = accumulator.results(1);
+    const all = decodeExplorer(encodeExplorer(ranked, 1).slice().buffer);
+    for (const filters of [[], [{ type: "level" as const, min: 9 }]]) {
+      for (const floor of [0, 1]) {
+        expect(runTotalsQuery(totals, filters, 1, floor)).toEqual(runQuery(all, filters, 1, floor));
+      }
+    }
+    expect(() => runTotalsQuery(totals, [{ type: "unit", unit: "Ahri" }])).toThrow();
   });
 });

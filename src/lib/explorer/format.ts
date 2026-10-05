@@ -1,5 +1,6 @@
 /**
- * Columnar binary format for the Explorer's board sample (`explorer.bin`, gzipped on disk):
+ * Columnar binary format for the Explorer's boards: the sample (`explorer.bin`) and each champion's boards
+ * (`explorer/{apiName}.bin`), gzipped on disk:
  *
  *   "TFTX" | u8 version | 3 bytes padding | u32 header length | header JSON | padding to 4 bytes
  *   then each section in `SECTIONS` order, each padded to 4 bytes.
@@ -15,6 +16,11 @@ export const ITEM_SLOTS = 3;
 export interface ExplorerHeader {
   /** Boards at this rank or above (see `ExplorerBoard.rank`) make up the default view; the rest serve other floors. */
   defaultRank: number;
+  /**
+   * Boards per rank on the whole patch, for a file holding every board of some kind (a champion's): shares are of
+   * these rather than of the file's own boards. Absent for the sample, whose shares are of itself.
+   */
+  population?: number[];
   units: string[];
   items: string[];
   traits: string[];
@@ -64,7 +70,7 @@ export interface ExplorerBoard {
   traits: { apiName: string; minUnits: number }[];
 }
 
-export function encodeExplorer(boards: ExplorerBoard[], defaultRank = 0): Uint8Array {
+export function encodeExplorer(boards: ExplorerBoard[], defaultRank = 0, population?: number[]): Uint8Array {
   const dictionary = () => {
     const names: string[] = [];
     const indices = new Map<string, number>();
@@ -122,6 +128,7 @@ export function encodeExplorer(boards: ExplorerBoard[], defaultRank = 0): Uint8A
 
   const header: ExplorerHeader = {
     defaultRank,
+    ...(population && { population }),
     units: units.names,
     items: items.names,
     traits: traits.names,
