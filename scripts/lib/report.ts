@@ -11,7 +11,7 @@ export interface SetReport {
   comps: number;
   floors: { floor: string; matches: number; comps: number }[];
   regions: { region: string; matches: number }[];
-  /** Boards in the published sample, and how many carry the later-added fields. */
+  /** Boards in the published sample, and how many report a knockout round and a Little Legend. */
   boards: number;
   withRounds: number;
   withCompanions: number;
@@ -98,7 +98,7 @@ export function renderReport({ sets, files, now, skipped }: Report): string {
         (stale ? " ⚠️ no new matches lately; is crawling enabled (`CRAWL_ENABLED`)?" : ""),
       `- **${count(report.comps)} comps** detected`,
       `- Knockout round on ${percent(report.withRounds, report.boards)} of boards, Little Legends on ${percent(report.withCompanions, report.boards)}` +
-        (report.boards && !report.withRounds ? " ⚠️ none yet, so those sections stay hidden" : ""),
+        (report.boards && !report.withRounds ? " ⚠️ none, so those sections stay hidden" : ""),
     );
     if (report.floors.length) {
       lines.push("", "| Rank floor | Matches | Comps |", "| --- | ---: | ---: |");

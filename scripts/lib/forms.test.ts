@@ -17,7 +17,7 @@ const data = {
   championAliases: {},
 } as unknown as SetData;
 
-const row = (units: BoardRow[5], traits: BoardRow[6]): BoardRow => ["m", 0, "diamond", 1, 8, units, traits];
+const row = (units: BoardRow[5], traits: BoardRow[6]): BoardRow => ["m", 0, "diamond", 1, 8, units, traits, {}];
 const units = (row: BoardRow) => row[5].map(([unit]) => unit);
 
 describe("FormInference", () => {

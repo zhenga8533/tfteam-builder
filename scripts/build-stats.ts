@@ -119,7 +119,6 @@ async function writeEntryFiles<T extends { apiName: string }>(dir: string, entri
   for (const entry of entries) await writeFile(join(dir, `${entry.apiName}.json`), JSON.stringify(parse(entry)));
 }
 
-/** Only boards crawled since rows recorded companions have them; the page explains when there are none yet. */
 async function writeLittleLegends(dir: string, legends: LittleLegendAccumulator) {
   if (!legends.size) return;
   try {

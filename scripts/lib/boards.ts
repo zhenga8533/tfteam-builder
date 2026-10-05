@@ -22,7 +22,7 @@ export interface ResolvedBoard {
   level: number;
   units: ResolvedUnit[];
   traits: ResolvedTrait[];
-  /** Round the player was knocked out (or the final round, for the winner); missing on older boards. */
+  /** Round the player was knocked out (or the final round, for the winner). */
   lastRound?: number;
   companion?: string;
 }
@@ -40,7 +40,7 @@ export class BoardResolver {
   }
 
   board(row: BoardRow): ResolvedBoard {
-    const [, , , placement, level, rawUnits, rawTraits, extras = {}] = row;
+    const [, , , placement, level, rawUnits, rawTraits, extras] = row;
     const units = rawUnits.flatMap(([rawUnit, star, rawItems]) => {
       const apiName = this.resolve.units.resolve(rawUnit, 0);
       if (!apiName) return [];

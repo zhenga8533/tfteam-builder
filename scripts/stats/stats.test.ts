@@ -229,6 +229,8 @@ describe("aggregation", () => {
           ["TFT18_Ahri", 1, []],
         ],
         [["TFT18_Blossom", 2, 5]],
+        // JSON drops the undefined fields when stored.
+        { lastRound: undefined, companion: undefined },
       ],
       ["NA1_1", 1_790_000_000, "diamond", 6, 8, [["TFT18_Ahri", 1, []]], [], { lastRound: 27, companion: "ossia-1" }],
     ]);

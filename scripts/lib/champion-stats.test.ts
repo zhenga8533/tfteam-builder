@@ -33,6 +33,7 @@ const board = (placement: number, units: BoardRow[5], traits: BoardRow[6] = []):
   8,
   units,
   traits,
+  {},
 ];
 
 describe("itemSubsets", () => {
