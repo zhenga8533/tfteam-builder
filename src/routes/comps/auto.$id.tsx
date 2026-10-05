@@ -20,7 +20,7 @@ import { StatTable } from "@/features/stats/components/stat-table";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { percent } from "@/features/stats/format";
+import { percent, share } from "@/features/stats/format";
 import { findComp } from "@/lib/game/comp-signature";
 import { stageRound } from "@/lib/game/rounds";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
@@ -132,7 +132,7 @@ function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
           <h1 className="font-display text-3xl font-bold tracking-tight">{comp.name}</h1>
           <StatSummary line={comp} className="text-sm" />
           <p className="text-sm text-muted-foreground">
-            Usually played at level {comp.level} · {percent(comp.play)} of boards
+            Usually played at level {comp.level} · {share(comp.play)} of boards
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
