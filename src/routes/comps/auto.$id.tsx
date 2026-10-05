@@ -79,6 +79,7 @@ function CarryProgression({ progression }: { progression: AutoComp["progression"
       <StatTable
         showDelta={false}
         keepOrder
+        playBaseline="this comp's games"
         rows={progression.map((stage) => ({
           key: stage.carries.join("+"),
           label: (
@@ -189,6 +190,7 @@ function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
               <StatTable
                 showDelta={false}
                 keepOrder
+                playBaseline="this comp's games"
                 rows={comp.byLevel.map((line) => ({ key: String(line.level), label: `Level ${line.level}`, line }))}
               />
             </Section>

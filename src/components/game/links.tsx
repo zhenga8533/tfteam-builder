@@ -15,7 +15,7 @@ interface LinkProps {
 }
 
 const LINK_CLASS =
-  "inline-flex min-w-0 items-center gap-2 rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring";
+  "inline-flex max-w-full min-w-0 items-center gap-2 rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring";
 
 /** A champion's icon and name, linking to its page, with its card on hover. */
 export function ChampionLink({

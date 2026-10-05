@@ -46,10 +46,11 @@ interface BuildFinderProps {
   onChange: (chosen: string[]) => void;
   /** Whether a next item passes the item filters. */
   shown: (item: string) => boolean;
+  playBaseline: string;
 }
 
 /** Pick items one at a time and see which next item does best. */
-function BuildFinder({ stats, chosen, onChange, shown }: BuildFinderProps) {
+function BuildFinder({ stats, chosen, onChange, shown, playBaseline }: BuildFinderProps) {
   const { itemsByApi } = useGameData();
   const candidates = chosen.length < MAX_ITEMS ? nextItems(stats.builds, chosen).filter(({ item }) => shown(item)) : [];
 
@@ -94,6 +95,7 @@ function BuildFinder({ stats, chosen, onChange, shown }: BuildFinderProps) {
             ),
             line: build,
           }))}
+          playBaseline={playBaseline}
           empty="No item has enough games alongside this build yet."
         />
       )}
@@ -103,7 +105,8 @@ function BuildFinder({ stats, chosen, onChange, shown }: BuildFinderProps) {
 
 /** The build finder and the top builds of each size, with item filters shared by every tab. */
 export function ItemBuilds({ stats }: { stats: ChampionStats }) {
-  const { itemsByApi } = useGameData();
+  const { championsByApi, itemsByApi } = useGameData();
+  const playBaseline = `${championsByApi.get(stats.apiName)?.name ?? "this champion"}'s games`;
   const [chosen, setChosen] = useState<string[]>([]);
   const [filters, setFilters] = useState<ItemFilters>({});
   const itemsOf = (apiNames: string[]) => apiNames.flatMap((apiName) => itemsByApi.get(apiName) ?? []);
@@ -136,11 +139,17 @@ export function ItemBuilds({ stats }: { stats: ChampionStats }) {
           <TabsTrigger value="3">Full builds</TabsTrigger>
         </TabsList>
         <TabsContent value="finder" className="pt-3">
-          <BuildFinder stats={stats} chosen={chosen} onChange={setChosen} shown={(item) => passes([item])} />
+          <BuildFinder
+            stats={stats}
+            chosen={chosen}
+            onChange={setChosen}
+            shown={(item) => passes([item])}
+            playBaseline={playBaseline}
+          />
         </TabsContent>
         {[1, 2, 3].map((size) => (
           <TabsContent key={size} value={String(size)} className="pt-3">
-            <StatTable rows={ofSize(size)} empty="No builds match these filters." />
+            <StatTable rows={ofSize(size)} playBaseline={playBaseline} empty="No builds match these filters." />
           </TabsContent>
         ))}
       </Tabs>

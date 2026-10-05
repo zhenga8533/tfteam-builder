@@ -10,7 +10,7 @@ import { AutoCompCard } from "@/features/comps/components/comp-card";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { count, percent } from "@/features/stats/format";
+import { count, percent, share } from "@/features/stats/format";
 import { parseRank } from "@/features/stats/scope";
 import { useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import { findComp } from "@/lib/game/comp-signature";
@@ -55,25 +55,33 @@ interface Side {
   details: { label: string; value: ReactNode }[];
 }
 
-/** Metric rows; `better` says which direction wins, so the stronger side is highlighted (games just inform). */
+/**
+ * Metric rows; `better` says which direction wins, so the stronger side is highlighted (play rate and games just
+ * inform). Play rate is a share of all boards, so it's only shown for champions and comps; an item's is a share of
+ * equipped items, too small to read well.
+ */
 const METRICS: {
   label: string;
   value: (line: StatLine) => number;
   format: (value: number) => string;
   better?: "low" | "high";
+  playRate?: boolean;
 }[] = [
   { label: "Avg place", value: (line) => line.avg, format: (value) => value.toFixed(2), better: "low" },
   { label: "Top 4", value: (line) => line.top4, format: percent, better: "high" },
   { label: "Win rate", value: (line) => line.win, format: percent, better: "high" },
+  { label: "Play rate", value: (line) => line.play, format: share, playRate: true },
   { label: "Games", value: (line) => line.games, format: count },
 ];
 
 function CompareTable({
   sides,
   trendKind,
+  showPlay = false,
 }: {
   sides: [Side | undefined, Side | undefined];
   trendKind?: "units" | "items";
+  showPlay?: boolean;
 }) {
   const [a, b] = sides;
   const winner = (value: (line: StatLine) => number, better: "low" | "high"): 0 | 1 | null => {
@@ -84,7 +92,7 @@ function CompareTable({
     return (better === "low" ? left < right : left > right) ? 0 : 1;
   };
   const rows: { label: string; cells: [ReactNode, ReactNode]; best?: 0 | 1 | null }[] = [
-    ...METRICS.map(({ label, value, format, better }) => ({
+    ...METRICS.filter((metric) => showPlay || !metric.playRate).map(({ label, value, format, better }) => ({
       label,
       cells: sides.map((side) => (side?.line ? format(value(side.line)) : "–")) as [ReactNode, ReactNode],
       best: better ? winner(value, better) : null,
@@ -184,7 +192,7 @@ function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFl
       ],
     };
   };
-  return <CompareTable sides={[side(a), side(b)]} trendKind="units" />;
+  return <CompareTable sides={[side(a), side(b)]} trendKind="units" showPlay />;
 }
 
 function ItemCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
@@ -259,7 +267,7 @@ function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
   const chosen = [a, b].flatMap((id) => (id && findComp(comps, id)) || []);
   return (
     <div className="space-y-4">
-      <CompareTable sides={[side(a), side(b)]} />
+      <CompareTable sides={[side(a), side(b)]} showPlay />
       {chosen.length > 0 && (
         <div className="grid gap-2 xl:grid-cols-2">
           {chosen.map((comp) => (

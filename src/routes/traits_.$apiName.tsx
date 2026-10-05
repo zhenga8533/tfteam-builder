@@ -29,6 +29,7 @@ function Breakpoints({ trait }: { trait: Trait }) {
     <StatTable
       showDelta={false}
       keepOrder
+      playBaseline="all boards"
       empty="Not enough games at any breakpoint yet."
       rows={lines
         .toSorted((a, b) => a.minUnits - b.minUnits)
@@ -57,6 +58,7 @@ function BestUnits({ stats }: { stats: TraitStats }) {
   return (
     <StatTable
       deltaBaseline="the average placement of boards running this trait"
+      playBaseline="boards running this trait"
       search="Search champions"
       rows={stats.units.flatMap((entry) => {
         const champion = championsByApi.get(entry.unit);
