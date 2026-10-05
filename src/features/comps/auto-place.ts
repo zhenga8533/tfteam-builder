@@ -7,23 +7,36 @@ const CENTER_OUT = [3, 2, 4, 1, 5, 0, 6];
 /** Back-row corners, where carries are safest from melee units and assassins. */
 const CORNERS = [0, 6];
 
-const FRONT_ROWS = [0, 1];
-const BACK_ROWS = [3, 2];
+/** Rows each line fills, front (row 0) to back (row 3), in the order they're tried. */
+const LINE_ROWS = {
+  front: [0, 1],
+  // Mid-range units stand just behind the frontline, close enough to reach past it.
+  middle: [1, 2],
+  back: [3, 2],
+} as const;
+type Line = keyof typeof LINE_ROWS;
+
 const MELEE_RANGE = 1;
+const MID_RANGE = 3;
 
-const slotsIn = (rows: number[], columns = CENTER_OUT) =>
+const slotsIn = (rows: readonly number[], columns = CENTER_OUT) =>
   rows.flatMap((row) => columns.map((col) => row * BOARD_COLS + col));
-const EVERYWHERE = slotsIn([...BACK_ROWS, ...FRONT_ROWS]);
+const EVERYWHERE = slotsIn([3, 2, 0, 1]);
 
-const isMeleeChampion = (champion: Champion | undefined) => (champion?.stats.range ?? 4) <= MELEE_RANGE;
+function lineOf(champion: Champion | undefined): Line {
+  const range = champion?.stats.range ?? MID_RANGE + 1;
+  return range <= MELEE_RANGE ? "front" : range <= MID_RANGE ? "middle" : "back";
+}
 
-/** Hexes in the order a unit would be placed: melee units front and centre, ranged units at the back. */
-export const placementOrder = (champion: Champion | undefined) =>
-  isMeleeChampion(champion) ? [...slotsIn(FRONT_ROWS), ...EVERYWHERE] : [...slotsIn(BACK_ROWS), ...EVERYWHERE];
+/** Hexes in the order a unit would be placed: melee front and centre, mid-range behind them, ranged at the back. */
+export const placementOrder = (champion: Champion | undefined) => [
+  ...slotsIn(LINE_ROWS[lineOf(champion)]),
+  ...EVERYWHERE,
+];
 
 /**
- * Match data has no positions, so lay out a board the way most players would: melee units in the
- * front two rows (tanks centered), ranged units in the back, and carries in the back corners.
+ * Match data has no positions, so lay out a board the way most players would: melee units in the front two rows
+ * (tanks centered), mid-range units behind them, ranged units in the back, and ranged carries in the back corners.
  */
 export function autoPlace(units: Omit<CompUnit, "hex">[], championsByApi: Map<string, Champion>): CompUnit[] {
   const taken = new Set<number>();
@@ -35,15 +48,18 @@ export function autoPlace(units: Omit<CompUnit, "hex">[], championsByApi: Map<st
     placed.push({ ...unit, hex });
     return true;
   };
-  const isMelee = (unit: Omit<CompUnit, "hex">) => isMeleeChampion(championsByApi.get(unit.apiName));
-  const ranged = units.filter((unit) => !isMelee(unit));
-  const melee = units.filter(isMelee).sort((a, b) => Number(Boolean(a.carry)) - Number(Boolean(b.carry)));
+  const champion = (unit: Omit<CompUnit, "hex">) => championsByApi.get(unit.apiName);
+  const inLine = (line: Line) =>
+    units
+      .filter((unit) => lineOf(champion(unit)) === line)
+      // Supports and tanks take the centre first, leaving the flanks to carries.
+      .sort((a, b) => Number(Boolean(a.carry)) - Number(Boolean(b.carry)));
+  const back = inLine("back");
 
-  for (const unit of ranged.filter((unit) => unit.carry))
-    place(unit, [...slotsIn([BACK_ROWS[0]!], CORNERS), ...EVERYWHERE]);
-  for (const unit of ranged.filter((unit) => !unit.carry))
-    place(unit, placementOrder(championsByApi.get(unit.apiName)));
-  for (const unit of melee) place(unit, placementOrder(championsByApi.get(unit.apiName)));
+  for (const unit of back.filter((unit) => unit.carry))
+    place(unit, [...slotsIn([LINE_ROWS.back[0]], CORNERS), ...EVERYWHERE]);
+  for (const unit of [...back.filter((unit) => !unit.carry), ...inLine("middle"), ...inLine("front")])
+    place(unit, placementOrder(champion(unit)));
   return placed;
 }
 

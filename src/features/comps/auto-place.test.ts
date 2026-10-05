@@ -4,9 +4,14 @@ import { autoPlace } from "./auto-place";
 
 const champion = (apiName: string, range: number) => ({ apiName, stats: { range } }) as unknown as Champion;
 const championsByApi = new Map(
-  [champion("Tank", 1), champion("Bruiser", 1), champion("Mage", 4), champion("Carry", 4), champion("Diver", 1)].map(
-    (c) => [c.apiName, c],
-  ),
+  [
+    champion("Tank", 1),
+    champion("Bruiser", 1),
+    champion("Mage", 4),
+    champion("Carry", 4),
+    champion("Diver", 1),
+    champion("Skirmisher", 2),
+  ].map((c) => [c.apiName, c]),
 );
 
 describe("autoPlace", () => {
@@ -18,6 +23,7 @@ describe("autoPlace", () => {
         { apiName: "Tank" },
         { apiName: "Bruiser" },
         { apiName: "Diver", carry: true },
+        { apiName: "Skirmisher" },
       ],
       championsByApi,
     ).map((unit) => [unit.apiName, unit.hex]),
@@ -34,6 +40,10 @@ describe("autoPlace", () => {
     expect([row("Tank"), col("Tank")]).toEqual([0, 3]);
     expect([row("Bruiser"), col("Bruiser")]).toEqual([0, 2]);
     expect(row("Diver")).toBe(0);
+  });
+
+  it("puts mid-range units just behind the frontline", () => {
+    expect([row("Skirmisher"), col("Skirmisher")]).toEqual([1, 3]);
   });
 
   it("never stacks two units on one hex", () => {
