@@ -9,6 +9,7 @@ import { findComp } from "@/content";
 import { DEFAULT_LEVEL, EARLY_LEVEL } from "@/features/builder/store";
 import { CompBoard } from "@/features/comps/components/comp-board";
 import { CopyTeamCodeButton } from "@/features/comps/components/copy-team-code-button";
+import { ExploreCompButton } from "@/features/comps/components/explore-comp-button";
 import { Section } from "@/components/layout/section";
 import { Carries, CompTraits } from "@/features/comps/components/comp-sections";
 import { SetGuard } from "@/features/comps/components/set-guard";
@@ -57,6 +58,10 @@ function Augments({ apiNames }: { apiNames: string[] }) {
 }
 
 /** Stats for the detected comp whose carries and core traits match this guide's board, if any. */
+function ExploreGuide({ units }: { units: CompUnit[] }) {
+  return <ExploreCompButton signature={useCompSignature(units)} />;
+}
+
 function LiveStats({ units }: { units: CompUnit[] }) {
   const signature = useCompSignature(units);
   const match = useAutoComps()?.find((comp) => comp.signature === signature || comp.variants.includes(signature));
@@ -102,13 +107,14 @@ function CompGuidePage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* Planner codes come from the active set's champions, so only offer one for this guide's set. */}
+          {/* Planner codes and match data are the active set's, so only offer these for this guide's set. */}
           <SetGuard set={comp.set} fallback={null}>
             <CopyTeamCodeButton
               apiNames={[...comp.board.filter((unit) => !unit.flex), ...comp.board.filter((unit) => unit.flex)].map(
                 (unit) => unit.apiName,
               )}
             />
+            <ExploreGuide units={comp.board} />
           </SetGuard>
           <Button
             onClick={() =>

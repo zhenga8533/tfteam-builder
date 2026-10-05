@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { autoCompUnits } from "@/features/comps/auto-place";
 import { CompBoard } from "@/features/comps/components/comp-board";
 import { CopyTeamCodeButton } from "@/features/comps/components/copy-team-code-button";
+import { ExploreCompButton } from "@/features/comps/components/explore-comp-button";
 import { Section } from "@/components/layout/section";
 import { Carries, CompTraits } from "@/features/comps/components/comp-sections";
 import { TierBadge } from "@/features/comps/components/tier-badge";
@@ -104,6 +105,7 @@ function AutoCompPage() {
             <NotebookPen /> Write a guide
           </Button>
           <CopyTeamCodeButton apiNames={units.map((unit) => unit.apiName)} />
+          <ExploreCompButton signature={comp.signature} />
           <Button onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name)}>
             <Hammer /> Open in Team Builder
           </Button>
