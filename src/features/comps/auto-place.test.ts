@@ -49,4 +49,20 @@ describe("autoPlace", () => {
   it("never stacks two units on one hex", () => {
     expect(new Set(placed.values()).size).toBe(placed.size);
   });
+
+  it("keeps known positions and places the rest around them", () => {
+    const guided = new Map(
+      autoPlace(
+        [{ apiName: "Carry", carry: true }, { apiName: "Tank" }, { apiName: "Bruiser" }],
+        championsByApi,
+        new Map([
+          ["Carry", 27],
+          ["Tank", 2],
+        ]),
+      ).map((unit) => [unit.apiName, unit.hex]),
+    );
+    expect(guided.get("Carry")).toBe(27);
+    expect(guided.get("Tank")).toBe(2);
+    expect(guided.get("Bruiser")).toBe(3);
+  });
 });

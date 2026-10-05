@@ -1,5 +1,5 @@
 import { parseRank } from "@/features/stats/scope";
-import type { AutoComp, RankFloor } from "@/lib/data/schema";
+import type { AutoComp, RankFloor, SetStats } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Hammer, NotebookPen } from "lucide-react";
 import { ChampionCard } from "@/components/game/cards";
@@ -7,13 +7,13 @@ import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ChampionIcon } from "@/components/game/icons";
 import { EmptyState } from "@/components/layout/empty-state";
 import { Button } from "@/components/ui/button";
-import { autoCompUnits } from "@/features/comps/auto-place";
 import { CompBoard } from "@/features/comps/components/comp-board";
 import { CopyTeamCodeButton } from "@/features/comps/components/copy-team-code-button";
 import { ExploreCompButton } from "@/features/comps/components/explore-comp-button";
 import { Section } from "@/components/layout/section";
 import { Carries, CompTraits } from "@/features/comps/components/comp-sections";
 import { TierBadge } from "@/features/comps/components/tier-badge";
+import { useAutoCompUnits } from "@/features/comps/use-auto-comp-units";
 import { useOpenInBuilder } from "@/features/comps/use-open-in-builder";
 import { PlacementChart } from "@/features/stats/components/placement-chart";
 import { StatTable } from "@/features/stats/components/stat-table";
@@ -101,18 +101,21 @@ function CarryProgression({ progression }: { progression: AutoComp["progression"
 
 function AutoCompPage() {
   const { id } = Route.useParams();
-  const { set } = useActiveSet();
-  const { championsByApi } = useGameData();
   const { rank } = Route.useSearch();
   const stats = useTierStats(rank);
   const comps = useAutoComps(rank);
   const comp = comps && findComp(comps, id);
-  const openInBuilder = useOpenInBuilder();
 
   if (!stats) return <NoStats subject="this comp" />;
   if (!comp)
     return <EmptyState>This comp isn't in the current stats. It may have dropped below the thresholds.</EmptyState>;
-  const units = autoCompUnits(comp, championsByApi);
+  return <AutoCompDetail comp={comp} stats={stats} />;
+}
+
+function AutoCompDetail({ comp, stats }: { comp: AutoComp; stats: SetStats }) {
+  const { set } = useActiveSet();
+  const units = useAutoCompUnits(comp);
+  const openInBuilder = useOpenInBuilder();
 
   return (
     <div className="space-y-6">

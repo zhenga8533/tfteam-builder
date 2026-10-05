@@ -37,20 +37,30 @@ export const placementOrder = (champion: Champion | undefined) => [
 /**
  * Match data has no positions, so lay out a board the way most players would: melee units in the front two rows
  * (tanks centered), mid-range units behind them, ranged units in the back, and ranged carries in the back corners.
+ * Units with a known hex in `positions` (e.g. from a hand-written guide for the comp) keep it.
  */
-export function autoPlace(units: Omit<CompUnit, "hex">[], championsByApi: Map<string, Champion>): CompUnit[] {
+export function autoPlace(
+  units: Omit<CompUnit, "hex">[],
+  championsByApi: Map<string, Champion>,
+  positions: Map<string, number> = new Map(),
+): CompUnit[] {
   const taken = new Set<number>();
   const placed: CompUnit[] = [];
   const place = (unit: Omit<CompUnit, "hex">, slots: number[]) => {
     const hex = slots.find((slot) => !taken.has(slot));
-    if (hex === undefined) return false;
+    if (hex === undefined) return;
     taken.add(hex);
     placed.push({ ...unit, hex });
-    return true;
   };
   const champion = (unit: Omit<CompUnit, "hex">) => championsByApi.get(unit.apiName);
+
+  for (const unit of units) {
+    const hex = positions.get(unit.apiName);
+    if (hex !== undefined) place(unit, [hex]);
+  }
+  const unplaced = units.filter((unit) => !placed.some((entry) => entry.apiName === unit.apiName));
   const inLine = (line: Line) =>
-    units
+    unplaced
       .filter((unit) => lineOf(champion(unit)) === line)
       // Supports and tanks take the centre first, leaving the flanks to carries.
       .sort((a, b) => Number(Boolean(a.carry)) - Number(Boolean(b.carry)));
@@ -63,8 +73,11 @@ export function autoPlace(units: Omit<CompUnit, "hex">[], championsByApi: Map<st
   return placed;
 }
 
-/** A detected comp's core board as placeable units, carries flagged. */
-export function autoCompUnits(comp: AutoComp, championsByApi: Map<string, Champion>): CompUnit[] {
+/** Each unit's hex on a board, for `autoPlace` to keep. */
+export const boardPositions = (board: CompUnit[]) => new Map(board.map((unit) => [unit.apiName, unit.hex]));
+
+/** A detected comp's core board as placeable units, carries flagged, positioned like `guide` where it has them. */
+export function autoCompUnits(comp: AutoComp, championsByApi: Map<string, Champion>, guide?: CompUnit[]): CompUnit[] {
   return autoPlace(
     comp.units.map((unit) => ({
       apiName: unit.apiName,
@@ -73,5 +86,6 @@ export function autoCompUnits(comp: AutoComp, championsByApi: Map<string, Champi
       carry: comp.carries.includes(unit.apiName),
     })),
     championsByApi,
+    guide && boardPositions(guide),
   );
 }
