@@ -1,5 +1,5 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
-import { memo, type ReactNode, useMemo } from "react";
+import { memo, type ReactNode } from "react";
 import { ItemCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
@@ -11,8 +11,8 @@ import { count, percent } from "@/features/stats/format";
 import { useCompTrendPatch, useGameData } from "@/lib/data/hooks";
 import type { AutoComp, RankFloor, StatLine } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
-import { autoCompUnits } from "../auto-place";
 import { DIFFICULTY_TEXT } from "../styles";
+import { useAutoCompUnits } from "../use-auto-comp-units";
 import { useCompTraits } from "../use-comp-traits";
 import { TrendBadge } from "./tier-badge";
 
@@ -166,9 +166,8 @@ export const CompCard = memo(function CompCard({ comp, preview = false }: { comp
 /** A comp detected from match data, with its placement stats. */
 export const AutoCompCard = memo(function AutoCompCard({ comp, rank }: { comp: AutoComp; rank?: RankFloor }) {
   const trendPatch = useCompTrendPatch(rank);
-  const { championsByApi } = useGameData();
   // Stable across renders, so the card's trait calculation (memoized on the units) isn't redone each time.
-  const units = useMemo(() => autoCompUnits(comp, championsByApi), [comp, championsByApi]);
+  const { units } = useAutoCompUnits(comp);
   return (
     <CompCardView
       title={comp.name}
