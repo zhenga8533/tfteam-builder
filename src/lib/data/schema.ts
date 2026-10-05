@@ -138,7 +138,7 @@ export const statLineSchema = z.object({
   score: z.number(),
   top4: z.number(),
   win: z.number(),
-  /** Share of the boards (or games) the entry is counted against: all boards for units, items and traits. */
+  /** Share of the games the entry is counted against: all games (one per player per match) for units, items and traits. */
   play: z.number(),
   tier: z.enum(STAT_TIERS).optional(),
   /** Games ending 1st to 8th; only on lines shown with a placement distribution. */

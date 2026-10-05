@@ -9,7 +9,8 @@ import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { PlacementChart } from "@/features/stats/components/placement-chart";
-import { PatchHistoryChart } from "@/features/stats/components/patch-trend";
+import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
+import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
@@ -29,7 +30,7 @@ function Breakpoints({ trait }: { trait: Trait }) {
     <StatTable
       showDelta={false}
       keepOrder
-      playBaseline="all boards"
+      playBaseline="all games"
       empty="Not enough games at any breakpoint yet."
       rows={lines
         .toSorted((a, b) => a.minUnits - b.minUnits)
@@ -57,8 +58,8 @@ function BestUnits({ stats }: { stats: TraitStats }) {
   const { championsByApi } = useGameData();
   return (
     <StatTable
-      deltaBaseline="the average placement of boards running this trait"
-      playBaseline="boards running this trait"
+      deltaBaseline="the average placement of games running this trait"
+      playBaseline="games running this trait"
       search="Search champions"
       rows={stats.units.flatMap((entry) => {
         const champion = championsByApi.get(entry.unit);
@@ -120,6 +121,13 @@ function TraitPage() {
           <p className="text-sm text-muted-foreground tabular-nums">
             {trait.breakpoints.map((breakpoint) => breakpoint.minUnits).join(" / ")}
           </p>
+          {busiest && (
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">At {busiest.minUnits}:</span>
+              <StatSummary line={busiest} play="of games" />
+              <StatTrend trend={setStats?.trend} kind="traits" entry={traitKey(trait.apiName, busiest.minUnits)} />
+            </span>
+          )}
         </div>
         {bestTier && <TierBadge tier={bestTier} className="size-14 text-3xl" />}
       </header>
@@ -160,12 +168,12 @@ function TraitPage() {
               <PlacementChart places={busiest.places} />
             </Section>
           )}
-          {setStats && top && (
+          {busiest && (
             <Section title="Patch history">
               <p className="mb-2 text-xs text-muted-foreground">
-                {trait.name} at {trait.breakpoints[0]?.minUnits}, its first breakpoint
+                At {busiest.minUnits} {trait.name}, its most played breakpoint
               </p>
-              <PatchHistoryChart kind="traits" entry={traitKey(trait.apiName, trait.breakpoints[0]?.minUnits ?? 0)} />
+              <PatchHistoryChart kind="traits" entry={traitKey(trait.apiName, busiest.minUnits)} />
             </Section>
           )}
         </aside>

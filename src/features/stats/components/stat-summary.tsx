@@ -30,7 +30,7 @@ export function StatSummary({
 }: {
   line: StatLine;
   className?: string;
-  /** Shows the play rate with this wording, e.g. "of boards"; what `play` is a share of differs by kind. */
+  /** Shows the play rate with this wording, e.g. "of games"; what `play` is a share of differs by kind. */
   play?: string;
 }) {
   return (

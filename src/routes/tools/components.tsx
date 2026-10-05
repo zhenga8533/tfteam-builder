@@ -18,7 +18,7 @@ import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import type { Item, StatLine } from "@/lib/data/schema";
 import { bestBuildable, buildableItems, type ComponentCounts, componentValues } from "@/lib/game/components";
-import { avgPlacementClass } from "@/features/stats/format";
+import { avgPlacementClass, count } from "@/features/stats/format";
 import { cn } from "@/lib/utils";
 import { stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
@@ -135,7 +135,7 @@ function CarryPlan({ carry, counts, buildable }: { carry: string; counts: Compon
               return item ? <ItemLink key={index} item={item} iconClassName="size-10" /> : null;
             })}
             <span className="ml-auto text-sm text-muted-foreground">
-              <AvgPlacement line={best} /> avg · {best.games} games
+              <AvgPlacement line={best} /> avg · {count(best.games)} games
             </span>
           </div>
         </Section>
