@@ -1,4 +1,4 @@
-import { Activity, ChevronDown, Info } from "lucide-react";
+import { Activity, ChevronDown, Info, TriangleAlert } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,7 +139,6 @@ export function StatsMeta({
 
   const stale = isStale(stats.updatedAt);
   const notes = [
-    stale && "No new games have come in for over a day, so these stats may be behind; match collection may be paused.",
     stats.previousPatch &&
       `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`,
     // Only the automatic fallback below the usual floor needs explaining, not a lower floor someone picked.
@@ -181,9 +180,15 @@ export function StatsMeta({
           </time>
         </span>
       </p>
+      {stale && (
+        <p className="flex items-start gap-2 text-xs text-placement-worse">
+          <TriangleAlert className="mt-px size-3.5 shrink-0" />
+          No new games have come in for over a day, so these stats may be behind; match collection may be paused.
+        </p>
+      )}
+      {/* Indented to line up with the sentence above, past its info button. */}
       {notes.map((note) => (
-        <p key={note as string} className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Info className="mt-0.5 size-3.5 shrink-0" />
+        <p key={note as string} className="pl-5.5 text-xs text-muted-foreground">
           {note}
         </p>
       ))}
