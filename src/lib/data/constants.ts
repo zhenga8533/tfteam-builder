@@ -8,6 +8,12 @@ export const RANK_FLOORS = ["diamond", "emerald", "platinum", "gold"] as const;
 /** Every floor stats can be shown for; Master+ is only offered as a choice, never as the fallback. */
 export const RANK_OPTIONS = ["master", ...RANK_FLOORS] as const;
 
+/** Crawls run every few hours; stats older than this mean crawling has stopped (e.g. an expired API key). */
+export const STALE_STATS_HOURS = 24;
+
+export const isStale = (updatedAt: string, now = Date.now()) =>
+  now - Date.parse(updatedAt) > STALE_STATS_HOURS * 3_600_000;
+
 /** Riot's routing regions; match data is fetched per region, so boards are stored per region too. */
 export const REGIONS = ["americas", "europe", "asia", "sea"] as const;
 export type Region = (typeof REGIONS)[number];

@@ -1,8 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Bug } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { timeAgo } from "@/features/stats/format";
+import { isStale } from "@/lib/data/constants";
 import { useManifest } from "@/lib/data/hooks";
+import { statsQuery } from "@/lib/data/queries";
+import { cn } from "@/lib/utils";
 import { REPOSITORY } from "@/lib/site";
 import { isNavGroup, NAV } from "./nav";
 
@@ -19,14 +23,31 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
+const At = ({ iso }: { iso: string }) => (
+  <time dateTime={iso} title={new Date(iso).toLocaleString()}>
+    {timeAgo(iso)}
+  </time>
+);
+
 function DataStatus() {
   const manifest = useManifest();
+  // Live stats only, and not suspending: the footer shows without them.
+  const set = manifest.patches.latest.sets[0];
+  const stats = useQuery({ ...statsQuery("latest", set ?? 0), enabled: set !== undefined }).data;
+  const stale = stats && isStale(stats.updatedAt);
   return (
     <p>
       Live patch {manifest.patches.latest.label} · PBE patch {manifest.patches.pbe.label} · Game data refreshed{" "}
-      <time dateTime={manifest.generatedAt} title={new Date(manifest.generatedAt).toLocaleString()}>
-        {timeAgo(manifest.generatedAt)}
-      </time>
+      <At iso={manifest.generatedAt} />
+      {stats && (
+        <span
+          className={cn(stale && "font-medium text-placement-worse")}
+          title={stale ? "Match collection may be paused" : undefined}
+        >
+          {" "}
+          · Match stats updated <At iso={stats.updatedAt} />
+        </span>
+      )}
     </p>
   );
 }
