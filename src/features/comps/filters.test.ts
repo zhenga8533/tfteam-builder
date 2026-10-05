@@ -38,15 +38,6 @@ describe("comp filters", () => {
     });
   });
 
-  it("still reads older single-value links", () => {
-    expect(parseCompFilters({ champion: "Ahri", carry: "true", trait: "Blossom" })).toEqual({
-      q: undefined,
-      champions: ["Ahri"],
-      carries: ["Ahri"],
-      traits: ["Blossom"],
-    });
-  });
-
   it("knows when filters are set and when carries can't all fit", () => {
     expect(hasCompFilters({})).toBe(false);
     expect(hasCompFilters({ traits: ["Blossom"] })).toBe(true);

@@ -69,11 +69,10 @@ export type BoardRow = [
   level: number,
   units: BoardUnitRow[],
   traits: BoardTraitRow[],
-  // Added later, so boards stored before then don't have it.
-  extras?: BoardExtras,
+  extras: BoardExtras,
 ];
 
-/** Board details beyond the original fields, by name so more can be added without tracking positions. */
+/** Board details by name, so more can be added without tracking positions. Fields are absent when Riot omits them. */
 export interface BoardExtras {
   /** The last round played: when the player was knocked out, or the game's final round for the winner. */
   lastRound?: number;

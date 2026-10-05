@@ -56,7 +56,7 @@ describe("renderReport", () => {
       now,
     });
     expect(markdown).toContain("newest crawled 3 days ago ⚠️ no new matches lately");
-    expect(markdown).toContain("⚠️ none yet, so those sections stay hidden");
+    expect(markdown).toContain("⚠️ none, so those sections stay hidden");
     expect(markdown).toContain("Unmapped names, left out of the stats: items: DA_Potion (150)");
   });
 

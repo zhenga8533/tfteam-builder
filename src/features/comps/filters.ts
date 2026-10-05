@@ -12,18 +12,14 @@ export interface CompFilters {
   traits?: string[];
 }
 
-/** Reads the filters, also taking the single `champion`, `carry` and `trait` params older links used. */
 export function parseCompFilters(search: Record<string, unknown>): CompFilters {
-  const champions = listParam(search.champions) ?? listParam(search.champion);
-  const legacyCarry = (search.carry === true || search.carry === "true") && search.champion;
-  const carries = (listParam(search.carries) ?? (legacyCarry ? champions : undefined))?.filter((apiName) =>
-    champions?.includes(apiName),
-  );
+  const champions = listParam(search.champions);
+  const carries = listParam(search.carries)?.filter((apiName) => champions?.includes(apiName));
   return {
     q: stringParam(search.q),
     champions,
     carries: carries?.length ? carries : undefined,
-    traits: listParam(search.traits) ?? listParam(search.trait),
+    traits: listParam(search.traits),
   };
 }
 

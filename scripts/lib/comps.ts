@@ -51,7 +51,7 @@ interface CompDetail {
   knockouts: Map<number, number>;
 }
 
-/** Median knockout round, once enough boards report it (older boards don't). */
+/** Median knockout round, once enough boards report it. */
 function knockoutRound(detail: CompDetail): { knockoutRound?: number } {
   const rounds = [...detail.knockouts]
     .flatMap(([round, count]) => Array<number>(count).fill(round))

@@ -25,7 +25,9 @@ function bump(record: Record<string, Counter>, key: string, placement: number) {
 export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
   const gameTime = Math.floor(match.info.game_datetime / 1000);
   return match.info.participants.map((participant) => {
-    const row: BoardRow = [
+    // JSON drops the undefined fields, so only what the match reported is stored.
+    const extras: BoardExtras = { lastRound: participant.last_round, companion: participant.companion?.content_ID };
+    return [
       match.metadata.match_id,
       gameTime,
       bucket,
@@ -35,14 +37,8 @@ export function matchToRows(match: Match, bucket: RankBucket): BoardRow[] {
       participant.traits
         .filter((trait) => trait.tier_current > 0)
         .map((trait) => [trait.name, trait.tier_current, trait.num_units]),
+      extras,
     ];
-    const extras: BoardExtras = {
-      lastRound: participant.last_round,
-      companion: participant.companion?.content_ID,
-    };
-    // JSON drops the undefined fields, so only what the match reported is stored.
-    if (Object.values(extras).some((value) => value !== undefined)) row.push(extras);
-    return row;
   });
 }
 
