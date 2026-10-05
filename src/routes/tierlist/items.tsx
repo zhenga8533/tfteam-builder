@@ -76,6 +76,7 @@ function ItemTierListPage() {
             icon={<ItemIcon item={item} decorative className="size-12" />}
             label={item.name}
             line={line}
+            play="of boards"
             link={{ to: "/items/$apiName", params: { apiName: item.apiName } }}
             trend={<StatTrend kind="items" entry={apiName} />}
             card={<ItemCard item={item} />}

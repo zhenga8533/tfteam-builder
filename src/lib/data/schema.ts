@@ -138,7 +138,7 @@ export const statLineSchema = z.object({
   score: z.number(),
   top4: z.number(),
   win: z.number(),
-  /** Share of boards (units, traits) or of equipped items (items) this entry accounts for. */
+  /** Share of the boards (or games) the entry is counted against: all boards for units, items and traits. */
   play: z.number(),
   tier: z.enum(STAT_TIERS).optional(),
   /** Games ending 1st to 8th; only on lines shown with a placement distribution. */
@@ -187,6 +187,8 @@ export const setStatsSchema = z.object({
   previousPatch: z.boolean(),
   units: z.record(z.string(), statLineSchema),
   items: z.record(z.string(), statLineSchema),
+  /** Items are counted once per board. Older stats counted every copy, so item trends don't compare against them. */
+  itemsPerBoard: z.boolean().optional(),
   traits: z.array(traitStatSchema),
   bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),
   /** Movement since the previous patch with saved stats; absent until there is one. */

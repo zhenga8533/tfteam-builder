@@ -1,4 +1,4 @@
-import { Activity, ChevronDown, Info } from "lucide-react";
+import { Activity, ChevronDown, Info, TriangleAlert } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { isStale, RANK_FLOORS, RANK_OPTIONS, type Region } from "@/lib/data/constants";
+import { BOARDS_PER_MATCH, isStale, RANK_FLOORS, RANK_OPTIONS, type Region } from "@/lib/data/constants";
 import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats } from "@/lib/data/schema";
 import { LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
@@ -131,7 +131,7 @@ export function StatsMeta({
     return (
       <p className="mb-6 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
         <Activity className="size-4 shrink-0 text-primary" />
-        Collecting match data for Set {stats.set}: {count(stats.matches)} ranked games so far. Stats appear once there
+        Collecting match data for Set {stats.set}: {count(stats.matches)} ranked matches so far. Stats appear once there
         are enough games.
       </p>
     );
@@ -139,7 +139,6 @@ export function StatsMeta({
 
   const stale = isStale(stats.updatedAt);
   const notes = [
-    stale && "No new games have come in for over a day, so these stats may be behind; match collection may be paused.",
     stats.previousPatch &&
       `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`,
     // Only the automatic fallback below the usual floor needs explaining, not a lower floor someone picked.
@@ -163,13 +162,14 @@ export function StatsMeta({
           </TooltipTrigger>
           <TooltipContent className="max-w-72">
             Ranked games from {stats.region ? REGION_LABEL[stats.region].servers : "every server"}, collected every few
-            hours from Riot's match API. Placements are averaged per board; entries with fewer than {LOW_SAMPLE_GAMES}{" "}
-            games are marked low sample.
+            hours from Riot's match API. Each player in a match counts as one game; entries with fewer than{" "}
+            {LOW_SAMPLE_GAMES} games are marked low sample.
           </TooltipContent>
         </Tooltip>
         <span>
-          Based on <span className="font-medium text-foreground">{count(stats.matches)}</span>{" "}
-          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games
+          Based on <span className="font-medium text-foreground">{count(stats.matches * BOARDS_PER_MATCH)}</span>{" "}
+          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games (
+          {count(stats.matches)} matches)
           <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch {stats.patch} ·{" "}
           <time
             dateTime={stats.updatedAt}
@@ -180,9 +180,15 @@ export function StatsMeta({
           </time>
         </span>
       </p>
+      {stale && (
+        <p className="flex items-start gap-2 text-xs text-placement-worse">
+          <TriangleAlert className="mt-px size-3.5 shrink-0" />
+          No new games have come in for over a day, so these stats may be behind; match collection may be paused.
+        </p>
+      )}
+      {/* Indented to line up with the sentence above, past its info button. */}
       {notes.map((note) => (
-        <p key={note as string} className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Info className="mt-0.5 size-3.5 shrink-0" />
+        <p key={note as string} className="pl-5.5 text-xs text-muted-foreground">
           {note}
         </p>
       ))}

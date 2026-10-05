@@ -21,7 +21,7 @@ const MAX_ITEMS = 3;
 
 /** The best next item for a champion given what it holds, from match stats; clicking one equips it. */
 export function BestItems({ champion, equipped, onPick, onPickBuild }: BestItemsProps) {
-  const { itemsByApi } = useGameData();
+  const { championsByApi, itemsByApi } = useGameData();
   const championStats = useChampionStats(champion);
   const fallback = useStats()?.bestItems[champion];
   if (equipped.length >= MAX_ITEMS) return null;
@@ -74,7 +74,11 @@ export function BestItems({ champion, equipped, onPick, onPickBuild }: BestItems
                 content={
                   <div className="space-y-3">
                     <ItemCard item={item} />
-                    <StatSummary line={line} className="border-t pt-3" />
+                    <StatSummary
+                      line={line}
+                      className="border-t pt-3"
+                      play={`of ${championsByApi.get(champion)?.name ?? "this champion"}'s games`}
+                    />
                   </div>
                 }
               >

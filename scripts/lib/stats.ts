@@ -221,9 +221,8 @@ export function buildSetStats(
   assignTiers(Object.values(unitLines), MIN_GAMES.unit);
 
   const itemCounters = collect(counters.items, (key, games) => items.resolve(key, games));
-  const equipped = [...itemCounters.values()].reduce((total, [games]) => total + games, 0);
   const itemLines = Object.fromEntries(
-    [...itemCounters].map(([name, counter]) => [name, statLine(counter, equipped, { places: true })]),
+    [...itemCounters].map(([name, counter]) => [name, statLine(counter, counters.boards, { places: true })]),
   );
   assignTiers(
     Object.entries(itemLines).flatMap(([name, line]) => (rankable.has(name) ? [line] : [])),
@@ -272,6 +271,7 @@ export function buildSetStats(
       previousPatch: sample.previousPatch,
       units: unitLines,
       items: itemLines,
+      itemsPerBoard: true,
       traits: traitLines.sort((a, b) => a.score - b.score),
       bestItems,
     },

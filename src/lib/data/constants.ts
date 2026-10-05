@@ -11,6 +11,9 @@ export const RANK_OPTIONS = ["master", ...RANK_FLOORS] as const;
 /** Crawls run every few hours; stats older than this mean crawling has stopped (e.g. an expired API key). */
 export const STALE_STATS_HOURS = 24;
 
+/** Players in a standard ranked match, each with a board of their own. */
+export const BOARDS_PER_MATCH = 8;
+
 export const isStale = (updatedAt: string, now = Date.now()) =>
   now - Date.parse(updatedAt) > STALE_STATS_HOURS * 3_600_000;
 

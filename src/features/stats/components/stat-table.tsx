@@ -5,7 +5,7 @@ import type { StatLine } from "@/lib/data/schema";
 import { isLowSample } from "@/lib/game/stat-line";
 import { matches } from "@/lib/search";
 import { cn } from "@/lib/utils";
-import { count, percent } from "../format";
+import { count, percent, share } from "../format";
 import { AvgPlacement, LOW_SAMPLE_HINT } from "./stat-summary";
 
 export interface StatRow {
@@ -16,17 +16,18 @@ export interface StatRow {
   name?: string;
 }
 
-type SortKey = "delta" | "avg" | "top4" | "games";
+type SortKey = "delta" | "avg" | "top4" | "play" | "games";
 
 const COLUMNS: { key: SortKey; label: string; title?: string }[] = [
   { key: "delta", label: "Δ" },
   { key: "avg", label: "Avg", title: "Average placement" },
   { key: "top4", label: "Top 4", title: "Top 4 rate" },
+  { key: "play", label: "Play" },
   { key: "games", label: "Games", title: "Number of games" },
 ];
 
 /** Lower is better for delta and average placement; higher is better for the rest. */
-const ASCENDING_BEST: Record<SortKey, boolean> = { delta: true, avg: true, top4: false, games: false };
+const ASCENDING_BEST: Record<SortKey, boolean> = { delta: true, avg: true, top4: false, play: false, games: false };
 
 /** Sorts by the value shown, but low samples always go last so a few lucky games can't top the table. */
 function sortRows(rows: StatRow[], sort: SortKey) {
@@ -55,6 +56,8 @@ interface StatTableProps {
   showDelta?: boolean;
   /** What Δ is measured against, shown as the column tooltip. */
   deltaBaseline?: string;
+  /** What each row's play rate is a share of (e.g. "Ahri's games"); adds the Play column. */
+  playBaseline?: string;
   empty?: ReactNode;
   limit?: number;
   /** Keep the rows' own order until a column is picked (e.g. trait breakpoints, smallest first). */
@@ -68,6 +71,7 @@ export function StatTable({
   rows,
   showDelta = true,
   deltaBaseline = "the champion's own average placement",
+  playBaseline,
   empty = "Not enough games yet.",
   limit = 15,
   keepOrder = false,
@@ -76,7 +80,9 @@ export function StatTable({
   const [sort, setSort] = useState<SortKey | null>(keepOrder ? null : showDelta ? "delta" : "avg");
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
-  const columns = COLUMNS.filter((column) => showDelta || column.key !== "delta");
+  const columns = COLUMNS.filter(
+    (column) => (showDelta || column.key !== "delta") && (playBaseline !== undefined || column.key !== "play"),
+  );
 
   if (rows.length === 0) return <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>;
 
@@ -87,7 +93,8 @@ export function StatTable({
   const visible = expanded || (searchable && query) ? sorted : sorted.slice(0, limit);
 
   return (
-    <div className="space-y-2">
+    // Narrow tables (phones, half-width cards, side panels) drop the Top 4 column to leave room for names.
+    <div className="@container space-y-2">
       {searchable && <SearchInput value={query} onChange={setQuery} placeholder={search} className="max-w-xs" />}
       <table className="w-full text-sm">
         <thead>
@@ -102,9 +109,15 @@ export function StatTable({
                 aria-sort={sort === column.key ? (ASCENDING_BEST[column.key] ? "ascending" : "descending") : undefined}
                 className={cn(
                   "w-12 py-1.5 pl-2 text-right font-medium sm:w-16",
-                  column.key === "top4" && "max-sm:hidden",
+                  column.key === "top4" && "@max-md:hidden",
                 )}
-                title={column.key === "delta" ? `Difference from ${deltaBaseline} (lower is better)` : column.title}
+                title={
+                  column.key === "delta"
+                    ? `Difference from ${deltaBaseline} (lower is better)`
+                    : column.key === "play"
+                      ? `Share of ${playBaseline}`
+                      : column.title
+                }
               >
                 <button
                   type="button"
@@ -140,9 +153,12 @@ export function StatTable({
               <td className="py-1.5 pl-2 text-right">
                 <AvgPlacement line={row.line} />
               </td>
-              <td className="py-1.5 pl-2 text-right text-muted-foreground tabular-nums max-sm:hidden">
+              <td className="py-1.5 pl-2 text-right text-muted-foreground tabular-nums @max-md:hidden">
                 {percent(row.line.top4)}
               </td>
+              {playBaseline !== undefined && (
+                <td className="py-1.5 pl-2 text-right text-muted-foreground tabular-nums">{share(row.line.play)}</td>
+              )}
               <td className="py-1.5 pl-2 text-right text-muted-foreground tabular-nums">{count(row.line.games)}</td>
             </tr>
           ))}

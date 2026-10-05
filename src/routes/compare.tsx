@@ -10,7 +10,7 @@ import { AutoCompCard } from "@/features/comps/components/comp-card";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { count, percent } from "@/features/stats/format";
+import { count, percent, share } from "@/features/stats/format";
 import { parseRank } from "@/features/stats/scope";
 import { useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import { findComp } from "@/lib/game/comp-signature";
@@ -55,7 +55,7 @@ interface Side {
   details: { label: string; value: ReactNode }[];
 }
 
-/** Metric rows; `better` says which direction wins, so the stronger side is highlighted (games just inform). */
+/** Metric rows; `better` says which direction wins, so the stronger side is highlighted (play rate and games just inform). */
 const METRICS: {
   label: string;
   value: (line: StatLine) => number;
@@ -65,6 +65,7 @@ const METRICS: {
   { label: "Avg place", value: (line) => line.avg, format: (value) => value.toFixed(2), better: "low" },
   { label: "Top 4", value: (line) => line.top4, format: percent, better: "high" },
   { label: "Win rate", value: (line) => line.win, format: percent, better: "high" },
+  { label: "Play rate", value: (line) => line.play, format: share },
   { label: "Games", value: (line) => line.games, format: count },
 ];
 

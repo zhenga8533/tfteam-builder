@@ -74,7 +74,7 @@ function ItemDetails({ item }: { item: Item }) {
         </p>
       )}
       <ItemCard item={item} />
-      {line && <StatSummary line={line} className="border-t pt-3" />}
+      {line && <StatSummary line={line} className="border-t pt-3" play="of boards" />}
       <TopHolders item={item} />
     </div>
   );
@@ -201,7 +201,7 @@ function ItemsPage() {
                 <CardContent className="px-4">
                   <ItemCard item={item} />
                   {stats?.items[item.apiName] && (
-                    <StatSummary line={stats.items[item.apiName]!} className="mt-3 border-t pt-3" />
+                    <StatSummary line={stats.items[item.apiName]!} className="mt-3 border-t pt-3" play="of boards" />
                   )}
                 </CardContent>
               </Card>

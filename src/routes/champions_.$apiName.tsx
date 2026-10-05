@@ -26,11 +26,16 @@ export const Route = createFileRoute("/champions_/$apiName")({
   component: ChampionPage,
 });
 
+/** What the champion's tables' play rates are a share of. */
+const gamesOf = (stats: ChampionStats, championsByApi: Map<string, Champion>) =>
+  `${championsByApi.get(stats.apiName)?.name ?? "this champion"}'s games`;
+
 function Partners({ stats }: { stats: ChampionStats }) {
   const { championsByApi } = useGameData();
   return (
     <StatTable
       search="Search champions"
+      playBaseline={gamesOf(stats, championsByApi)}
       rows={stats.partners.flatMap((partner) => {
         const champion = championsByApi.get(partner.unit);
         if (!champion) return [];
@@ -48,10 +53,11 @@ function Partners({ stats }: { stats: ChampionStats }) {
 }
 
 function Traits({ stats }: { stats: ChampionStats }) {
-  const { traitsByApi } = useGameData();
+  const { championsByApi, traitsByApi } = useGameData();
   return (
     <StatTable
       search="Search traits"
+      playBaseline={gamesOf(stats, championsByApi)}
       rows={stats.traits.flatMap((entry) => {
         const trait = traitsByApi.get(entry.trait);
         const breakpoint = trait?.breakpoints.find((b) => b.minUnits === entry.minUnits);
@@ -77,9 +83,11 @@ function Traits({ stats }: { stats: ChampionStats }) {
 }
 
 function StarLevels({ stats }: { stats: ChampionStats }) {
+  const { championsByApi } = useGameData();
   return (
     <StatTable
       showDelta={false}
+      playBaseline={gamesOf(stats, championsByApi)}
       rows={Object.entries(stats.stars).map(([star, line]) => ({
         key: star,
         label: <span className="text-trait-gold">{"★".repeat(Number(star))}</span>,

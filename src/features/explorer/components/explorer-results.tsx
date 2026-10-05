@@ -15,6 +15,7 @@ import type { ExplorerFilter, ExplorerResult, ExplorerRow } from "@/lib/explorer
 import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 const BASELINE = "the average of the boards matching your filters";
+const PLAY_BASELINE = "the boards matching your filters";
 const LIMIT = 20;
 
 function AddButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
@@ -84,6 +85,7 @@ function UnitItems({ units, result, onRequire }: UnitItemsProps) {
       )}
       <StatTable
         deltaBaseline={BASELINE}
+        playBaseline={PLAY_BASELINE}
         limit={LIMIT}
         empty={
           required.length >= 3
@@ -218,10 +220,22 @@ export function ExplorerResults({ result, filters, onChange, trend }: ExplorerRe
           {unitFilters.length > 0 && <TabsTrigger value="items">Items</TabsTrigger>}
         </TabsList>
         <TabsContent value="units" className="pt-3">
-          <StatTable rows={unitRows} deltaBaseline={BASELINE} limit={LIMIT} search="Search champions" />
+          <StatTable
+            rows={unitRows}
+            deltaBaseline={BASELINE}
+            playBaseline={PLAY_BASELINE}
+            limit={LIMIT}
+            search="Search champions"
+          />
         </TabsContent>
         <TabsContent value="traits" className="pt-3">
-          <StatTable rows={traitRows} deltaBaseline={BASELINE} limit={LIMIT} search="Search traits" />
+          <StatTable
+            rows={traitRows}
+            deltaBaseline={BASELINE}
+            playBaseline={PLAY_BASELINE}
+            limit={LIMIT}
+            search="Search traits"
+          />
         </TabsContent>
         {unitFilters.length > 0 && (
           <TabsContent value="items" className="pt-3">
