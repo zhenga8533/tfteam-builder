@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { count, percent } from "@/features/stats/format";
+import { TrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { useGameData } from "@/lib/data/hooks";
+import type { PatchTrend } from "@/lib/data/schema";
 import type { ExplorerFilter, ExplorerResult, ExplorerRow } from "@/lib/explorer/engine";
 import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
@@ -111,10 +113,26 @@ interface ExplorerResultsProps {
   result: ExplorerResult;
   filters: ExplorerFilter[];
   onChange: (filters: ExplorerFilter[]) => void;
+  /** Changes since the previous patch at the shown rank floor, from the tier list stats. */
+  trend?: PatchTrend;
+}
+
+/**
+ * The tier list trends cover every board of an entry, so they only match results that do too: the summary for one
+ * champion alone, and each row when nothing is filtered.
+ */
+function trendsFor(filters: ExplorerFilter[], trend: PatchTrend | undefined) {
+  const only = filters.length === 1 ? filters[0] : undefined;
+  const alone = only?.type === "unit" && !only.minStar && !only.items?.length ? only.unit : undefined;
+  return {
+    summary: alone ? trend?.units[alone] : undefined,
+    unit: (key: string) => (filters.length === 0 ? trend?.units[key] : undefined),
+    trait: (key: string) => (filters.length === 0 ? trend?.traits[key] : undefined),
+  };
 }
 
 /** Summary of matching boards, plus what to add next: units, traits, and items on each filtered unit. */
-export function ExplorerResults({ result, filters, onChange }: ExplorerResultsProps) {
+export function ExplorerResults({ result, filters, onChange, trend }: ExplorerResultsProps) {
   const { championsByApi, traitsByApi } = useGameData();
   const [tab, setTab] = useState("units");
   const { summary } = result;
@@ -124,6 +142,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
   // Removing the last champion filter removes the Items tab, so fall back to Champions.
   const shownTab = tab === "items" && unitFilters.length === 0 ? "units" : tab;
   const add = (filter: ExplorerFilter) => onChange([...filters, filter]);
+  const trends = trendsFor(filters, trend);
 
   const unitRows = result.units.flatMap((row: ExplorerRow) => {
     const champion = championsByApi.get(row.key);
@@ -137,6 +156,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
           <AddButton label={`Filter by ${champion.name}`} onClick={() => add({ type: "unit", unit: row.key })}>
             <ChampionIcon champion={champion} className="size-7" decorative />
             <span className="truncate">{champion.name}</span>
+            <TrendBadge delta={trends.unit(row.key)} patch={trend?.patch} />
           </AddButton>
         ),
       },
@@ -161,6 +181,7 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
             <span className="truncate">
               {minUnits} {trait.name}
             </span>
+            <TrendBadge delta={trends.trait(row.key)} patch={trend?.patch} />
           </AddButton>
         ),
       },
@@ -172,7 +193,13 @@ export function ExplorerResults({ result, filters, onChange }: ExplorerResultsPr
       <dl className="grid grid-cols-2 gap-3 rounded-xl border bg-card p-4 sm:grid-cols-5">
         {[
           ["Boards", count(summary.games)],
-          ["Avg placement", <AvgPlacement key="avg" line={summary} />],
+          [
+            "Avg placement",
+            <span key="avg" className="inline-flex items-baseline gap-1.5">
+              <AvgPlacement line={summary} />
+              <TrendBadge delta={trends.summary} patch={trend?.patch} className="text-xs" />
+            </span>,
+          ],
           ["Top 4", percent(summary.top4)],
           ["Win rate", percent(summary.win)],
           ["Of boards", percent(summary.play)],
