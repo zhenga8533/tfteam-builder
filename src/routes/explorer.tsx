@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { ExplorerResults } from "@/features/explorer/components/explorer-results";
 import { FilterBar } from "@/features/explorer/components/filter-bar";
+import { explorerUrl } from "@/features/explorer/explorer-url";
 import { useExplorer } from "@/features/explorer/use-explorer";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
@@ -65,10 +66,7 @@ function ExplorerPage() {
       : source.type === "trait"
         ? (traitsByApi.get(source.apiName)?.name ?? source.apiName)
         : null;
-  const url =
-    patch === "latest" && stats?.status === "ready"
-      ? `${import.meta.env.BASE_URL}data/stats/set${set}/${explorerFile(source)}`
-      : null;
+  const url = patch === "latest" && stats?.status === "ready" ? explorerUrl(set, explorerFile(source)) : null;
   const floor = floorStats ? RANK_OPTIONS.indexOf(floorStats.rankFloor) : undefined;
   const { status, result, pending } = useExplorer(url, filters, floor);
 

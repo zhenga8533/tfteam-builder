@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "crawl": "tsx scripts/stats/crawl.ts",
     "stats": "tsx scripts/build-stats.ts",
+    "publish-explorer": "tsx scripts/publish-explorer.ts",
     "test:e2e": "vite build && playwright test"
   },
   "dependencies": {

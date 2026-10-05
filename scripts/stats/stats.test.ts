@@ -362,6 +362,9 @@ describe("R2BlobStore", () => {
     const put = requests.at(-1)!;
     expect(put.url).toBe("https://acct.r2.cloudflarestorage.com/tft/state/na1.json");
     expect(put.headers.get("authorization")).toMatch(/^AWS4-HMAC-SHA256 Credential=id\//);
+
+    await store.put("1/set18/explorer/totals.json", "{}", { "Content-Type": "application/json" });
+    expect(requests.at(-1)!.headers.get("content-type")).toBe("application/json");
   });
 
   it("fails on client errors instead of retrying", async () => {
