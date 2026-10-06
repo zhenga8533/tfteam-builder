@@ -1,0 +1,19 @@
+name: Sync dev
+
+# Keeps dev level with main after every merge. Fast-forward only: if dev has commits main doesn't, this fails
+# rather than overwrite them.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: git push origin HEAD:dev

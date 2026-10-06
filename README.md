@@ -188,8 +188,9 @@ match data, so the augment tier list and comp guides stay hand-written.
   place better simply because the player is ahead, so Δ is the fairer comparison.
 - **Item and trait pages** (`/items/{apiName}`, `/traits/{apiName}`): an item's best holders, the items built with it
   and its comps; a trait's breakpoints, the units that do best while it's active, and its comps.
-- **Detected comps:** boards are grouped by their carries and two core traits. A comp needs at least 150 games, 0.2% of
-  boards and a first place. Match data has no positions, so comp boards are laid out by unit range.
+- **Detected comps:** boards are grouped by their carries and two core traits, then groups whose core boards share most
+  of their units are merged, so an emblem or an extra unit doesn't split one comp in two. A comp needs at least 150
+  games, 0.2% of boards and a first place. Match data has no positions, so comp boards are laid out by unit range.
 - **Patches:** stats are split by TFT patch, b patches included (18.3, 18.3b), using the release dates in
   [Riot's patch notes](https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/), because match data no
   longer reports a version. Right after a patch or b patch, the previous one is shown until there are enough games.
@@ -197,7 +198,8 @@ match data, so the augment tier list and comp guides stay hand-written.
   builds it one last time and freezes it. Its built files are archived in the stats bucket (`archive/set{N}/`) and its
   Explorer files in the public bucket (`archive/set{N}/explorer/`), and later deploys publish the archive instead of
   rebuilding the set; its pages say the stats are final. The set's boards stay in R2 but aren't read again. To rebuild a
-  frozen set from them, delete `archive/set{N}/complete.json` from the stats bucket; the next deploy re-freezes it.
+  frozen set from them, delete `archive/set{N}/complete.json` from the stats bucket and run the **Deploy** workflow
+  manually; it re-freezes the set.
 - **Explorer** (`/explorer`): every board of the patch, queried in the browser (in a Web Worker). A query loads its
   first champion's files, else its first trait's (each holds every board with them, split by rank so a floor
   downloads only the ranks it covers), else the totals (every board's counts by rank and level). Filter by champions
@@ -228,6 +230,10 @@ To serve the Explorer's files from R2 instead of the site (they grow with the da
 Each deploy then uploads the Explorer's files to a folder named after its workflow run and builds the site to read
 from there; folders from older deploys are deleted. Frozen sets' files stay in `archive/`. Without these variables,
 the files are bundled into the site, and finished sets aren't frozen.
+
+A deploy with nothing new to build (no new boards, and no change to the game data or to the code under `scripts/` and
+`src/lib/`) republishes the last build instead of rebuilding: its stats files are kept in the stats bucket (`build/`)
+and its Explorer files stay in its run's folder. Running the **Deploy** workflow manually always rebuilds.
 
 A development key works for test crawls, but it expires 24 hours after it's generated: crawls then fail with
 "Riot rejected the API key" until `RIOT_API_KEY` is updated (`gh secret set RIOT_API_KEY` prompts for it). Riot meant

@@ -32,12 +32,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run lint
+      # Lint already ran on the PR; tests run again because they check the freshly generated game data.
       - run: npm run data
       - run: npm test
       # Reads stored boards from R2; without credentials (or boards) it skips and the site hides stats. Finished sets
       # are frozen: their Explorer files go to the public bucket's archive once, and later deploys publish the archive.
-      - run: npm run stats
+      # With nothing new (no boards, game data or stats code), it republishes the last build; a manual run always
+      # rebuilds.
+      - run: npm run stats -- ${{ github.event_name != 'workflow_dispatch' && '--reuse' || '' }}
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -50,6 +52,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_PUBLIC_BUCKET: ${{ vars.R2_PUBLIC_BUCKET }}
           EXPLORER_PUBLIC_URL: ${{ vars.EXPLORER_PUBLIC_URL }}
       - run: npm run build
