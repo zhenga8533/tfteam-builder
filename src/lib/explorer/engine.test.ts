@@ -37,7 +37,8 @@ const boards: ExplorerBoard[] = [
   ),
   ...Array.from({ length: 5 }, () => board(4, [["Sett", 3, ["JG"]]], [])),
 ];
-const data = decodeExplorer(encodeExplorer(boards).slice().buffer);
+// The patch is just these 25 boards, all at rank 0.
+const data = decodeExplorer(encodeExplorer(boards, 0, [boards.length]).slice().buffer);
 
 describe("explorer engine", () => {
   it("summarizes boards matching unit, star, item, trait and level filters", () => {
@@ -62,7 +63,7 @@ describe("explorer engine", () => {
   });
 
   it("counts an item built twice on the filtered unit once", () => {
-    const doubled = decodeExplorer(encodeExplorer([board(1, [["Ahri", 2, ["BB", "BB"]]], [])]).slice().buffer);
+    const doubled = decodeExplorer(encodeExplorer([board(1, [["Ahri", 2, ["BB", "BB"]]], [])], 0, [1]).slice().buffer);
     expect(runQuery(doubled, [{ type: "unit", unit: "Ahri" }], 1).items["Ahri"]).toMatchObject([
       { key: "BB", line: { games: 1 } },
     ]);
@@ -132,17 +133,17 @@ describe("explorer rank floors", () => {
     ...Array.from({ length: 4 }, () => ({ ...board(4, [["Ahri", 1, []]], []), rank: 1 })),
     ...Array.from({ length: 4 }, () => ({ ...board(8, [["Ahri", 1, []]], []), rank: 2 })),
   ];
-  const sample = decodeExplorer(encodeExplorer(ranked, 1).slice().buffer);
+  const file = decodeExplorer(encodeExplorer(ranked, 1, [4, 4, 4]).slice().buffer);
 
   it("uses the default floor unless asked for another", () => {
-    expect(runQuery(sample, [], 1).summary?.games).toBe(8);
-    expect(runQuery(sample, [], 1, 0).summary).toMatchObject({ games: 4, avg: 1 });
-    expect(runQuery(sample, [], 1, 2).summary?.games).toBe(12);
+    expect(runQuery(file, [], 1).summary?.games).toBe(8);
+    expect(runQuery(file, [], 1, 0).summary).toMatchObject({ games: 4, avg: 1 });
+    expect(runQuery(file, [], 1, 2).summary?.games).toBe(12);
   });
 
-  it("gives shares of the boards at the floor, not the whole sample", () => {
-    expect(runQuery(sample, [], 1).summary?.play).toBe(1);
-    expect(runQuery(sample, [], 1, 0).summary?.play).toBe(1);
+  it("gives shares of the boards at the floor, not all the patch's boards", () => {
+    expect(runQuery(file, [], 1).summary?.play).toBe(1);
+    expect(runQuery(file, [], 1, 0).summary?.play).toBe(1);
   });
 
   it("gives shares of the whole patch for a file holding every board of a champion", () => {
@@ -159,7 +160,7 @@ describe("explorer rank floors", () => {
     const accumulator = new TotalsAccumulator();
     for (const entry of ranked) accumulator.add(entry);
     const totals = accumulator.results(1);
-    const all = decodeExplorer(encodeExplorer(ranked, 1).slice().buffer);
+    const all = decodeExplorer(encodeExplorer(ranked, 1, [13, 12]).slice().buffer);
     for (const filters of [[], [{ type: "level" as const, min: 9 }]]) {
       for (const floor of [0, 1]) {
         expect(runTotalsQuery(totals, filters, 1, floor)).toEqual(runQuery(all, filters, 1, floor));

@@ -43,7 +43,7 @@ export const Route = createFileRoute("/explorer")({
     const filters = parseFilters(search.filters);
     return { ...(filters.length && { filters }), rank: parseRank(search.rank) };
   },
-  // The filter bar reads game data only once the sample loads; without it cached, the page would suspend after appearing.
+  // The filter bar reads game data only once the boards load; without it cached, the page would suspend after appearing.
   loader: async ({ context: { queryClient } }) =>
     prefetchActiveSet(queryClient, await queryClient.ensureQueryData(manifestQuery)),
   component: ExplorerPage,

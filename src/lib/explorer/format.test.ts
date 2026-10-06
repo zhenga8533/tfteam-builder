@@ -17,7 +17,7 @@ const boards: ExplorerBoard[] = [
 
 describe("explorer format", () => {
   it("round-trips boards losslessly", () => {
-    const encoded = encodeExplorer(boards);
+    const encoded = encodeExplorer(boards, 0, [2]);
     // Copy into a fresh, exactly-sized buffer as the browser would after decompressing.
     const data = decodeExplorer(encoded.slice().buffer);
 
@@ -47,6 +47,7 @@ describe("explorer format", () => {
           { ...boards[1]!, rank: 2 },
         ],
         1,
+        [1, 0, 1],
       ).slice().buffer,
     );
     expect([...data.rank]).toEqual([0, 2]);

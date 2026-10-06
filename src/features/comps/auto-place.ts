@@ -74,7 +74,7 @@ export function autoPlace(
 }
 
 /** Each unit's hex on a board, for `autoPlace` to keep. */
-export const boardPositions = (board: CompUnit[]) => new Map(board.map((unit) => [unit.apiName, unit.hex]));
+const boardPositions = (board: CompUnit[]) => new Map(board.map((unit) => [unit.apiName, unit.hex]));
 
 /** A detected comp's core board as placeable units, carries flagged, positioned like `guide` where it has them. */
 export function autoCompUnits(comp: AutoComp, championsByApi: Map<string, Champion>, guide?: CompUnit[]): CompUnit[] {
