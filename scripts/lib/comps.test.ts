@@ -192,6 +192,45 @@ describe("CompDetector", () => {
     expect(comps[0]!.progression).toEqual([]);
   });
 
+  it("merges the same board whatever its carries and leading traits", () => {
+    // An emblem makes Brawler lead, and the items sit on Sett.
+    const emblem = (placement: number) =>
+      board(
+        placement,
+        [
+          ["Ahri", []],
+          ["Sett", ["JG", "BB", "Rab"]],
+          ["Karma", ["BB"]],
+        ],
+        [
+          ["Brawler", 4, 4],
+          ["Blossom", 3, 3],
+        ],
+      );
+    const comps = run([
+      ...Array.from({ length: games * 2 }, (_, i) => ahriBlossom(i === 0 ? 1 : 3)),
+      ...Array.from({ length: games }, (_, i) => emblem(i === 0 ? 1 : 5)),
+    ]);
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toMatchObject({ name: "Blossom Ahri", games: games * 3, variants: ["Sett|Blossom+Brawler"] });
+  });
+
+  it("names a comp after carries on most of its boards, even when a rarer carry wins more", () => {
+    // Zyra joins a third of the boards and takes the items; those boards all win.
+    const zyraBoard = ahriBlossom(1, [["Zyra", ["JG", "BB", "Rab"]]]);
+    const rareCarry = {
+      ...zyraBoard,
+      units: zyraBoard.units.map((unit) => (unit.apiName === "Ahri" ? { ...unit, items: [] } : unit)),
+    };
+    const comps = run([
+      ...Array.from({ length: games * 2 }, (_, i) => ahriBlossom(i < 2 ? 1 : 4)),
+      ...Array<ResolvedBoard>(games).fill(rareCarry),
+    ]);
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toMatchObject({ name: "Blossom Ahri", carries: ["Ahri"] });
+    expect(comps[0]!.units.map((unit) => unit.apiName)).not.toContain("Zyra");
+  });
+
   it("merges qualifying variants that share carries and main trait, keeping their signatures", () => {
     const brawlerVariant = (placement: number) =>
       board(
