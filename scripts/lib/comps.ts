@@ -28,8 +28,8 @@ export const COMP_THRESHOLDS = {
   minLevelGames: 30,
   maxFlex: 6,
   /**
-   * Comps with the same core traits whose core boards share this much (of both boards' units) are one comp at
-   * different stages: carries are whoever holds the items at the end, so they shift as the game goes on.
+   * Comps whose core boards share this much (of both boards' units) are one comp: carries are whoever holds the items
+   * at the end, so they shift as the game goes on, and an emblem or one extra unit can change which traits lead.
    */
   progressionOverlap: 0.75,
 } as const;
@@ -90,12 +90,19 @@ function overlap(a: Set<string>, b: Set<string>) {
   return shared / Math.max(a.size + b.size - shared, 1);
 }
 
+/** Units on at least `coreFrequency` of the boards. */
+const coreUnits = (detail: CompDetail) =>
+  new Set(
+    [...detail.units]
+      .filter(([, count]) => count >= detail.counter[0] * COMP_THRESHOLDS.coreFrequency)
+      .map(([unit]) => unit),
+  );
+
 /** A detected signature, with what decides which comp it belongs to. */
 interface Candidate {
   signature: string;
   detail: CompDetail;
   carries: string;
-  coreTraits: string;
   /** Carries plus the main trait: the same comp whose second trait varies. */
   key: string;
   coreUnits: Set<string>;
@@ -227,24 +234,21 @@ export class CompDetector {
   }
 
   private candidate(signature: string, detail: CompDetail): Candidate {
-    const [carries = "", coreTraits = ""] = signature.split("|");
-    const games = detail.counter[0];
+    const [carries = ""] = signature.split("|");
     return {
       signature,
       detail,
       carries,
-      coreTraits,
       key: `${carries}|${this.mainTrait(signature, detail) ?? signature}`,
-      coreUnits: new Set(
-        [...detail.units].filter(([, count]) => count >= games * COMP_THRESHOLDS.coreFrequency).map(([unit]) => unit),
-      ),
+      coreUnits: coreUnits(detail),
     };
   }
 
   /**
    * Signatures are one comp when they share carries and main trait (Riftbeast Ashe with Hunter or with Inferno),
-   * or core traits and most of the core board (the same board, its items on an earlier carry when it went out
-   * early). Each joins the most played comp it matches, so loose matches can't chain unrelated comps together.
+   * or most of the core board, whatever their traits and carries (the same board with an emblem, or its items on an
+   * earlier carry when it went out early). Each joins the most played comp it matches, so loose matches can't chain
+   * unrelated comps together.
    */
   private merged(): MergedComp[] {
     const groups: Candidate[][] = [];
@@ -253,22 +257,25 @@ export class CompDetector {
       const group = groups.find(
         ([lead]) =>
           lead!.key === candidate.key ||
-          (lead!.coreTraits === candidate.coreTraits &&
-            overlap(lead!.coreUnits, candidate.coreUnits) >= COMP_THRESHOLDS.progressionOverlap),
+          overlap(lead!.coreUnits, candidate.coreUnits) >= COMP_THRESHOLDS.progressionOverlap,
       );
       if (group) group.push(candidate);
       else groups.push([candidate]);
     }
     return groups.map((group) => {
+      const detail = combineDetails(group.map((candidate) => candidate.detail));
       const stages = new Map<string, Counter>();
       for (const { carries, detail } of group) addCounter(counterFor(stages, carries), detail.counter);
-      // Named after the carries it wins with most: the comp in its finished form.
-      const finished = [...stages].sort((a, b) => b[1][3] - a[1][3])[0]![0];
+      // Named after the carries it wins with most (the comp in its finished form), as long as they're on most of its
+      // boards: a rare late carry would name the comp after a unit its board doesn't show.
+      const core = coreUnits(detail);
+      const byWins = [...stages].sort((a, b) => b[1][3] - a[1][3]).map(([carries]) => carries);
+      const finished = byWins.find((carries) => carries.split("+").every((carry) => core.has(carry))) ?? byWins[0]!;
       const { signature } = group.find((candidate) => candidate.carries === finished)!;
       return {
         signature,
         variants: group.map((candidate) => candidate.signature).filter((variant) => variant !== signature),
-        detail: combineDetails(group.map((candidate) => candidate.detail)),
+        detail,
         stages,
       };
     });
