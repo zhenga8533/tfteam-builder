@@ -7,13 +7,16 @@ import {
   type SimilarBoards,
   similarBoards,
 } from "@/lib/explorer/engine";
-import { decodeExplorer, type ExplorerData } from "@/lib/explorer/format";
+import { concatExplorer, decodeExplorer, type ExplorerData } from "@/lib/explorer/format";
 import type { ExplorerTotals } from "@/lib/explorer/totals";
 
-/** Every question names the file it's about (see `EXPLORER_FILES`); the worker loads it. */
+/**
+ * Every question names the files it's about (see `explorerFiles`): the totals, or one champion's or trait's file per
+ * rank, which the worker loads and joins.
+ */
 export type WorkerRequest =
-  | { type: "query"; id: number; url: string; filters: ExplorerFilter[]; floor?: number }
-  | { type: "similar"; id: number; url: string; units: string[] };
+  | { type: "query"; id: number; urls: string[]; filters: ExplorerFilter[]; floor?: number }
+  | { type: "similar"; id: number; urls: string[]; units: string[] };
 
 export type FileStatus =
   { state: "ready"; boards: number } | { state: "missing" } | { state: "error"; message: string };
@@ -26,8 +29,11 @@ export type WorkerResponse =
 
 type ExplorerFile = { type: "boards"; data: ExplorerData } | { type: "totals"; totals: ExplorerTotals };
 
-/** Files kept decoded, most recently used last; switching back to a recent champion needs no download. */
-const CACHED_FILES = 6;
+/**
+ * Files kept decoded, most recently used last: switching back to a recent champion, or between floors, needs no
+ * download.
+ */
+const CACHED_FILES = 12;
 const files = new Map<string, Promise<ExplorerFile | null>>();
 const post = (message: WorkerResponse) => self.postMessage(message);
 
@@ -98,7 +104,17 @@ function file(url: string) {
   return loading;
 }
 
+/**
+ * The request's files as one. Joining is a single pass over the boards, cheap next to a query, so it isn't cached. A
+ * missing rank's file just has no boards; all of them missing means there's no file.
+ */
+async function joinFiles(urls: string[]): Promise<ExplorerFile | null> {
+  const loaded = (await Promise.all(urls.map(file))).filter((entry) => entry !== null);
+  const boards = loaded.flatMap((entry) => (entry.type === "boards" ? [entry.data] : []));
+  return boards.length > 1 ? { type: "boards", data: concatExplorer(boards) } : (loaded[0] ?? null);
+}
+
 self.onmessage = (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
-  void file(request.url).then((loaded) => post(answer(loaded, request)));
+  void joinFiles(request.urls).then((loaded) => post(answer(loaded, request)));
 };

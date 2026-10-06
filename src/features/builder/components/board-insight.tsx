@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { explorerUrl } from "@/features/explorer/explorer-url";
 import { useSimilarBoards } from "@/features/explorer/use-explorer";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
-import { EXPLORER_FILES } from "@/lib/explorer/files";
+import { explorerFiles } from "@/lib/explorer/files";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent } from "@/features/stats/format";
 import { useActiveSet, useGameData } from "@/lib/data/hooks";
@@ -35,17 +35,19 @@ export function BoardInsight() {
     );
   const names = [...new Set(core.map((unit) => unit.apiName))].sort();
   const carry = core[0] && championsByApi.get(core[0].apiName);
-  const url =
+  const urls =
     patch === "latest" && stats?.status === "ready" && carry
-      ? explorerUrl(set, EXPLORER_FILES.champion(carry.apiName), stats.frozen)
+      ? explorerFiles({ type: "champion", apiName: carry.apiName }, stats.rankFloor).map((path) =>
+          explorerUrl(set, path, stats.frozen),
+        )
       : null;
-  const { status, similar } = useSimilarBoards(url, names.length >= MIN_UNITS ? names : null);
+  const { status, similar } = useSimilarBoards(urls, names.length >= MIN_UNITS ? names : null);
   // Requiring every unit would usually match nothing, so the Explorer starts from the main item holders.
   const explorerFilters: ExplorerFilter[] = core
     .slice(0, EXPLORE_UNITS)
     .map((unit) => ({ type: "unit", unit: unit.apiName }));
 
-  if (!url || names.length < MIN_UNITS || status.state === "missing" || status.state === "error") return null;
+  if (!urls || names.length < MIN_UNITS || status.state === "missing" || status.state === "error") return null;
 
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border bg-card/60 px-3 py-2 text-sm">

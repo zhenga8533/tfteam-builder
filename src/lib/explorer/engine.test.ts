@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runQuery, runTotalsQuery, similarBoards } from "./engine";
 import { TotalsAccumulator } from "./totals";
-import { decodeExplorer, encodeExplorer, type ExplorerBoard } from "./format";
+import { concatExplorer, decodeExplorer, encodeExplorer, type ExplorerBoard } from "./format";
 
 const board = (placement: number, units: [string, number, string[]][], traits: [string, number][], level = 8) => ({
   placement,
@@ -95,6 +95,33 @@ describe("similar boards", () => {
     const ahriBoards = boards.filter((entry) => entry.units.some((unit) => unit.apiName === "Ahri"));
     const ahri = decodeExplorer(encodeExplorer(ahriBoards, 0, [200]).slice().buffer);
     expect(similarBoards(ahri, ["Ahri", "Sett", "Zyra"], 10)?.line).toMatchObject({ games: 10, play: 0.05 });
+  });
+});
+
+describe("joined files", () => {
+  it("answer exactly as one file holding all their boards", () => {
+    // Each rank's file has its own name dictionaries: the Diamond boards name Sett and Zyra before Ahri.
+    const ranked = boards.map((entry, i) => ({ ...entry, rank: i % 3 === 0 ? 0 : 1 }));
+    const encode = (part: ExplorerBoard[]) => decodeExplorer(encodeExplorer(part, 1, [100, 100]).slice().buffer);
+    const master = encode(ranked.filter((entry) => entry.rank === 0));
+    const diamond = encode(ranked.filter((entry) => entry.rank === 1).reverse());
+    const joined = concatExplorer([master, diamond]);
+    const whole = encode([
+      ...ranked.filter((entry) => entry.rank === 0),
+      ...ranked.filter((entry) => entry.rank === 1).reverse(),
+    ]);
+    expect(master.units).not.toEqual(diamond.units);
+    for (const filters of [
+      [],
+      [{ type: "unit" as const, unit: "Ahri", items: ["JG"] }],
+      [{ type: "trait" as const, trait: "Blossom", minUnits: 3 }],
+    ]) {
+      for (const floor of [0, 1])
+        expect(runQuery(joined, filters, 1, floor)).toEqual(runQuery(whole, filters, 1, floor));
+    }
+    expect(similarBoards(joined, ["Ahri", "Sett", "Zyra"], 1)).toEqual(
+      similarBoards(whole, ["Ahri", "Sett", "Zyra"], 1),
+    );
   });
 });
 

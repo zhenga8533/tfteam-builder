@@ -45,7 +45,7 @@ interface Report {
 /** Files the browser downloads whole; past this they're worth a look. */
 const LARGE_FILE_BYTES = 2_000_000;
 const LARGEST_SHOWN = 5;
-/** The Explorer's files download only there (a champion's when they're picked), so they get more room. */
+/** The Explorer's files download only there (a champion's at each rank when it's picked), so they get more room. */
 const LARGE_EXPLORER_FILE_BYTES = 10_000_000;
 const EXPLORER = /(^|\/)explorer\//;
 
