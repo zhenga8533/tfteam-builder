@@ -26,6 +26,7 @@ import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { compTrends, patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
+import { buildKey, restoreBuild, saveBuild } from "./lib/build-cache.ts";
 import { createArchiveBucket, freezeSet, restoreArchive, shouldFreeze } from "./lib/freeze.ts";
 import { type FileSize, type FrozenSet, renderReport, type SetReport } from "./lib/report.ts";
 import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
@@ -35,7 +36,8 @@ import { CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, chunkTime, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
 import type { BoardRow, PatchCounters } from "./stats/types.ts";
 
-const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
+const ROOT = join(import.meta.dirname, "..");
+const DATA_DIR = join(ROOT, "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
 /** The site shows the newest patch, falling back to the previous one right after a patch. */
 const PATCHES_PER_SET = 2;
@@ -47,6 +49,9 @@ const { values: args } = parseArgs({
     "public-stats": { type: "string" },
     // Overrides the live set (the newest in the game data), e.g. to try freezing locally.
     "live-set": { type: "string" },
+    // Republishes the last full build when nothing it depends on has changed (see `saveBuild`); for deploys, whose
+    // next step publishes the Explorer's files and marks the build reusable.
+    reuse: { type: "boolean" },
   },
 });
 
@@ -226,6 +231,11 @@ async function publishReport(markdown: string) {
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown);
 }
 
+/** Hands a value to the workflow's later steps when running in GitHub Actions. */
+async function exportToWorkflow(name: string, value: string) {
+  if (process.env.GITHUB_ENV) await appendFile(process.env.GITHUB_ENV, `${name}=${value}\n`);
+}
+
 /** Other rank floors that get their own tier list stats: those with enough games that differ meaningfully. */
 function floorStatsFor(data: SetData, patches: PatchCounters[], stats: SetStats): SetStats[] {
   const floors = RANK_OPTIONS.map((floor) =>
@@ -380,9 +390,28 @@ async function main() {
   const now = new Date();
   const liveSet = Number(args["live-set"] ?? manifest.patches.latest.sets[0]);
   const bucket = createArchiveBucket(args["public-stats"]);
+  const sets = manifest.patches.latest.sets;
+
+  const key = args.reuse
+    ? await buildKey(ROOT, {
+        chunks: chunks.map((chunk) => chunk.key).sort(),
+        sets,
+        liveSet,
+        // A set due to freeze changes the build even without new boards.
+        freezing: bucket ? sets.filter((set) => shouldFreeze(set, liveSet, chunks, now)) : [],
+      })
+    : undefined;
+  const reused = key && (await restoreBuild(source.blobs, OUT_DIR, key));
+  if (reused) {
+    const note = `No new boards, game data or stats code since run ${reused.explorerRun}, so its stats were republished.`;
+    console.log(note);
+    await exportToWorkflow("EXPLORER_RUN", reused.explorerRun);
+    await publishReport(`\n${note}\n`);
+    return;
+  }
   const reports: SetReport[] = [];
   const frozen: FrozenSet[] = [];
-  for (const set of manifest.patches.latest.sets) {
+  for (const set of sets) {
     const archived = await restoreArchive(source.blobs, OUT_DIR, set);
     if (archived) {
       console.log(`set ${set}: frozen at patch ${archived.patch}, published from the archive`);
@@ -400,6 +429,10 @@ async function main() {
     }
   }
   await publishReport(renderReport({ sets: reports, frozen, files: await statsFiles(), now }));
+  if (key) {
+    console.log(`Saved ${await saveBuild(source.blobs, OUT_DIR)} stats files for later deploys to reuse`);
+    await exportToWorkflow("STATS_BUILD_KEY", key);
+  }
 }
 
 main().catch((error: unknown) => {

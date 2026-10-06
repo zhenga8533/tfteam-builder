@@ -4,9 +4,13 @@
  * reads its own build's files; older folders are deleted. Hands the folder's URL to the site build as
  * `VITE_EXPLORER_BASE` through `GITHUB_ENV`, along with `VITE_EXPLORER_ARCHIVE_BASE` for frozen sets' files (uploaded
  * once by the stats build, see `freezeSet`). Without the public bucket configured, the files stay in the site.
+ *
+ * When the stats build republished the last build (`EXPLORER_RUN`), its run's folder is reused rather than uploaded
+ * again. After a full build (`STATS_BUILD_KEY`), the build is marked reusable once its files are up.
  */
 import { appendFile, readdir, readFile, rm } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
+import { markBuild } from "./lib/build-cache.ts";
 import { explorerHeaders, staleKeys } from "./lib/explorer-publish.ts";
 import { forEachConcurrently } from "./lib/parallel.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./stats/r2.ts";
@@ -16,7 +20,15 @@ const STATS_DIR = join(import.meta.dirname, "..", "public", "data", "stats");
 const CONCURRENT_REQUESTS = 8;
 
 async function main() {
-  const { R2_PUBLIC_BUCKET, EXPLORER_PUBLIC_URL, GITHUB_RUN_ID, GITHUB_ENV, GITHUB_STEP_SUMMARY } = process.env;
+  const {
+    R2_PUBLIC_BUCKET,
+    EXPLORER_PUBLIC_URL,
+    GITHUB_RUN_ID,
+    GITHUB_ENV,
+    GITHUB_STEP_SUMMARY,
+    EXPLORER_RUN,
+    STATS_BUILD_KEY,
+  } = process.env;
   const r2 = r2ConfigFromEnv(R2_PUBLIC_BUCKET);
   if (!r2 || !EXPLORER_PUBLIC_URL || !GITHUB_RUN_ID) {
     console.log("No public R2 bucket configured; the Explorer's files stay in the site.");
@@ -25,6 +37,13 @@ async function main() {
 
   const publicUrl = EXPLORER_PUBLIC_URL.replace(/\/$/, "");
   if (GITHUB_ENV) await appendFile(GITHUB_ENV, `VITE_EXPLORER_ARCHIVE_BASE=${publicUrl}/archive/\n`);
+
+  if (EXPLORER_RUN) {
+    const base = `${publicUrl}/${EXPLORER_RUN}/`;
+    if (GITHUB_ENV) await appendFile(GITHUB_ENV, `VITE_EXPLORER_BASE=${base}\n`);
+    console.log(`Reusing the Explorer files at ${base}`);
+    return;
+  }
 
   const sets = (await readdir(STATS_DIR, { withFileTypes: true })).filter((entry) => entry.isDirectory());
   const folders = sets.map((set) => join(STATS_DIR, set.name, "explorer"));
@@ -61,6 +80,11 @@ async function main() {
     (stale.length ? `, removing ${stale.length} from older builds` : "");
   console.log(summary);
   if (GITHUB_STEP_SUMMARY) await appendFile(GITHUB_STEP_SUMMARY, `\n${summary}.\n`);
+
+  const stats = r2ConfigFromEnv();
+  if (STATS_BUILD_KEY && stats) {
+    await markBuild(new R2BlobStore(stats), { key: STATS_BUILD_KEY, explorerRun: GITHUB_RUN_ID });
+  }
 }
 
 main().catch((error: unknown) => {
