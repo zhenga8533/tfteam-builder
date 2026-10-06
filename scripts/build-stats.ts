@@ -149,7 +149,8 @@ async function writeExplorer(dir: string, read: ReadBoards, data: SetData, stats
   };
   const written = { champion: { files: 0, bytes: 0 }, trait: { files: 0, bytes: 0 } };
   for (const { kind, apiName, rank, boards } of collector.parts(RANK_OPTIONS.indexOf(lowest) + 1)) {
-    const contents = gzipSync(encodeExplorer(boards, defaultRank, collector.population), { level: 9 });
+    // gzip's default level: level 9 takes about eight times as long for files only 1.5% smaller.
+    const contents = gzipSync(encodeExplorer(boards, defaultRank, collector.population));
     written[kind].bytes += await write(EXPLORER_FILES[kind](apiName, RANK_OPTIONS[rank]!), contents);
     written[kind].files += 1;
   }

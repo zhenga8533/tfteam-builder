@@ -8,9 +8,12 @@
 import { appendFile, readdir, readFile, rm } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { explorerHeaders, staleKeys } from "./lib/explorer-publish.ts";
+import { forEachConcurrently } from "./lib/parallel.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./stats/r2.ts";
 
 const STATS_DIR = join(import.meta.dirname, "..", "public", "data", "stats");
+/** Requests to R2 in flight at once: one at a time, hundreds of files take minutes. */
+const CONCURRENT_REQUESTS = 8;
 
 async function main() {
   const { R2_PUBLIC_BUCKET, EXPLORER_PUBLIC_URL, GITHUB_RUN_ID, GITHUB_ENV, GITHUB_STEP_SUMMARY } = process.env;
@@ -41,14 +44,14 @@ async function main() {
 
   const bucket = new R2BlobStore(r2);
   let bytes = 0;
-  for (const file of files) {
+  await forEachConcurrently(files, CONCURRENT_REQUESTS, async (file) => {
     const path = relative(STATS_DIR, file).split(sep).join("/");
     const contents = await readFile(file);
     await bucket.put(`${GITHUB_RUN_ID}/${path}`, contents, explorerHeaders(path));
     bytes += contents.byteLength;
-  }
+  });
   const stale = staleKeys(await bucket.list(""));
-  for (const key of stale) await bucket.delete(key);
+  await forEachConcurrently(stale, CONCURRENT_REQUESTS, (key) => bucket.delete(key));
   for (const folder of folders) await rm(folder, { recursive: true, force: true });
 
   const base = `${publicUrl}/${GITHUB_RUN_ID}/`;
