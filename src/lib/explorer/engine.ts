@@ -112,12 +112,8 @@ export function runQuery(
   const filtered = new Set(compiled.units.map((filter) => filter.unit));
   const matchedRows: number[] = [];
 
-  // Shares are of the boards at this floor, not the whole file (which can hold lower floors too).
-  let atFloor = 0;
   for (let board = 0; board < data.boards; board++) {
-    if (data.rank[board]! > floor) continue;
-    atFloor++;
-    if (data.level[board]! < compiled.minLevel) continue;
+    if (data.rank[board]! > floor || data.level[board]! < compiled.minLevel) continue;
     const unitStart = data.unitStart[board]!;
     const unitEnd = data.unitStart[board + 1]!;
     const traitStart = data.traitStart[board]!;
@@ -168,7 +164,7 @@ export function runQuery(
   }
 
   if (summary[0] === 0) return empty;
-  const line = statLine(summary, data.population ? boardsAtFloor(data.population, floor) : atFloor);
+  const line = statLine(summary, boardsAtFloor(data.population, floor));
   return {
     summary: line,
     units: rows(unitCounters, line.avg, summary[0], minGames),
@@ -245,10 +241,8 @@ export function similarBoards(
 
   // byOverlap[k] counts boards sharing exactly k of the wanted units.
   const byOverlap = Array.from({ length: wanted.size + 1 }, emptyCounter);
-  let atFloor = 0;
   for (let board = 0; board < data.boards; board++) {
     if (data.rank[board]! > floor) continue;
-    atFloor++;
     const seen = new Set<number>();
     for (let row = data.unitStart[board]!; row < data.unitStart[board + 1]!; row++) {
       const unit = data.unitIndex[row]!;
@@ -262,8 +256,7 @@ export function similarBoards(
   for (let shared = wanted.size; shared >= MIN_SHARED; shared--) {
     addCounter(total, byOverlap[shared]!);
     if (total[0] >= minGames) {
-      const boards = data.population ? boardsAtFloor(data.population, floor) : atFloor;
-      return { shared, total: wanted.size, line: statLine(total, boards) };
+      return { shared, total: wanted.size, line: statLine(total, boardsAtFloor(data.population, floor)) };
     }
   }
   return null;

@@ -225,24 +225,6 @@ async function publishReport(markdown: string) {
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown);
 }
 
-/**
- * A set whose boards are gone (e.g. deleted to save storage) still publishes its last saved stats and
- * history; per-champion details need the boards, so those pages show no details.
- */
-async function publishSavedSummary(store: StatsStore, set: number) {
-  const summaries = await store.summaries(set);
-  const last = summaries.filter((summary) => summary.status === "ready").at(-1);
-  if (!last) return;
-  await writeFile(join(OUT_DIR, `set${set}.json`), JSON.stringify(setStatsSchema.parse(last)));
-  await rm(join(OUT_DIR, `set${set}`), { recursive: true, force: true });
-  await mkdir(join(OUT_DIR, `set${set}`), { recursive: true });
-  await writeFile(
-    join(OUT_DIR, `set${set}`, "history.json"),
-    JSON.stringify(patchHistorySchema.parse(patchHistory(summaries))),
-  );
-  console.log(`set ${set}: saved summary from patch ${last.patch} (no stored boards)`);
-}
-
 /** Other rank floors that get their own tier list stats: those with enough games that differ meaningfully. */
 function floorStatsFor(data: SetData, patches: PatchCounters[], stats: SetStats): SetStats[] {
   const floors = RANK_OPTIONS.map((floor) =>
@@ -315,18 +297,12 @@ async function writeFloorFiles(
   return floors;
 }
 
-/**
- * Builds and writes one set's stats from its newest patches' boards. A set whose boards are gone publishes its
- * saved summary instead, and has nothing to report.
- */
+/** Builds and writes one set's stats from its newest patches' boards; nothing for a set without boards. */
 async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): Promise<SetReport | undefined> {
   const setChunks = chunks.filter((chunk) => chunk.set === set);
   const byPatch = Map.groupBy(setChunks, (chunk) => chunk.patch);
   const newest = [...byPatch.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
-  if (newest.length === 0) {
-    await publishSavedSummary(store, set);
-    return undefined;
-  }
+  if (newest.length === 0) return undefined;
 
   const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
   const forms = new FormInference(data);

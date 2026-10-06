@@ -18,9 +18,9 @@ export interface ExplorerHeader {
   defaultRank: number;
   /**
    * Boards per rank on the whole patch: shares are of these rather than of the file's own boards, which are only those
-   * with one champion or trait. Absent in files whose shares are of themselves (tests).
+   * with one champion or trait.
    */
-  population?: number[];
+  population: number[];
   units: string[];
   items: string[];
   traits: string[];
@@ -70,7 +70,7 @@ export interface ExplorerBoard {
   traits: { apiName: string; minUnits: number }[];
 }
 
-export function encodeExplorer(boards: ExplorerBoard[], defaultRank = 0, population?: number[]): Uint8Array {
+export function encodeExplorer(boards: ExplorerBoard[], defaultRank: number, population: number[]): Uint8Array {
   const dictionary = () => {
     const names: string[] = [];
     const indices = new Map<string, number>();
@@ -128,7 +128,7 @@ export function encodeExplorer(boards: ExplorerBoard[], defaultRank = 0, populat
 
   const header: ExplorerHeader = {
     defaultRank,
-    ...(population && { population }),
+    population,
     units: units.names,
     items: items.names,
     traits: traits.names,

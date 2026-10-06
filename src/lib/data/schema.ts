@@ -274,7 +274,7 @@ export const autoCompSchema = statLineSchema.extend({
    * Placement by who held the items at the end, when that varies: boards that go out early still have them on
    * earlier carries. Worst average first; `play` is the share of the comp's games. Empty when the carries don't vary.
    */
-  progression: z.array(statLineSchema.extend({ carries: z.array(z.string()) })).default([]),
+  progression: z.array(statLineSchema.extend({ carries: z.array(z.string()) })),
 });
 export type AutoComp = z.infer<typeof autoCompSchema>;
 
