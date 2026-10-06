@@ -4,14 +4,26 @@ import type { FileStatus, WorkerRequest, WorkerResponse } from "./worker";
 
 export type ExplorerStatus = { state: "loading" } | FileStatus;
 
-/** A question for a board file: a filtered query (Explorer) or boards similar to a list of units (builder). */
+/** A question for board files: a filtered query (Explorer) or boards similar to a list of units (builder). */
 type Question =
-  | { type: "query"; url: string; filters: ExplorerFilter[]; floor?: number }
-  | { type: "similar"; url: string; units: string[] };
+  | { type: "query"; urls: string[]; filters: ExplorerFilter[]; floor?: number }
+  | { type: "similar"; urls: string[]; units: string[] };
+
+/** One status for a question's files: an error or a load in progress wins, then any file that's ready. */
+function combinedStatus(urls: string[], statuses: Record<string, FileStatus>): ExplorerStatus {
+  const each = urls.map((url) => statuses[url]);
+  const error = each.find((status) => status?.state === "error");
+  if (error) return error;
+  if (each.some((status) => status === undefined)) return { state: "loading" };
+  const ready = each.flatMap((status) => (status?.state === "ready" ? [status.boards] : []));
+  return ready.length
+    ? { state: "ready", boards: ready.reduce((sum, boards) => sum + boards, 0) }
+    : { state: "missing" };
+}
 type Answer<Q extends Question> = Q extends { type: "query" } ? ExplorerResult | null : SimilarBoards | null;
 
 /**
- * Asks a Web Worker `question` about a board file, so scanning hundreds of thousands of boards never blocks the
+ * Asks a Web Worker `question` about board files, so scanning hundreds of thousands of boards never blocks the
  * page. The worker keeps recent files loaded. The latest answer is kept while a newer question is worked out, so
  * results don't flash; `pending` says it's out of date. `null` pauses.
  */
@@ -51,7 +63,7 @@ function useBoardWorker<Q extends Question>(question: Q | null) {
     worker.current.postMessage({ ...(JSON.parse(key) as Question), id } satisfies WorkerRequest);
   }, [key]);
 
-  const status: ExplorerStatus = question ? (statuses[question.url] ?? { state: "loading" }) : { state: "missing" };
+  const status: ExplorerStatus = question ? combinedStatus(question.urls, statuses) : { state: "missing" };
   return {
     status,
     answer: answer && (answer.result as Answer<Q>),
@@ -60,16 +72,17 @@ function useBoardWorker<Q extends Question>(question: Q | null) {
 }
 
 /**
- * The Explorer: stats for boards matching `filters` in the board file at `url`, at rank `floor` (an index into
- * `RANK_OPTIONS`; the file's default floor if unset). `result` is undefined until the first answer.
+ * The Explorer: stats for boards matching `filters` in the board files at `urls` (see `explorerFiles`), at rank
+ * `floor` (an index into `RANK_OPTIONS`; the files' default floor if unset). `result` is undefined until the first
+ * answer; `null` urls pauses.
  */
-export function useExplorer(url: string | null, filters: ExplorerFilter[], floor?: number) {
-  const { status, answer, pending } = useBoardWorker(url ? { type: "query", url, filters, floor } : null);
+export function useExplorer(urls: string[] | null, filters: ExplorerFilter[], floor?: number) {
+  const { status, answer, pending } = useBoardWorker(urls ? { type: "query", urls, filters, floor } : null);
   return { status, result: answer, pending };
 }
 
-/** Stats for boards in the file at `url` that share the most of `units`; `null` units skips loading it. */
-export function useSimilarBoards(url: string | null, units: string[] | null) {
-  const { status, answer } = useBoardWorker(url && units ? { type: "similar", url, units } : null);
+/** Stats for boards in the files at `urls` that share the most of `units`; `null` units skips loading them. */
+export function useSimilarBoards(urls: string[] | null, units: string[] | null) {
+  const { status, answer } = useBoardWorker(urls && units ? { type: "similar", urls, units } : null);
   return { status, similar: answer ?? null };
 }

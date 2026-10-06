@@ -199,9 +199,11 @@ match data, so the augment tier list and comp guides stay hand-written.
   rebuilding the set; its pages say the stats are final. The set's boards stay in R2 but aren't read again. To rebuild a
   frozen set from them, delete `archive/set{N}/complete.json` from the stats bucket; the next deploy re-freezes it.
 - **Explorer** (`/explorer`): every board of the patch, queried in the browser (in a Web Worker). A query loads its
-  first champion's file, else its first trait's (each holds every board with them), else the totals (every board's
-  counts by rank and level). Filter by champions (star level, items), traits and level, and see which champions,
-  traits and items do best with them. The builder compares its board with every board that has its main carry.
+  first champion's files, else its first trait's (each holds every board with them, split by rank so a floor
+  downloads only the ranks it covers), else the totals (every board's counts by rank and level). Filter by champions
+  (star level, items), traits and level, and see which champions, traits and items do best with them. The builder
+  compares its board with every board that has its main carry. The stats build keeps boards packed as numbers until
+  each file is written, so its memory stays small as the number of games grows.
 
 To enable crawling:
 

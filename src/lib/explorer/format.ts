@@ -1,6 +1,6 @@
 /**
- * Columnar binary format for the Explorer's boards: the sample (`explorer.bin`) and each champion's boards
- * (`explorer/{apiName}.bin`), gzipped on disk:
+ * Columnar binary format for the Explorer's boards: each file holds one champion's or trait's boards at one rank
+ * (see `EXPLORER_FILES`), gzipped on disk:
  *
  *   "TFTX" | u8 version | 3 bytes padding | u32 header length | header JSON | padding to 4 bytes
  *   then each section in `SECTIONS` order, each padded to 4 bytes.
@@ -17,8 +17,8 @@ export interface ExplorerHeader {
   /** Boards at this rank or above (see `ExplorerBoard.rank`) make up the default view; the rest serve other floors. */
   defaultRank: number;
   /**
-   * Boards per rank on the whole patch, for a file holding every board of some kind (a champion's): shares are of
-   * these rather than of the file's own boards. Absent for the sample, whose shares are of itself.
+   * Boards per rank on the whole patch: shares are of these rather than of the file's own boards, which are only those
+   * with one champion or trait. Absent in files whose shares are of themselves (tests).
    */
   population?: number[];
   units: string[];
@@ -172,4 +172,82 @@ export function decodeExplorer(buffer: ArrayBuffer): ExplorerData {
     offset = align(offset + count * (type === "u32" ? 4 : 1));
   }
   return { ...header, ...(sections as Pick<ExplorerData, Section>) };
+}
+
+/**
+ * Joins files holding different boards of the same kind (a champion's boards at each rank) into one. Each file has
+ * its own name dictionaries, so indices are mapped onto the joined ones. Headers other than the counts and names
+ * (default rank, population) come from the first file; they're the same in every part of a set.
+ */
+export function concatExplorer(parts: ExplorerData[]): ExplorerData {
+  if (parts.length === 1) return parts[0]!;
+  const join = (names: (part: ExplorerData) => string[]) => {
+    const joined: string[] = [];
+    const indices = new Map<string, number>();
+    const maps = parts.map((part) =>
+      Uint8Array.from(names(part), (name) => {
+        let index = indices.get(name);
+        if (index === undefined) indices.set(name, (index = joined.push(name) - 1));
+        if (index > 254) throw new Error("Explorer format supports at most 255 names per dictionary");
+        return index;
+      }),
+    );
+    return { joined, maps };
+  };
+  const units = join((part) => part.units);
+  const items = join((part) => part.items);
+  const traits = join((part) => part.traits);
+
+  const sum = (count: (part: ExplorerData) => number) => parts.reduce((total, part) => total + count(part), 0);
+  const boards = sum((part) => part.boards);
+  const unitRows = sum((part) => part.unitRows);
+  const traitRows = sum((part) => part.traitRows);
+  const data: ExplorerData = {
+    ...parts[0]!,
+    units: units.joined,
+    items: items.joined,
+    traits: traits.joined,
+    boards,
+    unitRows,
+    traitRows,
+    unitStart: new Uint32Array(boards + 1),
+    traitStart: new Uint32Array(boards + 1),
+    placement: new Uint8Array(boards),
+    level: new Uint8Array(boards),
+    rank: new Uint8Array(boards),
+    unitIndex: new Uint8Array(unitRows),
+    unitStar: new Uint8Array(unitRows),
+    unitItems: new Uint8Array(unitRows * ITEM_SLOTS),
+    traitIndex: new Uint8Array(traitRows),
+    traitMinUnits: new Uint8Array(traitRows),
+  };
+
+  let board = 0;
+  let unitRow = 0;
+  let traitRow = 0;
+  parts.forEach((part, p) => {
+    for (let b = 0; b < part.boards; b++) {
+      data.unitStart[board + b] = unitRow + part.unitStart[b]!;
+      data.traitStart[board + b] = traitRow + part.traitStart[b]!;
+    }
+    data.placement.set(part.placement, board);
+    data.level.set(part.level, board);
+    data.rank.set(part.rank, board);
+    data.unitStar.set(part.unitStar, unitRow);
+    data.traitMinUnits.set(part.traitMinUnits, traitRow);
+    for (let row = 0; row < part.unitRows; row++) data.unitIndex[unitRow + row] = units.maps[p]![part.unitIndex[row]!]!;
+    for (let slot = 0; slot < part.unitRows * ITEM_SLOTS; slot++) {
+      const item = part.unitItems[slot]!;
+      data.unitItems[unitRow * ITEM_SLOTS + slot] = item && items.maps[p]![item - 1]! + 1;
+    }
+    for (let row = 0; row < part.traitRows; row++) {
+      data.traitIndex[traitRow + row] = traits.maps[p]![part.traitIndex[row]!]!;
+    }
+    board += part.boards;
+    unitRow += part.unitRows;
+    traitRow += part.traitRows;
+  });
+  data.unitStart[boards] = unitRow;
+  data.traitStart[boards] = traitRow;
+  return data;
 }

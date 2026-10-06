@@ -1,12 +1,15 @@
+import { RANK_OPTIONS } from "../data/constants";
+import type { RankFloor } from "../data/schema";
 import type { ExplorerFilter } from "./engine";
 
 /**
  * The Explorer's files in a set's stats folder. Every query reads all of the patch's boards it's about: a champion's
- * or trait's file holds every board with them, and the totals answer queries without either exactly.
+ * or trait's boards come in one file per rank (`master` holds Master+), so a floor downloads only its ranks' files,
+ * and the totals answer queries without either exactly.
  */
 export const EXPLORER_FILES = {
-  champion: (apiName: string) => `explorer/champions/${apiName}.bin.gz`,
-  trait: (apiName: string) => `explorer/traits/${apiName}.bin.gz`,
+  champion: (apiName: string, rank: RankFloor) => `explorer/champions/${apiName}/${rank}.bin.gz`,
+  trait: (apiName: string, rank: RankFloor) => `explorer/traits/${apiName}/${rank}.bin.gz`,
   totals: "explorer/totals.json",
 };
 
@@ -22,5 +25,9 @@ export function explorerSource(filters: ExplorerFilter[]): ExplorerSource {
   return { type: "totals" };
 }
 
-export const explorerFile = (source: ExplorerSource) =>
-  source.type === "totals" ? EXPLORER_FILES.totals : EXPLORER_FILES[source.type](source.apiName);
+/** The files a query at `floor` reads: the totals, or the source's file for every rank at or above the floor. */
+export function explorerFiles(source: ExplorerSource, floor: RankFloor): string[] {
+  if (source.type === "totals") return [EXPLORER_FILES.totals];
+  const ranks = RANK_OPTIONS.slice(0, RANK_OPTIONS.indexOf(floor) + 1);
+  return ranks.map((rank) => EXPLORER_FILES[source.type](source.apiName, rank));
+}

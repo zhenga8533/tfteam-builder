@@ -17,7 +17,7 @@ import {
   traitStatsSchema,
 } from "../src/lib/data/schema.ts";
 import { EXPLORER_FILES } from "../src/lib/explorer/files.ts";
-import { encodeExplorer, type ExplorerBoard } from "../src/lib/explorer/format.ts";
+import { encodeExplorer } from "../src/lib/explorer/format.ts";
 import { BoardResolver, type ResolvedBoard } from "./lib/boards.ts";
 import { ExplorerCollector } from "./lib/explorer.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
@@ -128,8 +128,8 @@ async function writeLittleLegends(dir: string, legends: LittleLegendAccumulator)
 }
 
 /**
- * The Explorer's files (see `EXPLORER_FILES`), from every board behind `stats` and the other offered rank floors, each
- * with its rank so the Explorer can show any offered floor.
+ * The Explorer's files (see `EXPLORER_FILES`): every board behind `stats` and the other offered rank floors, in one
+ * file per champion or trait and rank, so a floor downloads only the ranks it covers.
  */
 async function writeExplorer(dir: string, read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]) {
   const offered = [stats.rankFloor, ...(stats.ranks ?? [])];
@@ -147,18 +147,15 @@ async function writeExplorer(dir: string, read: ReadBoards, data: SetData, stats
     await writeFile(join(dir, path), contents);
     return typeof contents === "string" ? Buffer.byteLength(contents) : contents.byteLength;
   };
-  const writeBoards = (path: string, boards: ExplorerBoard[], population: number[]) =>
-    write(path, gzipSync(encodeExplorer(boards, defaultRank, population), { level: 9 }));
-  const writeAll = async (kind: string, files: Map<string, ExplorerBoard[]>, path: (apiName: string) => string) => {
-    let bytes = 0;
-    for (const [apiName, boards] of files) bytes += await writeBoards(path(apiName), boards, collector.population);
-    return `${files.size} ${kind} files (${mb(bytes)})`;
-  };
-
-  const champions = await writeAll("champion", collector.champions, EXPLORER_FILES.champion);
-  const traits = await writeAll("trait", collector.traits, EXPLORER_FILES.trait);
+  const written = { champion: { files: 0, bytes: 0 }, trait: { files: 0, bytes: 0 } };
+  for (const { kind, apiName, rank, boards } of collector.parts(RANK_OPTIONS.indexOf(lowest) + 1)) {
+    const contents = gzipSync(encodeExplorer(boards, defaultRank, collector.population), { level: 9 });
+    written[kind].bytes += await write(EXPLORER_FILES[kind](apiName, RANK_OPTIONS[rank]!), contents);
+    written[kind].files += 1;
+  }
   const totals = await write(EXPLORER_FILES.totals, JSON.stringify(collector.totals.results(defaultRank)));
-  console.log(`  explorer: ${champions}, ${traits}, totals (${mb(totals)})`);
+  const summary = (kind: keyof typeof written) => `${written[kind].files} ${kind} files (${mb(written[kind].bytes)})`;
+  console.log(`  explorer: ${summary("champion")}, ${summary("trait")}, totals (${mb(totals)})`);
 }
 
 const mb = (bytes: number) => `${(bytes / 1e6).toFixed(1)} MB`;

@@ -79,13 +79,16 @@ function holds(data: ExplorerData, row: number, wanted: number[]) {
 }
 
 function rows(counters: Map<string, Counter>, baseline: number, total: number, minGames: number): ExplorerRow[] {
-  return [...counters]
-    .filter(([, counter]) => counter[0] >= minGames)
-    .map(([key, counter]) => {
-      const line = statLine(counter, total);
-      return { key, line: { ...line, delta: round(line.avg - baseline, 2) } };
-    })
-    .sort((a, b) => a.line.score - b.line.score);
+  return (
+    [...counters]
+      .filter(([, counter]) => counter[0] >= minGames)
+      .map(([key, counter]) => {
+        const line = statLine(counter, total);
+        return { key, line: { ...line, delta: round(line.avg - baseline, 2) } };
+      })
+      // Ties go by name, so the order never depends on which file a board came from.
+      .sort((a, b) => a.line.score - b.line.score || a.key.localeCompare(b.key))
+  );
 }
 
 const boardsAtFloor = (population: number[], floor: number) =>

@@ -15,7 +15,7 @@ import { useActiveSet, useGameData, useStats, useTierStats } from "@/lib/data/ho
 import { manifestQuery } from "@/lib/data/queries";
 import type { RankFloor } from "@/lib/data/schema";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
-import { explorerFile, explorerSource } from "@/lib/explorer/files";
+import { explorerFiles, explorerSource } from "@/lib/explorer/files";
 import { cn } from "@/lib/utils";
 
 const isString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
@@ -66,10 +66,12 @@ function ExplorerPage() {
       : source.type === "trait"
         ? (traitsByApi.get(source.apiName)?.name ?? source.apiName)
         : null;
-  const url =
-    patch === "latest" && stats?.status === "ready" ? explorerUrl(set, explorerFile(source), stats.frozen) : null;
+  const urls =
+    patch === "latest" && stats?.status === "ready" && floorStats
+      ? explorerFiles(source, floorStats.rankFloor).map((path) => explorerUrl(set, path, stats.frozen))
+      : null;
   const floor = floorStats ? RANK_OPTIONS.indexOf(floorStats.rankFloor) : undefined;
-  const { status, result, pending } = useExplorer(url, filters, floor);
+  const { status, result, pending } = useExplorer(urls, filters, floor);
 
   const setFilters = (next: ExplorerFilter[]) =>
     navigate({ search: (previous) => ({ ...previous, filters: next.length ? next : undefined }), replace: true });
@@ -86,7 +88,7 @@ function ExplorerPage() {
           onRankChange={(rank) => navigate({ search: (previous) => ({ ...previous, rank }), replace: true })}
         />
       )}
-      {!url || (status.state === "missing" && source.type === "totals") ? (
+      {!urls || (status.state === "missing" && source.type === "totals") ? (
         <NoStats subject={`Set ${set}`} />
       ) : status.state === "error" ? (
         <EmptyState>Couldn't load the boards: {status.message}</EmptyState>
