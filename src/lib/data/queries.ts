@@ -59,6 +59,13 @@ export const regionStatsQuery = (patch: Patch, set: number, region: Region | nul
     queryFn: () => (region ? fetchStats<SetStats>(patch, `set${set}/regions/${region}.json`) : null),
   });
 
+/** The newest patch's early tier list stats (see `SetStats.newestPatch`); null when not chosen. */
+export const newestPatchStatsQuery = (patch: Patch, set: number, chosen: boolean) =>
+  queryOptions({
+    queryKey: ["stats", patch, set, "newest-patch", chosen],
+    queryFn: () => (chosen ? fetchStats<SetStats>(patch, `set${set}/newest-patch.json`) : null),
+  });
+
 export const statsQuery = (patch: Patch, set: number) =>
   queryOptions({
     queryKey: ["stats", patch, set],

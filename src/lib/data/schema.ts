@@ -185,6 +185,11 @@ export const setStatsSchema = z.object({
   matches: z.number().int(),
   /** True when the current patch is too new and the previous patch's stats are shown instead. */
   previousPatch: z.boolean(),
+  /**
+   * Set alongside `previousPatch`: the newest patch and its matches so far at this floor. Its early tier list stats
+   * are in `set{N}/newest-patch.json`.
+   */
+  newestPatch: z.object({ patch: z.string(), matches: z.number().int() }).optional(),
   units: z.record(z.string(), statLineSchema),
   items: z.record(z.string(), statLineSchema),
   /** Items are counted once per board. Older stats counted every copy, so item trends don't compare against them. */

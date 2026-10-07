@@ -26,7 +26,7 @@ function ChampionTierListPage() {
   const { set } = useActiveSet();
   const { championsByApi } = useGameData();
   const search = Route.useSearch();
-  const stats = useTierStats(search.rank, search.region);
+  const stats = useTierStats(search.rank, search.region, search.patch);
   const lines = Object.entries(stats?.units ?? {}).filter(([apiName]) => championsByApi.has(apiName));
   const update = useUpdateSearch<ChampionTierSearch>();
   const visible = (apiName: string) => {

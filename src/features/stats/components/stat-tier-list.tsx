@@ -8,7 +8,7 @@ import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { tierListRows } from "../tiers";
 import { NoStats } from "./no-stats";
-import { type RegionChoice, StatsMeta } from "./stats-meta";
+import { type PatchChoice, type RegionChoice, StatsMeta } from "./stats-meta";
 
 interface StatTierListProps {
   title: string;
@@ -32,6 +32,8 @@ interface StatTierListProps {
   rank?: { value?: RankFloor; onChange: (rank: RankFloor | undefined) => void };
   /** The chosen region and how to change it; regions have stats at the default floor only. */
   region?: RegionChoice;
+  /** The chosen patch and how to change it, for an early look at a patch too new for the default stats. */
+  patch?: PatchChoice;
 }
 
 interface EntryListProps extends Pick<StatTierListProps, "renderEntry"> {
@@ -81,6 +83,7 @@ export function StatTierList({
   stats: shownStats,
   rank,
   region,
+  patch,
 }: StatTierListProps) {
   const base = useStats();
   const stats = shownStats === undefined ? base : shownStats;
@@ -108,7 +111,7 @@ export function StatTierList({
   return (
     <>
       <PageHeader title={title} description={description} />
-      {stats && <StatsMeta stats={stats} onRankChange={rank?.onChange} region={region} />}
+      {stats && <StatsMeta stats={stats} onRankChange={rank?.onChange} region={region} patch={patch} />}
       {toolbar && <div className="mb-6 flex flex-wrap items-center gap-2">{toolbar}</div>}
       {!hasStats ? (
         <NoStats />
