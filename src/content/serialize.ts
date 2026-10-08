@@ -155,13 +155,14 @@ export function tierListSource(list: TierList): string {
 
 /** Formats a content module the way `npm run format` does, so a file submitted from the site passes CI as is. */
 export async function formatContentSource(source: string): Promise<string> {
-  // Loaded on demand: Prettier is large and only the content editors need it.
-  const [prettier, typescript, estree] = await Promise.all([
+  // Loaded on demand: Prettier is large and only the content editors need it. Babel's TypeScript parser formats the
+  // same as the `typescript` one `npm run format` uses, at about a third of the download.
+  const [prettier, babel, estree] = await Promise.all([
     import("prettier/standalone"),
-    import("prettier/plugins/typescript"),
+    import("prettier/plugins/babel"),
     import("prettier/plugins/estree"),
   ]);
-  return prettier.format(source, { parser: "typescript", plugins: [typescript, estree], printWidth: 120 });
+  return prettier.format(source, { parser: "babel-ts", plugins: [babel, estree], printWidth: 120 });
 }
 
 export const compFileName = (name: string) => `${slugify(name) || "new-comp"}.ts`;
