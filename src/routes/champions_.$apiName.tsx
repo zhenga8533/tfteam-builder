@@ -1,10 +1,10 @@
+import { MissingEntry } from "@/components/game/missing-entry";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { ChampionCard } from "@/components/game/cards";
 import { ChampionLink, TraitLink } from "@/components/game/links";
 import { ChampionIcon } from "@/components/game/icons";
 import { COST_TEXT } from "@/components/game/styles";
-import { EmptyState } from "@/components/layout/empty-state";
 import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
@@ -140,7 +140,7 @@ function ChampionPage() {
   const stats = useChampionStats(apiName);
   const champion = championsByApi.get(apiName);
 
-  if (!champion) return <EmptyState>That champion isn't in the selected set.</EmptyState>;
+  if (!champion) return <MissingEntry kind="champion" apiName={apiName} />;
 
   return (
     <div className="space-y-6">

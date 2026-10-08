@@ -13,6 +13,7 @@ import { autoCompsQuery } from "@/lib/data/queries";
 import { traitStyle } from "@/lib/game/traits";
 import { cn } from "@/lib/utils";
 import { isNavGroup, NAV } from "./nav";
+import { OPEN_SEARCH } from "./open-search";
 
 interface Entry {
   key: string;
@@ -187,7 +188,7 @@ const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 
-/** Site-wide search, opened from the header or with Ctrl/⌘ K (or "/" when not typing). */
+/** Site-wide search, opened from the header, with Ctrl/⌘ K (or "/" when not typing), or by `openSearch`. */
 export function CommandSearch() {
   const [open, setOpen] = useState(false);
 
@@ -199,8 +200,13 @@ export function CommandSearch() {
       event.preventDefault();
       setOpen(true);
     };
+    const onOpen = () => setOpen(true);
     addEventListener("keydown", onKey);
-    return () => removeEventListener("keydown", onKey);
+    addEventListener(OPEN_SEARCH, onOpen);
+    return () => {
+      removeEventListener("keydown", onKey);
+      removeEventListener(OPEN_SEARCH, onOpen);
+    };
   }, []);
 
   return (

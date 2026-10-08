@@ -1,10 +1,10 @@
+import { MissingEntry } from "@/components/game/missing-entry";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { TraitCard } from "@/components/game/cards";
 import { TraitIcon } from "@/components/game/icons";
 import { ChampionLink, ItemLink } from "@/components/game/links";
 import { COST_TEXT } from "@/components/game/styles";
-import { EmptyState } from "@/components/layout/empty-state";
 import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
@@ -102,7 +102,7 @@ function TraitPage() {
   const stats = useTraitStats(apiName);
   const trait = traitsByApi.get(apiName);
 
-  if (!trait) return <EmptyState>That trait isn't in the selected set.</EmptyState>;
+  if (!trait) return <MissingEntry kind="trait" apiName={apiName} />;
   const top = trait.breakpoints.at(-1);
   const busiest = setStats?.traits.filter((line) => line.trait === trait.apiName).sort((a, b) => b.games - a.games)[0];
   const bestTier = setStats?.traits
