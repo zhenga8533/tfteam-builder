@@ -1,6 +1,6 @@
 export const PATCHES = ["latest", "pbe"] as const;
 
-export const ITEM_KINDS = ["component", "completed", "emblem", "radiant", "artifact"] as const;
+export const ITEM_KINDS = ["component", "completed", "emblem", "radiant", "artifact", "set"] as const;
 
 /** Rank floors stats can be computed at, highest first. */
 /** Rank floors the stats fall back through, highest first, until one has enough games. */

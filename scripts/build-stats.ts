@@ -14,6 +14,7 @@ import {
   type RankFloor,
   type SetData,
   type SetStats,
+  setDataSchema,
   setStatsSchema,
   traitStatsSchema,
 } from "../src/lib/data/schema.ts";
@@ -24,6 +25,7 @@ import { ExplorerCollector } from "./lib/explorer.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
+import { confirmSetItems } from "./lib/set-items.ts";
 import { compTrends, otherPatchStats, patchHistory, patchTrend } from "./lib/trends.ts";
 import { patchAt, supersededPatches, type TftPatch } from "./lib/tft-patches.ts";
 import { FormInference } from "./lib/forms.ts";
@@ -463,6 +465,23 @@ async function withFrozenGameData(store: BlobStore): Promise<Manifest> {
   return manifest;
 }
 
+/**
+ * Keeps only the set items each set's published stats show held (see `confirmSetItems`), in its live game data. Runs
+ * after the stats, which read every set item a board could hold.
+ */
+async function keepHeldSetItems(sets: number[]) {
+  for (const set of sets) {
+    const file = join(DATA_DIR, "latest", `set${set}.json`);
+    const data = await readJson<SetData>(file);
+    const stats = await readJson<SetStats>(join(OUT_DIR, `set${set}.json`)).catch(() => null);
+    const confirmed = confirmSetItems(data, new Set(Object.keys(stats?.items ?? {})));
+    if (confirmed === data) continue;
+    await writeFile(file, JSON.stringify(setDataSchema.parse(confirmed)));
+    const kept = confirmed.items.filter((item) => item.kind === "set").map((item) => item.name);
+    console.log(`set ${set}: set items held in games: ${kept.join(", ") || "none"}`);
+  }
+}
+
 async function main() {
   const source = createStatsStore(args.stats);
   if (!source) {
@@ -509,6 +528,7 @@ async function main() {
     const note = `No new boards, game data or stats code since run ${reused.explorerRun}, so its stats were republished.`;
     console.log(note);
     await exportToWorkflow("EXPLORER_RUN", reused.explorerRun);
+    await keepHeldSetItems(sets);
     await publishReport(`\n${note}\n`);
     return;
   }
@@ -540,6 +560,7 @@ async function main() {
     }
   }
   await publishReport(renderReport({ sets: reports, frozen, files: await statsFiles(), now }));
+  await keepHeldSetItems(sets);
   if (key) {
     console.log(`Saved ${await saveBuild(source.blobs, OUT_DIR)} stats files for later deploys to reuse`);
     await exportToWorkflow("STATS_BUILD_KEY", key);

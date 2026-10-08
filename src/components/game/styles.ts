@@ -56,6 +56,7 @@ export const ITEM_KIND_LABELS: Record<ItemKind, string> = {
   artifact: "Artifacts",
   radiant: "Radiant",
   component: "Components",
+  set: "Set items",
 };
 
 export const AUGMENT_TIERS = [1, 2, 3] as const satisfies AugmentTier[];

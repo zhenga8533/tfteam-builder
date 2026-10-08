@@ -258,6 +258,15 @@ export function buildItems(
     } else if (item.name.endsWith("Emblem") && !/augment/i.test(item.apiName)) add(item, "emblem");
   }
 
+  // The set's own mechanic items (Set 18's potions): drawn in its icon folder, and not a kind above or a consumable.
+  // Some are only rewards or tokens, so the stats keep the ones boards hold (see `confirmSetItems`).
+  const classified = new Set([...candidates.values()].flat());
+  const setIcons = new RegExp(`/icons/tft${set.number}/`, "i");
+  for (const item of pool) {
+    if (classified.has(item.apiName) || item.composition.length === 2 || item.tags?.includes("Consumable")) continue;
+    if (setIcons.test(item.icon ?? "")) add(item, "set");
+  }
+
   const aliases: Record<string, string> = Object.fromEntries(
     [...chosen.entries()].flatMap(([key, { raw }]) =>
       (candidates.get(key) ?? []).filter((apiName) => apiName !== raw.apiName).map((apiName) => [apiName, raw.apiName]),
