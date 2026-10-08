@@ -4,7 +4,6 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import type { TierRows } from "@/content/types";
 import { TierRows as TierRowsView } from "@/features/comps/components/tier-rows";
-import { useStats } from "@/lib/data/hooks";
 import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { tierListRows } from "../tiers";
 import { NoStats } from "./no-stats";
@@ -26,13 +25,13 @@ interface StatTierListProps {
   toolbar?: ReactNode;
   /** Whether an entry passes the toolbar's filters; everything shows by default. */
   visible?: (key: string) => boolean;
-  /** The stats `lines` come from, when they're for a chosen rank floor. */
-  stats?: SetStats | null;
-  /** The chosen rank floor and how to change it; the stats line offers floors that have their own stats. */
-  rank?: { value?: RankFloor; onChange: (rank: RankFloor | undefined) => void };
-  /** The chosen region and how to change it; regions have stats at the default floor only. */
+  /** The stats `lines` come from: the default ones, or a chosen rank floor's, region's or patch's. */
+  stats: SetStats | null;
+  /** How to change the rank floor; the stats line offers floors that have their own stats. */
+  rank?: { onChange: (rank: RankFloor | undefined) => void };
+  /** How to change the region; regions have stats at the default floor only. */
   region?: RegionChoice;
-  /** The chosen patch and how to change it, for an early look at a patch too new for the default stats. */
+  /** How to change the patch, among the set's patches with their own stats. */
   patch?: PatchChoice;
 }
 
@@ -80,13 +79,11 @@ export function StatTierList({
   renderEntry,
   toolbar,
   visible = () => true,
-  stats: shownStats,
+  stats,
   rank,
   region,
   patch,
 }: StatTierListProps) {
-  const base = useStats();
-  const stats = shownStats === undefined ? base : shownStats;
   const shown = lines.filter(([key]) => visible(key));
   const byKey = new Map(shown);
   const onlyVisible = (rows: TierRows) =>

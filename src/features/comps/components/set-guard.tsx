@@ -1,25 +1,22 @@
+import { BookOpen } from "lucide-react";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { SwitchSetButton } from "@/components/game/switch-set-button";
+import { NotFoundState } from "@/components/layout/not-found-state";
 import { useActiveSet } from "@/lib/data/hooks";
-import { useSettings } from "@/stores/settings";
 
 /** Content is authored per set; only render it when that set's game data is the active one. */
 export function SetGuard({ set, children, fallback }: { set: number; children: ReactNode; fallback?: ReactNode }) {
-  const { set: activeSet, sets } = useActiveSet();
-  const setActiveSet = useSettings((state) => state.setSet);
-
+  const { set: activeSet } = useActiveSet();
   if (set === activeSet) return children;
   if (fallback !== undefined) return fallback;
   return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed py-16 text-center">
-      <p className="text-muted-foreground">
-        This content is for Set {set}, but you're viewing Set {activeSet}.
-      </p>
-      {sets.includes(set) && (
-        <Button variant="secondary" onClick={() => setActiveSet(set === sets[0] ? null : set)}>
-          Switch to Set {set}
-        </Button>
-      )}
-    </div>
+    <NotFoundState
+      icon={BookOpen}
+      title={`Written for Set ${set}`}
+      description={`You're viewing Set ${activeSet}.`}
+      heading="h2"
+    >
+      <SwitchSetButton set={set} />
+    </NotFoundState>
   );
 }

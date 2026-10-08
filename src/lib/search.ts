@@ -16,5 +16,9 @@ export function listParam(value: unknown): string[] | undefined {
   return items.length ? [...new Set(items)] : undefined;
 }
 
+/** Reads an optional search param that must be one of `values`. */
+export const oneOf = <T extends string>(values: readonly T[], value: unknown): T | undefined =>
+  values.find((option) => option === value);
+
 export const matches = (text: string, query: string | undefined) =>
   !query || text.toLowerCase().includes(query.trim().toLowerCase());

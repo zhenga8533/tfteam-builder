@@ -2,14 +2,13 @@ export const PATCHES = ["latest", "pbe"] as const;
 
 export const ITEM_KINDS = ["component", "completed", "emblem", "radiant", "artifact", "set"] as const;
 
-/** Rank floors stats can be computed at, highest first. */
 /** Rank floors the stats fall back through, highest first, until one has enough games. */
 export const RANK_FLOORS = ["diamond", "emerald", "platinum", "gold"] as const;
 /** Every floor stats can be shown for; Master+ is only offered as a choice, never as the fallback. */
 export const RANK_OPTIONS = ["master", ...RANK_FLOORS] as const;
 
 /** Crawls run every few hours; stats older than this mean crawling has stopped (e.g. an expired API key). */
-export const STALE_STATS_HOURS = 24;
+const STALE_STATS_HOURS = 24;
 
 /** Players in a standard ranked match, each with a board of their own. */
 export const BOARDS_PER_MATCH = 8;

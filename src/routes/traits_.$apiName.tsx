@@ -1,6 +1,6 @@
-import { MissingEntry } from "@/components/game/missing-entry";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { MissingEntry } from "@/components/game/missing-entry";
 import { TraitCard } from "@/components/game/cards";
 import { TraitIcon } from "@/components/game/icons";
 import { ChampionLink, ItemLink } from "@/components/game/links";
@@ -16,7 +16,7 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useGameData, useStats, useTraitStats } from "@/lib/data/hooks";
 import type { Trait, TraitStats } from "@/lib/data/schema";
-import { traitKey, traitStyle } from "@/lib/game/traits";
+import { breakpointOf, traitKey, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/traits_/$apiName")({
   head: () => ({ meta: [{ title: "Trait Stats · TFTeam" }] }),
@@ -35,7 +35,7 @@ function Breakpoints({ trait }: { trait: Trait }) {
       rows={lines
         .toSorted((a, b) => a.minUnits - b.minUnits)
         .flatMap((line) => {
-          const breakpoint = trait.breakpoints.find((entry) => entry.minUnits === line.minUnits);
+          const breakpoint = breakpointOf(trait, line.minUnits);
           if (!breakpoint) return [];
           return [
             {

@@ -16,12 +16,10 @@ import { cn } from "@/lib/utils";
 import { count, RANK_FLOOR_LABEL, REGION_LABEL, timeAgo } from "../format";
 
 export interface RegionChoice {
-  value?: Region;
   onChange: (region: Region | undefined) => void;
 }
 
 export interface PatchChoice {
-  value?: string;
   onChange: (patch: string | undefined) => void;
 }
 
@@ -167,7 +165,7 @@ export function StatsMeta({
   region?: RegionChoice;
   patch?: PatchChoice;
 }) {
-  const defaultStats = useStats();
+  const base = useStats();
   if (stats.status === "collecting") {
     return (
       <p className="mb-6 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
@@ -178,7 +176,6 @@ export function StatsMeta({
     );
   }
 
-  const base = defaultStats;
   const newest = base?.newestPatch;
   const offered = base?.patches ?? [];
   // Another patch's stats: the newest patch's early ones, or an earlier patch's final ones.
@@ -224,10 +221,7 @@ export function StatsMeta({
     ]);
   }
   // Only the automatic fallback below the usual floor needs explaining, not a lower floor someone picked.
-  if (
-    stats.rankFloor === defaultStats?.rankFloor &&
-    RANK_FLOORS.indexOf(stats.rankFloor as (typeof RANK_FLOORS)[number]) > 0
-  ) {
+  if (stats.rankFloor === base?.rankFloor && RANK_FLOORS.indexOf(stats.rankFloor as (typeof RANK_FLOORS)[number]) > 0) {
     notes.push([
       "floor",
       `Early in the set, few players have reached Diamond, so this includes ${RANK_FLOOR_LABEL[stats.rankFloor]} games.`,
@@ -255,9 +249,9 @@ export function StatsMeta({
         </Tooltip>
         <span>
           Based on <span className="font-medium text-foreground">{count(stats.matches * BOARDS_PER_MATCH)}</span>{" "}
-          <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games (
-          {count(stats.matches)} matches)
-          <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch{" "}
+          <RankLabel floor={stats.rankFloor} base={base} onChange={onRankChange} /> ranked games ({count(stats.matches)}{" "}
+          matches)
+          <RegionLabel region={stats.region} regions={base?.regions} choice={region} /> on patch{" "}
           <PatchLabel shown={stats.patch} base={base} choice={patch} /> ·{" "}
           {stats.frozen ? (
             `Final stats for Set ${stats.set}`

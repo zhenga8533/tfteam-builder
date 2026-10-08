@@ -5,7 +5,7 @@ import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
 import { ChampionLink, TraitLink } from "@/components/game/links";
 import type { Comp, CompUnit } from "@/content/types";
-import { TrendBadge as PatchTrendBadge } from "@/features/stats/components/patch-trend";
+import { TrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent, share } from "@/features/stats/format";
 import { useCompTrendPatch, useGameData } from "@/lib/data/hooks";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { DIFFICULTY_TEXT } from "../styles";
 import { useAutoCompUnits } from "../use-auto-comp-units";
 import { useCompTraits } from "../use-comp-traits";
-import { TrendBadge } from "./tier-badge";
+import { GuideTrendBadge } from "./tier-badge";
 
 const MAX_TRAITS = 8;
 
@@ -155,7 +155,7 @@ export const CompCard = memo(function CompCard({ comp, preview = false }: { comp
       title={comp.name}
       link={preview ? undefined : { to: "/comps/$slug", params: { slug: comp.slug } }}
       units={comp.board}
-      badge={comp.trend && <TrendBadge trend={comp.trend} />}
+      badge={comp.trend && <GuideTrendBadge trend={comp.trend} />}
       aside={
         <>
           <span className="text-sm font-medium sm:text-center">{comp.playstyle}</span>
@@ -187,11 +187,7 @@ export const AutoCompCard = memo(function AutoCompCard({
       units={units}
       // In the title row, where guide cards show their trend.
       badge={
-        <PatchTrendBadge
-          delta={comp.trend}
-          patch={trendPatch}
-          className="rounded-full px-1.5 py-0.5 ring-1 ring-border"
-        />
+        <TrendBadge delta={comp.trend} patch={trendPatch} className="rounded-full px-1.5 py-0.5 ring-1 ring-border" />
       }
       aside={<CompStats line={comp} />}
     />

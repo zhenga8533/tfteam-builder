@@ -11,7 +11,7 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend, TrendBadge } from "@/features/stats/components/patch-trend";
 import { LowSampleBadge } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { count, percent, share } from "@/features/stats/format";
+import { count, percent, placement, share } from "@/features/stats/format";
 import { parseRank } from "@/features/stats/scope";
 import { useAutoComps, useCompTrendPatch, useGameData, useTierStats } from "@/lib/data/hooks";
 import { isLowSample } from "@/lib/game/stat-line";
@@ -19,8 +19,8 @@ import { findComp } from "@/lib/game/comp-signature";
 import type { RankFloor } from "@/lib/data/schema";
 import { bestHolders } from "@/features/stats/builds";
 import type { StatLine } from "@/lib/data/schema";
-import { traitStyle } from "@/lib/game/traits";
-import { stringParam } from "@/lib/search";
+import { traitBreakpoint, traitKey, traitStyle } from "@/lib/game/traits";
+import { oneOf, stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,7 @@ interface CompareSearch {
 export const Route = createFileRoute("/compare")({
   head: () => ({ meta: [{ title: "Compare · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): CompareSearch => ({
-    kind: KINDS.includes(search.kind as Kind) ? (search.kind as Kind) : undefined,
+    kind: oneOf(KINDS, search.kind),
     rank: parseRank(search.rank),
     a: stringParam(search.a),
     b: stringParam(search.b),
@@ -71,7 +71,7 @@ const METRICS: {
   /** Muted, with a hint, for a low-sample side. */
   sampled?: boolean;
 }[] = [
-  { label: "Avg place", value: (line) => line.avg, format: (value) => value.toFixed(2), better: "low", sampled: true },
+  { label: "Avg place", value: (line) => line.avg, format: placement, better: "low", sampled: true },
   { label: "Top 4", value: (line) => line.top4, format: percent, better: "high" },
   { label: "Win rate", value: (line) => line.win, format: percent, better: "high" },
   { label: "Play rate", value: (line) => line.play, format: share },
@@ -250,8 +250,8 @@ function CompCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor 
                 .filter((entry) => traitsByApi.get(entry.trait)?.breakpoints.length !== 1)
                 .slice(0, 4)
                 .flatMap((entry) => {
-                  const trait = traitsByApi.get(entry.trait);
-                  const breakpoint = trait?.breakpoints.find((bp) => bp.minUnits === entry.minUnits);
+                  const found = traitBreakpoint(traitKey(entry.trait, entry.minUnits), traitsByApi);
+                  const { trait, breakpoint } = found ?? {};
                   return trait && breakpoint
                     ? [
                         <span key={entry.trait} className="inline-flex items-center gap-1">

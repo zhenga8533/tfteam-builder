@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ItemCard } from "@/components/game/cards";
+import { type ItemFilters, itemKindsIn, parseItemFilters } from "@/components/game/filter-params";
 import { ItemKindFilter } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
 import { EmptyState } from "@/components/layout/empty-state";
@@ -8,26 +9,19 @@ import { PageHeader } from "@/components/layout/page-header";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { isItemKind, ITEM_KINDS } from "@/lib/data/constants";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { bestHolders } from "@/features/stats/builds";
 import { useGameData, useStats } from "@/lib/data/hooks";
-import type { Item, ItemKind } from "@/lib/data/schema";
+import type { Item } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches, stringParam } from "@/lib/search";
+import { matches } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
-interface ItemSearch {
-  q?: string;
-  kind?: ItemKind;
-}
+type ItemSearch = ItemFilters;
 
 export const Route = createFileRoute("/items")({
   head: () => ({ meta: [{ title: "Items · TFTeam" }] }),
-  validateSearch: (search: Record<string, unknown>): ItemSearch => ({
-    q: stringParam(search.q),
-    kind: isItemKind(search.kind) ? search.kind : undefined,
-  }),
+  validateSearch: parseItemFilters,
   component: ItemsPage,
 });
 
@@ -164,7 +158,7 @@ function ItemsPage() {
   const stats = useStats();
   const search = Route.useSearch();
   const kind = search.kind ?? "completed";
-  const kinds = ITEM_KINDS.filter((option) => items.some((item) => item.kind === option));
+  const kinds = itemKindsIn(items);
   const filtered = items.filter((item) => item.kind === kind && matches(item.name, search.q));
 
   const update = useUpdateSearch<ItemSearch>();

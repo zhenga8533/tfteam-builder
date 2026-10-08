@@ -9,9 +9,11 @@ import {
   matchesChampionFilters,
   matchesItemFilters,
   parseChampionFilters,
+  parseItemFilters,
 } from "@/components/game/filter-params";
 import { ChampionLink, ItemLink, TraitLink } from "@/components/game/links";
 import { ChampionIcon } from "@/components/game/icons";
+import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
 import { Section } from "@/components/layout/section";
@@ -30,25 +32,23 @@ import {
 import { NoStats } from "@/features/stats/components/no-stats";
 import { PlayTrend, TrendBadge } from "@/features/stats/components/patch-trend";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { share } from "@/features/stats/format";
+import { count, placement, share } from "@/features/stats/format";
 import { parsePatch, parseRank } from "@/features/stats/scope";
-import { isItemKind } from "@/lib/data/constants";
 import { useAutoCompsFile, useGameData, useStats, useTierStats } from "@/lib/data/hooks";
 import type { AutoComps, RankFloor, SetStats } from "@/lib/data/schema";
 import { traitBreakpoint, traitKey, traitStyle } from "@/lib/game/traits";
-import { matches, stringParam } from "@/lib/search";
+import { matches, oneOf } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 
 const VIEWS = ["champions", "items", "traits", "comps"] as const;
 type View = (typeof VIEWS)[number];
 const VIEW_LABELS: Record<View, string> = { champions: "Champions", items: "Items", traits: "Traits", comps: "Comps" };
 
-interface ChangesSearch extends ChampionFilters, CompFilters {
+interface ChangesSearch extends ChampionFilters, ItemFilters, CompFilters {
   rank?: RankFloor;
   /** Another of the set's patches, whose changes since the patch before it are shown. */
   patch?: string;
   view?: View;
-  kind?: ItemFilters["kind"];
 }
 
 export const Route = createFileRoute("/tierlist/changes")({
@@ -58,8 +58,8 @@ export const Route = createFileRoute("/tierlist/changes")({
     ...parseCompFilters(search),
     rank: parseRank(search.rank),
     patch: parsePatch(search.patch),
-    view: VIEWS.find((view) => view === search.view),
-    kind: isItemKind(search.kind) ? search.kind : undefined,
+    view: oneOf(VIEWS, search.view),
+    kind: parseItemFilters(search).kind,
   }),
   component: PatchChangesPage,
 });
@@ -126,21 +126,19 @@ function RowPair({
   );
 }
 
-const avgText = (avg: number) => avg.toFixed(2);
-
 /** Rows for each list, from `entries` and how to label one. */
-function useRows(entries: ChangeEntry[], label: (key: string) => ReactNode, before: string, after: string) {
+function rowsFor(entries: ChangeEntry[], label: (key: string) => ReactNode, before: string, after: string) {
   const games = (entry: ChangeEntry) =>
     [
-      entry.before && `${before}: ${avgText(entry.before[0])} avg over ${entry.before[2]} games`,
-      entry.now && `${after}: ${avgText(entry.now.avg)} avg over ${entry.now.games} games`,
+      entry.before && `${before}: ${placement(entry.before[0])} avg over ${count(entry.before[2])} games`,
+      entry.now && `${after}: ${placement(entry.now.avg)} avg over ${count(entry.now.games)} games`,
     ]
       .filter(Boolean)
       .join(" · ");
   const placementRow = (entry: ChangeEntry): Row => ({
     key: entry.key,
     label: label(entry.key),
-    values: entry.before && entry.now && `${avgText(entry.before[0])} → ${avgText(entry.now.avg)}`,
+    values: entry.before && entry.now && `${placement(entry.before[0])} → ${placement(entry.now.avg)}`,
     change: <TrendBadge delta={entry.delta} patch={before} className="justify-end" />,
     title: games(entry),
   });
@@ -157,12 +155,12 @@ function useRows(entries: ChangeEntry[], label: (key: string) => ReactNode, befo
     values: `${share(entry.now?.play ?? entry.before![1])} of games`,
     title: games(entry),
   });
-  const placement = placementMovers(entries);
+  const moved = placementMovers(entries);
   const play = playMovers(entries);
   const arrived = arrivals(entries);
   return {
-    better: placement.better.map(placementRow),
-    worse: placement.worse.map(placementRow),
+    better: moved.better.map(placementRow),
+    worse: moved.worse.map(placementRow),
     pickedUp: play.pickedUp.map(playRow),
     droppedOff: play.droppedOff.map(playRow),
     added: arrived.added.map(onlyRow),
@@ -187,7 +185,7 @@ function EntryChanges({
   /** Whether the earlier patch's lines are known, which play rates and new or gone entries need. */
   hasBefore: boolean;
 }) {
-  const rows = useRows(entries, label, before, after);
+  const rows = rowsFor(entries, label, before, after);
   return (
     <div className="space-y-6">
       <RowPair
@@ -341,7 +339,7 @@ function CompChanges({
   const row = (comp: (typeof comps)[number]): Row => ({
     key: comp.id,
     label: <CompName name={comp.name} carries={comp.carries} link={link(comp.id, comp.name, patch)} />,
-    values: comp.trend !== undefined && `${avgText(comp.avg - comp.trend)} → ${avgText(comp.avg)}`,
+    values: comp.trend !== undefined && `${placement(comp.avg - comp.trend)} → ${placement(comp.avg)}`,
     change: <TrendBadge delta={comp.trend} patch={before} className="justify-end" />,
   });
   const { better, worse } = placementMovers(moved.map((comp) => ({ key: comp.id, delta: comp.trend })));
@@ -384,9 +382,9 @@ function CompChanges({
 
 function NoChanges({ stats }: { stats: SetStats }) {
   return (
-    <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+    <EmptyState>
       No earlier patch of Set {stats.set} has stats to compare patch {stats.patch} with yet.
-    </p>
+    </EmptyState>
   );
 }
 
@@ -422,7 +420,7 @@ function PatchChangesPage() {
         <StatsMeta
           stats={stats}
           onRankChange={(rank) => update({ rank, patch: undefined })}
-          patch={{ value: patch, onChange: (patch) => update({ patch, rank: undefined }) }}
+          patch={{ onChange: (patch) => update({ patch, rank: undefined }) }}
         />
       )}
       {stats?.notes && (
@@ -460,7 +458,7 @@ function PatchChangesPage() {
             {view === "traits" && (
               <SearchInput
                 value={search.q ?? ""}
-                onChange={(q) => update({ q: stringParam(q) })}
+                onChange={(q) => update({ q: q || undefined })}
                 placeholder="Search traits"
                 className="max-w-xs"
               />

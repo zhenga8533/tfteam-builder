@@ -24,7 +24,7 @@ const TRENDS = {
   new: { icon: Sparkles, label: "New", className: "text-primary bg-primary/10" },
 } as const;
 
-export function TrendBadge({ trend }: { trend: Trend }) {
+export function GuideTrendBadge({ trend }: { trend: Trend }) {
   const { icon: Icon, label, className } = TRENDS[trend];
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", className)}>

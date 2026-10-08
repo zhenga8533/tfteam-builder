@@ -1,11 +1,11 @@
 import { isRankFloor, isRegion, type Region } from "@/lib/data/constants";
 import type { RankFloor } from "@/lib/data/schema";
 
-/** The rank floor, region or newest patch a tier list is narrowed to, kept in the URL. */
+/** The rank floor, region or other patch a tier list is narrowed to, kept in the URL. */
 export interface StatsScope {
   rank?: RankFloor;
   region?: Region;
-  /** The newest patch, chosen for an early look while the stats fall back to the previous one. */
+  /** Another of the set's patches with its own stats (see `SetStats.patches`): the newest early, or an earlier one. */
   patch?: string;
 }
 
@@ -22,14 +22,11 @@ export const parseStatsScope = (search: Record<string, unknown>): StatsScope => 
 });
 
 /**
- * `StatTierList`'s rank, region and patch choices. Picking one clears the others: regional and newest-patch stats
- * exist at the default rank floor only, and the newest patch has no regional stats.
+ * `StatTierList`'s rank, region and patch choices. Picking one clears the others: regional stats and other patches'
+ * stats exist at the default rank floor only, and other patches have no regional stats.
  */
-export const scopeChoices = (scope: StatsScope, update: (changes: StatsScope) => void) => ({
-  rank: { value: scope.rank, onChange: (rank?: RankFloor) => update({ rank, region: undefined, patch: undefined }) },
-  region: {
-    value: scope.region,
-    onChange: (region?: Region) => update({ region, rank: undefined, patch: undefined }),
-  },
-  patch: { value: scope.patch, onChange: (patch?: string) => update({ patch, rank: undefined, region: undefined }) },
+export const scopeChoices = (update: (changes: StatsScope) => void) => ({
+  rank: { onChange: (rank?: RankFloor) => update({ rank, region: undefined, patch: undefined }) },
+  region: { onChange: (region?: Region) => update({ region, rank: undefined, patch: undefined }) },
+  patch: { onChange: (patch?: string) => update({ patch, rank: undefined, region: undefined }) },
 });

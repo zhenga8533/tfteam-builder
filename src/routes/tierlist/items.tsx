@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ItemCard } from "@/components/game/cards";
+import { type ItemFilters, parseItemFilters } from "@/components/game/filter-params";
 import { ItemKindFilter } from "@/components/game/filters";
 import { ItemIcon } from "@/components/game/icons";
 import { SearchInput } from "@/components/layout/search-input";
@@ -12,12 +13,9 @@ import { ITEM_KINDS } from "@/lib/data/constants";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import type { ItemKind } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches, stringParam } from "@/lib/search";
+import { matches, oneOf } from "@/lib/search";
 
-interface ItemTierSearch extends StatsScope {
-  q?: string;
-  kind?: ItemKind;
-}
+interface ItemTierSearch extends StatsScope, ItemFilters {}
 
 const RANKED_KINDS: ItemKind[] = ITEM_KINDS.filter((kind) => kind !== "component");
 
@@ -25,8 +23,8 @@ export const Route = createFileRoute("/tierlist/items")({
   head: () => ({ meta: [{ title: "Item Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ItemTierSearch => ({
     ...parseStatsScope(search),
-    q: stringParam(search.q),
-    kind: RANKED_KINDS.includes(search.kind as ItemKind) ? (search.kind as ItemKind) : undefined,
+    ...parseItemFilters(search),
+    kind: oneOf(RANKED_KINDS, search.kind),
   }),
   component: ItemTierListPage,
 });
@@ -57,7 +55,7 @@ function ItemTierListPage() {
       fallback={tierListForSet(set)?.fallback?.items}
       visible={visible}
       stats={stats}
-      {...scopeChoices(search, update)}
+      {...scopeChoices(update)}
       toolbar={
         <>
           <SearchInput

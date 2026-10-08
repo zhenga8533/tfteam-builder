@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGameData } from "@/lib/data/hooks";
 import type { ChampionStats } from "@/lib/data/schema";
 import { nextItems } from "../builds";
+import { championGames } from "../format";
 import { StatTable } from "./stat-table";
 
 const MAX_ITEMS = 3;
@@ -106,7 +107,7 @@ function BuildFinder({ stats, chosen, onChange, shown, playBaseline }: BuildFind
 /** The build finder and the top builds of each size, with item filters shared by every tab. */
 export function ItemBuilds({ stats }: { stats: ChampionStats }) {
   const { championsByApi, itemsByApi } = useGameData();
-  const playBaseline = `${championsByApi.get(stats.apiName)?.name ?? "this champion"}'s games`;
+  const playBaseline = championGames(championsByApi.get(stats.apiName)?.name);
   const [chosen, setChosen] = useState<string[]>([]);
   const [filters, setFilters] = useState<ItemFilters>({});
   const itemsOf = (apiNames: string[]) => apiNames.flatMap((apiName) => itemsByApi.get(apiName) ?? []);

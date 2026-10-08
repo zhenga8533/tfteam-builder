@@ -33,11 +33,15 @@ export function parseTraitKey(key: string): { apiName: string; minUnits: number 
   return { apiName, minUnits: Number(minUnits) };
 }
 
+/** A trait's breakpoint at `minUnits` units, if it has one. */
+export const breakpointOf = (trait: Trait, minUnits: number) =>
+  trait.breakpoints.find((entry) => entry.minUnits === minUnits);
+
 /** The trait and breakpoint a key names, or null when the game data doesn't have them. */
 export function traitBreakpoint(key: string, traitsByApi: Map<string, Trait>) {
   const { apiName, minUnits } = parseTraitKey(key);
   const trait = traitsByApi.get(apiName);
-  const breakpoint = trait?.breakpoints.find((entry) => entry.minUnits === minUnits);
+  const breakpoint = trait && breakpointOf(trait, minUnits);
   return trait && breakpoint ? { trait, breakpoint } : null;
 }
 

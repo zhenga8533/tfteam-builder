@@ -184,7 +184,7 @@ function AutoCompDetail({
       <StatsMeta
         stats={stats}
         onRankChange={(next) => navigate({ search: { rank: next }, replace: true })}
-        patch={{ value: patch, onChange: (next) => navigate({ search: { patch: next }, replace: true }) }}
+        patch={{ onChange: (next) => navigate({ search: { patch: next }, replace: true }) }}
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">

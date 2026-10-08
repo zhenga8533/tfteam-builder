@@ -24,7 +24,7 @@ describe("stats scope", () => {
 
   it("keeps one of rank, region and patch at a time", () => {
     const update = vi.fn();
-    const choices = scopeChoices({ rank: "master" }, update);
+    const choices = scopeChoices(update);
     choices.region.onChange("asia");
     expect(update).toHaveBeenLastCalledWith({ region: "asia", rank: undefined, patch: undefined });
     choices.rank.onChange("diamond");

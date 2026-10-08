@@ -18,7 +18,7 @@ interface TierEntryProps {
 }
 
 /** A trend badge as a chip on an icon's corner; hidden when the badge has nothing to show. */
-export const TREND_CHIP =
+const TREND_CHIP =
   "absolute -top-1.5 -right-2 flex rounded-full bg-background px-1 shadow-xs ring-1 ring-border empty:hidden";
 
 const ENTRY_CLASS =
