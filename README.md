@@ -175,8 +175,9 @@ match data, so the augment tier list and comp guides stay hand-written.
   boards are pruned. It shows
   Diamond+ games when there are enough. Otherwise it falls back to the previous patch of the same set, or to lower ranks
   early in a set, when the top of the ladder is still nearly empty. The page states which ranks and patch the stats
-  come from. The tier lists can switch to another patch of the set
-  (`set{N}/patches/{patch}.json`). Earlier patches show their saved stats. While the stats fall back, the newest patch
+  come from. The tier lists, comp pages and patch changes can switch to another patch
+  of the set (`set{N}/patches/{patch}.json` and `{patch}.comps.json`). Earlier patches show their saved stats and
+  comps. While the stats fall back, the newest patch
   shows its stats so far, once it has 250 matches; the stats line shows its match count either way.
 - **Tiers:** pages show each entry's real average placement; tiers and "best" orderings rank by that average pulled
   toward 4.5 when there are few games, so a handful of lucky games can't top a list. The top 10% are S, the next 25% A,

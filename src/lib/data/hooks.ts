@@ -93,6 +93,13 @@ function useOfferedFloor(rank: RankFloor | undefined) {
   return deferred && base?.ranks?.includes(deferred) ? deferred : null;
 }
 
+/** `gamePatch` when the default stats offer it (see `SetStats.patches`), otherwise null. Deferred like the floor. */
+function useOfferedPatch(gamePatch: string | undefined) {
+  const deferred = useDeferredValue(gamePatch);
+  const base = useStats();
+  return deferred && base?.patches?.includes(deferred) ? deferred : null;
+}
+
 /**
  * Stats for the tier lists at `rank` when that floor has its own stats, otherwise the default stats; `gamePatch`
  * picks another patch with its own stats: the newest patch early, or an earlier one.
@@ -104,8 +111,7 @@ export function useTierStats(rank: RankFloor | undefined, region?: Region, gameP
   const floor = useOfferedFloor(rank);
   const deferredRegion = useDeferredValue(region);
   const area = deferredRegion && base?.regions?.includes(deferredRegion) ? deferredRegion : null;
-  const deferredPatch = useDeferredValue(gamePatch);
-  const other = deferredPatch && base?.patches?.includes(deferredPatch) ? deferredPatch : null;
+  const other = useOfferedPatch(gamePatch);
   const ranked = useSuspenseQuery(rankStatsQuery(patch, set, floor)).data;
   const regional = useSuspenseQuery(regionStatsQuery(patch, set, area)).data;
   const patched = useSuspenseQuery(patchStatsQuery(patch, set, other)).data;
@@ -144,15 +150,19 @@ export function useLittleLegends() {
 }
 
 /** Comps detected from match data (at `rank` when it has its own), best first; null when not published (or on PBE). */
-export function useAutoComps(rank?: RankFloor) {
+/** Detected comps' file at `rank`, or on another of the set's patches (`gamePatch`, at the default floor). */
+function useAutoCompsFile(rank?: RankFloor, gamePatch?: string) {
   const { patch, set } = useActiveSet();
   const floor = useOfferedFloor(rank);
-  return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data?.comps ?? null;
+  const other = useOfferedPatch(gamePatch);
+  return useSuspenseQuery(autoCompsQuery(patch, set, other ? null : floor, other)).data;
+}
+
+export function useAutoComps(rank?: RankFloor, gamePatch?: string) {
+  return useAutoCompsFile(rank, gamePatch)?.comps ?? null;
 }
 
 /** The patch detected comps' `trend` compares with; undefined until a previous patch has comps. */
-export function useCompTrendPatch(rank?: RankFloor) {
-  const { patch, set } = useActiveSet();
-  const floor = useOfferedFloor(rank);
-  return useSuspenseQuery(autoCompsQuery(patch, set, floor)).data?.trendPatch;
+export function useCompTrendPatch(rank?: RankFloor, gamePatch?: string) {
+  return useAutoCompsFile(rank, gamePatch)?.trendPatch;
 }

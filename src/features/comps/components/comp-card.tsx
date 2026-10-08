@@ -165,14 +165,23 @@ export const CompCard = memo(function CompCard({ comp, preview = false }: { comp
 });
 
 /** A comp detected from match data, with its placement stats. */
-export const AutoCompCard = memo(function AutoCompCard({ comp, rank }: { comp: AutoComp; rank?: RankFloor }) {
-  const trendPatch = useCompTrendPatch(rank);
+export const AutoCompCard = memo(function AutoCompCard({
+  comp,
+  rank,
+  patch,
+}: {
+  comp: AutoComp;
+  rank?: RankFloor;
+  /** Another of the set's patches the comp is from. */
+  patch?: string;
+}) {
+  const trendPatch = useCompTrendPatch(rank, patch);
   // Stable across renders, so the card's trait calculation (memoized on the units) isn't redone each time.
   const { units } = useAutoCompUnits(comp);
   return (
     <CompCardView
       title={comp.name}
-      link={{ to: "/comps/auto/$id", params: { id: comp.id }, search: rank ? { rank } : {} }}
+      link={{ to: "/comps/auto/$id", params: { id: comp.id }, search: { rank, patch } }}
       units={units}
       aside={<CompStats line={comp} trend={<PatchTrendBadge delta={comp.trend} patch={trendPatch} />} />}
     />

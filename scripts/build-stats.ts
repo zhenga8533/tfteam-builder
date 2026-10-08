@@ -135,13 +135,18 @@ async function detectComps(eachBoard: EachBoard, data: SetData) {
  * Returns what `comps.json` holds.
  */
 async function withCompTrends(store: StatsStore, stats: SetStats, comps: AutoComp[], floor?: RankFloor) {
+  const file = await compsFile(store, stats, comps, floor);
+  await store.putComps(stats.set, stats.patch, JSON.stringify({ comps }), floor);
+  return file;
+}
+
+/** What `comps.json` holds: `comps` with each one's change since the previous patch's saved comps. */
+async function compsFile(store: StatsStore, stats: SetStats, comps: AutoComp[], floor?: RankFloor) {
   const previous = await store.previousComps(stats.set, stats.patch, floor);
-  const file = autoCompsSchema.parse({
+  return autoCompsSchema.parse({
     comps: previous ? compTrends(comps, previous.comps) : comps,
     ...(previous && { trendPatch: previous.patch }),
   });
-  await store.putComps(stats.set, stats.patch, JSON.stringify({ comps }), floor);
-  return file;
 }
 
 /** One JSON file per entry, named by its apiName, for the detail pages. */
@@ -338,14 +343,28 @@ async function writeFloorFiles(
   return floors;
 }
 
-async function writePatchFiles(set: number, patchStats: SetStats[]) {
+/**
+ * Each other patch's tier list stats and detected comps. An earlier patch's comps are the ones saved for it; the
+ * newest patch's, while it's offered early, are detected from its boards (`boardsFor`) and never saved.
+ */
+async function writePatchFiles(
+  store: StatsStore,
+  data: SetData,
+  patchStats: SetStats[],
+  boardsFor: (stats: SetStats) => EachBoard,
+  newestPatch?: string,
+) {
   if (patchStats.length === 0) return;
-  await mkdir(join(OUT_DIR, `set${set}`, "patches"), { recursive: true });
+  const dir = join(OUT_DIR, `set${data.number}`, "patches");
+  await mkdir(dir, { recursive: true });
   for (const entry of patchStats) {
-    await writeFile(
-      join(OUT_DIR, `set${set}`, "patches", `${entry.patch}.json`),
-      JSON.stringify(setStatsSchema.parse(entry)),
-    );
+    await writeFile(join(dir, `${entry.patch}.json`), JSON.stringify(setStatsSchema.parse(entry)));
+    const comps =
+      entry.patch === newestPatch
+        ? await detectComps(boardsFor(entry), data)
+        : await store.comps(data.number, entry.patch);
+    if (comps)
+      await writeFile(join(dir, `${entry.patch}.comps.json`), JSON.stringify(await compsFile(store, entry, comps)));
   }
 }
 
@@ -370,9 +389,12 @@ async function buildSet(
   for (const counters of patches) await store.putCounters(counters);
   const { stats, unknown } = buildSetStats(data, patches);
   // Every later pass reads only the boards behind the published stats.
+  const readPatch =
+    (patch: string): ReadBoards =>
+    async (chunk) =>
+      (await read(chunk)).filter((row) => patchOf(row, chunk) === patch);
   const sample = holders.get(stats.patch) ?? [];
-  const readSample: ReadBoards = async (chunk) =>
-    (await read(chunk)).filter((row) => patchOf(row, chunk) === stats.patch);
+  const readSample = readPatch(stats.patch);
   const summaries = (await store.summaries(set)).filter((summary) => summary.patch !== stats.patch);
   const trend = patchTrend(stats, summaries);
   if (trend) stats.trend = trend;
@@ -393,7 +415,13 @@ async function buildSet(
   // Clears and rewrites the set's folder, so the region and floor files are written after it.
   const figures = await writeDetails(store, readSample, data, stats, sample);
   await writeRegionFiles(set, regionStats);
-  await writePatchFiles(set, patchStats);
+  await writePatchFiles(
+    store,
+    data,
+    patchStats,
+    (entry) => boardsOf(readPatch(entry.patch), data, entry, holders.get(entry.patch) ?? []),
+    stats.newestPatch?.patch,
+  );
   const floors = await writeFloorFiles(store, readSample, data, floorStats, sample);
   if (ready) {
     const history = patchHistory([...summaries, stats]);

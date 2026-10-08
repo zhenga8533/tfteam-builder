@@ -9,18 +9,25 @@ import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { MIN_TREND } from "@/features/stats/format";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { parseRank } from "@/features/stats/scope";
+import { parsePatch, parseRank } from "@/features/stats/scope";
 import { useGameData, useTierStats } from "@/lib/data/hooks";
 import type { PatchTrend, RankFloor, SetStats, StatLine } from "@/lib/data/schema";
 import { traitBreakpoint, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/tierlist/changes")({
   head: () => ({ meta: [{ title: "Patch Changes · TFTeam" }] }),
-  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } => ({
+  validateSearch: (search: Record<string, unknown>): ChangesSearch => ({
     rank: parseRank(search.rank),
+    patch: parsePatch(search.patch),
   }),
   component: PatchChangesPage,
 });
+
+interface ChangesSearch {
+  rank?: RankFloor;
+  /** Another of the set's patches, whose changes since the patch before it are shown. */
+  patch?: string;
+}
 
 /** Entries listed per direction and kind. */
 const SHOWN = 8;
@@ -127,9 +134,9 @@ function Changes({ trend, stats }: { trend: PatchTrend; stats: SetStats }) {
 }
 
 function PatchChangesPage() {
-  const { rank } = Route.useSearch();
-  const stats = useTierStats(rank);
-  const update = useUpdateSearch<{ rank?: RankFloor }>();
+  const { rank, patch } = Route.useSearch();
+  const stats = useTierStats(rank, undefined, patch);
+  const update = useUpdateSearch<ChangesSearch>();
   const trend = stats?.trend;
   return (
     <>
@@ -141,15 +148,20 @@ function PatchChangesPage() {
             : "What moved the most since the previous patch, by change in average placement."
         }
       />
-      {stats && <StatsMeta stats={stats} onRankChange={(rank) => update({ rank })} />}
+      {stats && (
+        <StatsMeta
+          stats={stats}
+          onRankChange={(rank) => update({ rank, patch: undefined })}
+          patch={{ value: patch, onChange: (patch) => update({ patch, rank: undefined }) }}
+        />
+      )}
       {!stats ? (
         <NoStats />
       ) : trend ? (
         <Changes trend={trend} stats={stats} />
       ) : (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          Changes appear once there are stats for two patches of Set {stats.set}; so far there's only patch{" "}
-          {stats.patch}.
+          No earlier patch of Set {stats.set} has stats to compare patch {stats.patch} with yet.
         </p>
       )}
     </>
