@@ -71,6 +71,17 @@ export function useStats() {
 }
 
 /**
+ * The patch the active set is shown at: the live or PBE patch for the current set, and for an older set the patch its
+ * stats come from (null without stats), since the live patch says nothing about it.
+ */
+export function useSetPatch(): { label: string | null; final: boolean } {
+  const { label, current } = useActiveSet();
+  const stats = useStats();
+  if (current) return { label, final: false };
+  return { label: stats?.patch ?? null, final: Boolean(stats?.frozen) };
+}
+
+/**
  * `rank` when it has its own stats, otherwise null (the default floor). Deferred, like the region in `useTierStats`:
  * switching keeps the current stats on screen while the new ones load, instead of suspending back to the page skeleton.
  */

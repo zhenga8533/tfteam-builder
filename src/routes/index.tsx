@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AutoCompCard } from "@/features/comps/components/comp-card";
 import { MIN_TREND } from "@/features/stats/format";
-import { useActiveSet, useAutoComps, useGameData } from "@/lib/data/hooks";
+import { useActiveSet, useAutoComps, useGameData, useSetPatch } from "@/lib/data/hooks";
 
 /** Detected comps previewed on the home page. */
 const FEATURED_COMPS = 4;
@@ -95,7 +95,8 @@ const FEATURES: Feature[] = [
 ];
 
 function HomePage() {
-  const { label, set } = useActiveSet();
+  const { set } = useActiveSet();
+  const { label } = useSetPatch();
   const data = useGameData();
   // Forms such as Lux (Coven) and set-mechanic traits aren't separate things to explore.
   const shopChampions = data.champions.filter((champion) => !champion.formOf).length;
@@ -105,7 +106,8 @@ function HomePage() {
     <div className="space-y-12">
       <section className="flex flex-col items-start gap-6 py-8 sm:py-16">
         <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          Set {set} · Patch {label}
+          Set {set}
+          {label && ` · Patch ${label}`}
         </span>
         <h1 className="max-w-3xl font-display text-4xl font-bold tracking-tight sm:text-6xl">
           Plan your next <span className="text-primary">top four</span>.
