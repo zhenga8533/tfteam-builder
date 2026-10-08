@@ -87,26 +87,30 @@ function SplashBanner({ champion }: { champion: Champion }) {
   if (!champion.splash || failed) return null;
   const small = width !== null && width < SHARP_SPLASH_WIDTH;
   return (
-    <div className="relative -mx-6 -mt-6 flex aspect-[2/1] w-[calc(100%+3rem)] max-w-none items-center justify-center overflow-hidden rounded-t-lg bg-muted">
-      {small && (
+    // Its height comes from the aspect ratio. In the dialog's grid a clipping box counts as no height when the content
+    // overflows, so the banner would collapse under it; the clipping is on the layer inside instead.
+    <div className="relative -mx-6 -mt-6 aspect-[2/1] w-[calc(100%+3rem)] max-w-none">
+      <div className="absolute inset-0 overflow-hidden rounded-t-lg bg-muted">
+        {small && (
+          <img
+            src={champion.splash}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 size-full scale-125 object-cover opacity-60 blur-xl"
+          />
+        )}
         <img
           src={champion.splash}
           alt=""
-          aria-hidden
-          className="absolute inset-0 size-full scale-125 object-cover opacity-60 blur-xl"
+          onLoad={(event) => setWidth(event.currentTarget.naturalWidth)}
+          onError={() => setFailed(true)}
+          className={cn(
+            "absolute inset-0 transition-opacity",
+            width === null && "opacity-0",
+            small ? "m-auto max-h-[85%] max-w-[85%] rounded-md shadow-lg" : "size-full object-cover object-top",
+          )}
         />
-      )}
-      <img
-        src={champion.splash}
-        alt=""
-        onLoad={(event) => setWidth(event.currentTarget.naturalWidth)}
-        onError={() => setFailed(true)}
-        className={cn(
-          "transition-opacity",
-          width === null && "opacity-0",
-          small ? "relative max-h-[85%] max-w-[85%] rounded-md shadow-lg" : "size-full object-cover object-top",
-        )}
-      />
+      </div>
     </div>
   );
 }
