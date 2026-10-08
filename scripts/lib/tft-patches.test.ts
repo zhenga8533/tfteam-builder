@@ -89,6 +89,10 @@ describe("TFT patch notes", () => {
     expect(nearPatchChange(timeline, 18, change + 7 * hour, 6 * hour)).toBe(false);
     expect(nearPatchChange(timeline, 18, timeline[0]!.since + hour, 6 * hour)).toBe(false);
     expect(nearPatchChange(timeline, 19, change, 6 * hour)).toBe(false);
+    // Without the set's first patch, every change counts; a b patch out at release isn't a change.
+    expect(nearPatchChange(timeline.slice(1), 18, change, 6 * hour)).toBe(true);
+    const releaseB = [...timeline, { label: "18.1b", set: 18, since: timeline[0]!.since }];
+    expect(nearPatchChange(releaseB, 18, timeline[0]!.since + hour, 6 * hour)).toBe(false);
   });
 
   it("finds patches replaced before they had any time live", () => {

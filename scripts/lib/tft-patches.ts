@@ -174,9 +174,10 @@ export async function fetchTftPatches(): Promise<TftPatch[]> {
  * games that close to one may belong to either side. A set's first patch isn't a change: matches report their set.
  */
 export function nearPatchChange(timeline: TftPatch[], set: number, time: number, margin: number): boolean {
-  const changes = timeline.filter((patch) => patch.set === set).map((patch) => patch.since);
-  const first = Math.min(...changes);
-  return changes.some((since) => since !== first && Math.abs(time - since) < margin);
+  const ofSet = timeline.filter((patch) => patch.set === set);
+  // The set's release, by its first patch's label: the stored timeline may not reach back that far.
+  const release = ofSet.find((patch) => patch.label === `${set}.1`)?.since ?? -Infinity;
+  return ofSet.some((patch) => patch.since > release && Math.abs(time - patch.since) < margin);
 }
 
 /** The patch live at `time` for `set`, or null when the timeline has none for that set yet. */
