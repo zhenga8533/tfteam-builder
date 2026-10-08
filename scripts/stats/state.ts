@@ -33,6 +33,8 @@ export const chunkTime = (name: string) =>
  */
 export class StatsStore {
   readonly blobs: BlobStore;
+  /** Patches whose saved summaries and comps are left out (see `supersededPatches`). */
+  ignoredPatches = new Set<string>();
 
   constructor(blobs: BlobStore) {
     this.blobs = blobs;
@@ -147,7 +149,7 @@ export class StatsStore {
       .map((key) => key.slice(prefix.length))
       .filter((name) => !name.includes("/"))
       .map((name) => name.replace(/\.json$/, ""))
-      .filter((name) => comparePatches(name, patch) < 0)
+      .filter((name) => comparePatches(name, patch) < 0 && !this.ignoredPatches.has(name))
       .sort(comparePatches)
       .at(-1);
     if (!previous) return null;
@@ -163,6 +165,7 @@ export class StatsStore {
       // Rank floors' summaries live in a folder below the default ones.
       .filter((name) => !name.includes("/"))
       .map((name) => name.replace(/\.json$/, ""))
+      .filter((name) => !this.ignoredPatches.has(name))
       .sort(comparePatches);
     const summaries = await Promise.all(patches.map((patch) => this.readJson<SetStats>(`${prefix}${patch}.json`)));
     return summaries.filter((summary): summary is SetStats => summary !== null);

@@ -283,6 +283,18 @@ describe("StatsStore", () => {
     expect((await store.summaries(18, "master")).map((entry) => entry.matches)).toEqual([2100]);
   });
 
+  it("leaves out ignored patches' summaries and comps", async () => {
+    root = await mkdtemp(join(tmpdir(), "tft-stats-"));
+    const store = new StatsStore(new FileBlobStore(root));
+    for (const patch of ["18.3b", "18.4", "18.4b"]) {
+      await store.putSummary(18, patch, JSON.stringify({ patch, status: "ready" }));
+      await store.putComps(18, patch, JSON.stringify({ comps: [] }));
+    }
+    store.ignoredPatches = new Set(["18.4"]);
+    expect((await store.summaries(18)).map((entry) => entry.patch)).toEqual(["18.3b", "18.4b"]);
+    expect((await store.previousComps(18, "18.4b"))?.patch).toBe("18.3b");
+  });
+
   it("keeps a patch's counters after its boards are pruned", async () => {
     root = await mkdtemp(join(tmpdir(), "tft-stats-"));
     const store = new StatsStore(new FileBlobStore(root));
