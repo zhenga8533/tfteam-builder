@@ -154,8 +154,12 @@ src/
 
 The full CommunityDragon TFT export is ~24 MB per patch. `scripts/build-data.ts` downloads it for the live and PBE patches and
 splits it into one file per mainline set. It filters out placeholder and duplicate entries, classifies items (components,
-completed, emblems, radiants, artifacts), reads augment tiers and champion roles, adds team planner codes, and reads each set's shop odds and champion pool from Riot's map data. The result is small per-set JSON
+completed, emblems, radiants, artifacts, and set items such as Set 18's potions), reads augment tiers and champion roles, adds team planner codes, and reads each set's shop odds and champion pool from Riot's map data. The result is small per-set JSON
 files validated with Zod. The app loads only the set being viewed.
+
+Set items are the set's own mechanic items: drawn in its icon folder, and neither another kind nor a consumable. Some
+of those are only rewards or tokens, so the stats build keeps a set's items in its live game data only once ranked
+boards hold them. A new set's mechanic items appear on their own as soon as they're played.
 
 ### Match Stats
 

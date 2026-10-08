@@ -9,6 +9,8 @@ export interface RawItem {
   effects: Record<string, number | null>;
   associatedTraits: string[];
   unique: boolean;
+  /** e.g. "Consumable"; most are hashes. */
+  tags?: string[];
 }
 
 export interface RawChampion {

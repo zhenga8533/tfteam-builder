@@ -85,8 +85,16 @@ describe("buildItems", () => {
     rawItem({ apiName: "DA_Artifact_Anvil", name: "Artifact Anvil" }),
     rawItem({ apiName: "DA_Artifact_Fishbones", name: "Fishbones" }),
     rawItem({ apiName: "DA_Augment_Thing", name: "Some_Placeholder" }),
+    rawItem({ apiName: "DA_BlastPotion18", name: "Blast Potion", icon: "ASSETS/Maps/TFT/Icons/TFT18/potion.tex" }),
+    rawItem({
+      apiName: "DA_Booster18",
+      name: "Booster",
+      icon: "ASSETS/Maps/TFT/Icons/TFT18/booster.tex",
+      tags: ["Consumable"],
+    }),
+    rawItem({ apiName: "DA_Potion17", name: "Old Potion", icon: "ASSETS/Maps/TFT/Icons/TFT17/potion.tex" }),
   ];
-  const set = { items: items.map((item) => item.apiName) } as RawSet;
+  const set = { number: 18, items: items.map((item) => item.apiName) } as RawSet;
   const { items: result, aliases } = buildItems(set, new Map(items.map((item) => [item.apiName, item])), "latest");
   const byKind = (kind: string) => result.filter((item) => item.kind === kind).map((item) => item.apiName);
 
@@ -128,6 +136,10 @@ describe("buildItems", () => {
     expect(byKind("radiant")).toEqual(["DA_InfinityEdgeRadiant"]);
     expect(byKind("artifact")).toEqual(["DA_Artifact_Fishbones"]);
     expect(result.some((item) => item.name.includes("_"))).toBe(false);
+  });
+
+  it("keeps the set's own items drawn in its icon folder, but not consumables or other sets' items", () => {
+    expect(byKind("set")).toEqual(["DA_BlastPotion18"]);
   });
 });
 
