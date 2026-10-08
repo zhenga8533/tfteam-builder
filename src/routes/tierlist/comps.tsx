@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ChoiceFilter } from "@/components/game/choice-filter";
 import { compsForSet } from "@/content";
 import { type Comp, type Playstyle, PLAYSTYLES, type Tier } from "@/content/types";
 import { AutoCompCard, CompCard } from "@/features/comps/components/comp-card";
@@ -161,20 +161,13 @@ function CompTierListPage() {
           </TabsList>
           <CompFilterBar value={search} onChange={update}>
             {view === "guides" && (
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                value={search.playstyle ?? ""}
-                onValueChange={(value) => update({ playstyle: isPlaystyle(value) ? value : undefined })}
-                className="flex-wrap"
-                aria-label="Filter by playstyle"
-              >
-                {PLAYSTYLES.map((playstyle) => (
-                  <ToggleGroupItem key={playstyle} value={playstyle} className="px-3">
-                    {playstyle}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+              <ChoiceFilter
+                options={PLAYSTYLES.map((playstyle) => ({ value: playstyle, label: playstyle }))}
+                value={search.playstyle}
+                onChange={(playstyle) => update({ playstyle })}
+                label="Filter by playstyle"
+                noneLabel="All playstyles"
+              />
             )}
           </CompFilterBar>
         </div>

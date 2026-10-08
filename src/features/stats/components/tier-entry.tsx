@@ -17,21 +17,26 @@ interface TierEntryProps {
   play?: string;
 }
 
+/** A trend badge as a chip on an icon's corner; hidden when the badge has nothing to show. */
+export const TREND_CHIP =
+  "absolute -top-1.5 -right-2 flex rounded-full bg-background px-1 shadow-xs ring-1 ring-border empty:hidden";
+
 const ENTRY_CLASS =
   "flex w-16 flex-col items-center gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-/** Icon, name and average placement, with the full game card (plus stats) on hover. */
+/**
+ * Icon, name and average placement, with the full game card (plus stats) on hover. The trend sits on the icon's corner,
+ * so entries with and without one are the same size.
+ */
 export function TierEntry({ icon, label, line, card, link, trend, play }: TierEntryProps) {
   const content = (
     <>
-      {icon}
+      <span className="relative">
+        {icon}
+        {trend && <span className={TREND_CHIP}>{trend}</span>}
+      </span>
       <span className="line-clamp-2 text-center text-[11px] leading-tight text-muted-foreground">{label}</span>
-      {line && (
-        <span className="flex items-center gap-1">
-          <AvgPlacement line={line} className="text-xs" />
-          {trend}
-        </span>
-      )}
+      {line && <AvgPlacement line={line} className="text-xs" />}
     </>
   );
 

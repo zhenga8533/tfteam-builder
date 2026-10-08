@@ -4,7 +4,7 @@ import { ItemCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
 import { ITEM_KIND_LABELS } from "@/components/game/styles";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ItemKindFilter } from "@/components/game/filters";
 import { useGameData } from "@/lib/data/hooks";
 import type { Item, ItemKind } from "@/lib/data/schema";
 import type { DragPayload } from "../dnd";
@@ -43,20 +43,7 @@ export function ItemPool() {
 
   return (
     <div className="space-y-3">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        value={kind}
-        onValueChange={(value) => value && setKind(value as ItemKind)}
-        className="flex-wrap"
-        aria-label="Item category"
-      >
-        {kinds.map((option) => (
-          <ToggleGroupItem key={option} value={option} className="px-3">
-            {ITEM_KIND_LABELS[option]}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+      <ItemKindFilter kinds={kinds} value={kind} onChange={(next) => next && setKind(next)} />
       <div className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1.5">
         {items
           .filter((item) => item.kind === kind)
