@@ -3,7 +3,7 @@ import { type BlobStore, FileBlobStore } from "./blob.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
 import type { AutoComp, RankFloor, SetStats } from "../../src/lib/data/schema.ts";
 import type { TftPatch } from "../lib/tft-patches.ts";
-import type { BoardRow, PlatformState } from "./types.ts";
+import type { BoardRow, PatchCounters, PlatformState } from "./types.ts";
 
 export interface BoardChunk {
   key: string;
@@ -27,6 +27,7 @@ export const chunkTime = (name: string) =>
  *   boards/set{N}/{patch}/{runStart}-{region}.jsonl.gz   one gzipped JSON row per board
  *   summaries/set{N}/{patch}.json                  built stats per patch, kept permanently
  *   summaries/set{N}/ranks/{floor}/{patch}.json    the same for other rank floors
+ *   counters/set{N}/{patch}.json.gz                the patch's counters per rank bucket, kept permanently
  *   comps/set{N}/[ranks/{floor}/]{patch}.json       detected comps per patch, for comp trends
  *   archive/set{N}/                                a finished set's final built files (see `freezeSet`)
  */
@@ -110,6 +111,19 @@ export class StatsStore {
       const stale = new Set(patches.slice(keep));
       for (const chunk of chunks) if (stale.has(chunk.patch)) await this.blobs.delete(chunk.key);
     }
+  }
+
+  /**
+   * Saves a patch's counters. Unlike its boards they're never pruned, so a patch's stats can be rebuilt after its boards
+   * are gone, e.g. when the tiering rules change.
+   */
+  putCounters(counters: PatchCounters) {
+    return this.blobs.put(`counters/set${counters.set}/${counters.patch}.json.gz`, gzipSync(JSON.stringify(counters)));
+  }
+
+  async counters(set: number, patch: string): Promise<PatchCounters | null> {
+    const data = await this.blobs.get(`counters/set${set}/${patch}.json.gz`);
+    return data ? (JSON.parse(gunzipSync(data).toString("utf8")) as PatchCounters) : null;
   }
 
   /** Saves a patch's stats; `floor` stats (for the tier lists' rank choice) are kept apart. */
