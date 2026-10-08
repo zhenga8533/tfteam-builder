@@ -47,8 +47,8 @@ const MONTHS = [
   "NOVEMBER",
   "DECEMBER",
 ];
-// Section headings are uppercase ("SEPTEMBER 24TH"); prose mentions ("September 30") are not.
-const DATED_HEADING = new RegExp(`\\b(${MONTHS.join("|")}) (\\d{1,2})(?:ST|ND|RD|TH)?\\b`, "g");
+// A date in a mid-patch update's heading: "SEPTEMBER 24TH", "August 31st and September 1st" (the first counts).
+const HEADING_DATE = new RegExp(`\\b(${MONTHS.join("|")}) (\\d{1,2})(?:ST|ND|RD|TH)?\\b`, "i");
 
 export interface PatchArticle {
   set: number;
@@ -89,56 +89,96 @@ export function parsePatchList(data: unknown): PatchArticle[] {
   return [...articles.values()].sort((a, b) => b.publishedAt - a.publishedAt);
 }
 
-/** Plain text of every string in the page data that contains a mid-patch update section. */
-export function midPatchText(data: unknown): string {
-  const parts: string[] = [];
+const plainText = (html: string) =>
+  html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** The heading that opens an article's mid-patch updates, however it's capitalised ("Mid-Patch Updates"). */
+const MID_PATCH_HEADING = /<h2[^>]*>(?:(?!<\/h2>)[\s\S])*mid-patch update(?:(?!<\/h2>)[\s\S])*<\/h2>/i;
+
+/**
+ * The HTML of an article's mid-patch section: its heading (which may carry the update's date, "17.3 MAY 13TH MID-PATCH
+ * UPDATE") up to the next top-level heading. Empty without one.
+ */
+export function midPatchSection(data: unknown): string {
+  const sections: string[] = [];
   const walk = (node: unknown) => {
     if (typeof node === "string") {
-      if (node.includes("MID-PATCH UPDATE")) parts.push(node.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+      const heading = node.match(MID_PATCH_HEADING);
+      if (!heading) return;
+      const rest = node.slice(heading.index! + heading[0].length);
+      const end = rest.search(/<h2[\s>]/i);
+      sections.push(heading[0] + (end === -1 ? rest : rest.slice(0, end)));
     } else if (node && typeof node === "object") {
       for (const value of Object.values(node)) walk(value);
     }
   };
   walk(data);
-  return parts.join(" ");
+  return sections.join("");
 }
 
-/**
- * Mid-patch ("b") updates listed in an article, oldest first. The first is the b patch; later entries
- * only start a new letter when they name one ("our 18.3 C patch"), otherwise they're hotfixes within it.
- */
-export function parseMidPatches(text: string, article: PatchArticle): { letter: string; since: number }[] {
-  const start = text.indexOf("MID-PATCH UPDATE");
-  if (start === -1) return [];
-  const section = text.slice(start);
+/** A balance change in the notes: `Mana: 30/120 ⇒ 20/110`. */
+const BALANCE_CHANGE = /⇒/g;
+/** An update with at least this many balance changes changes the balance; fewer is bug and performance fixes. */
+const MIN_BALANCE_CHANGES = 3;
+
+/** The dated updates in a mid-patch section (each from a heading with its date), oldest first, with their text. */
+function midPatchEntries(section: string, article: PatchArticle): { since: number; text: string }[] {
   const published = new Date(article.publishedAt);
-  const headings = [...section.matchAll(DATED_HEADING)].map((match) => {
-    const month = MONTHS.indexOf(match[1]!);
+  const headings = [...section.matchAll(/<h[2-6][^>]*>([\s\S]*?)<\/h[2-6]>/gi)].flatMap((heading) => {
+    const date = plainText(heading[1]!).match(HEADING_DATE);
+    if (!date) return [];
+    const month = MONTHS.indexOf(date[1]!.toUpperCase());
     // Notes published in December can have January updates.
     const year = published.getUTCFullYear() + (month < published.getUTCMonth() ? 1 : 0);
-    return { index: match.index, since: Date.UTC(year, month, Number(match[2]), MID_PATCH_HOUR_UTC) };
+    return [{ index: heading.index!, since: Date.UTC(year, month, Number(date[2]), MID_PATCH_HOUR_UTC) }];
   });
-  const entries = headings
-    .map((heading, i) => ({ since: heading.since, text: section.slice(heading.index, headings[i + 1]?.index) }))
+  return headings
+    .map((heading, i) => ({
+      since: heading.since,
+      text: plainText(section.slice(heading.index, headings[i + 1]?.index)),
+    }))
     .sort((a, b) => a.since - b.since);
+}
 
+/** The patch letter an update names ("18.3 C patch", "18.4 B-Patch"), if any. */
+function namedLetter(text: string, article: PatchArticle): string | undefined {
+  const named = text.match(
+    new RegExp(`\\b${article.set}\\.${article.minor}\\s*([b-z])\\b|\\b([b-z])[ -]patch\\b`, "i"),
+  );
+  return (named?.[1] ?? named?.[2])?.toLowerCase();
+}
+
+const nextLetter = (letter: string) => String.fromCharCode(letter.charCodeAt(0) + 1);
+
+/**
+ * Patches started by the mid-patch updates in a section, oldest first. Riot counts every update as the next letter
+ * (18.1's third update is "18.1d") unless it names one. Only updates that change the balance start a patch; bug and
+ * performance fixes stay part of the patch before, rather than splitting off a few days with nothing to compare.
+ */
+export function parseMidPatches(section: string, article: PatchArticle): { letter: string; since: number }[] {
   const patches: { letter: string; since: number }[] = [];
-  for (const entry of entries) {
-    const named = entry.text.match(
-      new RegExp(`\\b${article.set}\\.${article.minor}\\s*([b-z])\\b|\\b([b-z]) patch\\b`, "i"),
-    );
-    const letter = (named?.[1] ?? named?.[2])?.toLowerCase();
-    if (patches.length === 0) patches.push({ letter: letter ?? "b", since: entry.since });
-    else if (letter && letter > patches.at(-1)!.letter) patches.push({ letter, since: entry.since });
+  let letter = "a";
+  for (const entry of midPatchEntries(section, article)) {
+    letter = namedLetter(entry.text, article) ?? nextLetter(letter);
+    const changes = entry.text.match(BALANCE_CHANGE)?.length ?? 0;
+    if (changes >= MIN_BALANCE_CHANGES) patches.push({ letter, since: entry.since });
   }
   return patches;
 }
 
-/** Builds the timeline, oldest first, from the article list and the newest articles' mid-patch updates. */
+/**
+ * Builds the timeline, oldest first, from the articles that were read (the keys of `midPatches`) and their mid-patch
+ * updates. Articles not read are left to the stored timeline (see `mergeTimelines`).
+ */
 export function buildTimeline(articles: PatchArticle[], midPatches: Map<string, { letter: string; since: number }[]>) {
   const timeline: TftPatch[] = [];
   for (const article of articles) {
     const label = `${article.set}.${article.minor}`;
+    if (!midPatches.has(label)) continue;
     const notes = article.url;
     timeline.push({ label, set: article.set, since: article.publishedAt + RELEASE_DELAY_MS, notes });
     for (const { letter, since } of midPatches.get(label) ?? []) {
@@ -173,7 +213,7 @@ export async function fetchTftPatches(): Promise<TftPatch[]> {
   for (const article of articlesToRead(articles)) {
     midPatches.set(
       `${article.set}.${article.minor}`,
-      parseMidPatches(midPatchText(await fetchPage(article.url)), article),
+      parseMidPatches(midPatchSection(await fetchPage(article.url)), article),
     );
   }
   return buildTimeline(articles, midPatches);
@@ -209,11 +249,17 @@ export function patchReplacements(timeline: TftPatch[]): Map<string, string> {
 /** The patches `patchReplacements` finds replaced. */
 export const supersededPatches = (timeline: TftPatch[]): Set<string> => new Set(patchReplacements(timeline).keys());
 
-/** Keeps patches from the stored timeline that a fresh fetch no longer lists (older articles drop off). */
+const familyOf = (label: string) => label.replace(/[a-z]$/, "");
+
+/**
+ * The stored timeline with each patch the fetch re-read replaced as a family (18.3 with its b, c, …), so a letter its
+ * notes no longer support doesn't linger. Patches it didn't re-read, such as older sets', are kept as stored.
+ */
 export function mergeTimelines(stored: TftPatch[], fetched: TftPatch[]): TftPatch[] {
-  const byLabel = new Map(stored.map((patch) => [patch.label, patch]));
-  for (const patch of fetched) byLabel.set(patch.label, patch);
-  return [...byLabel.values()].sort((a, b) => a.since - b.since);
+  const refreshed = new Set(fetched.map((patch) => familyOf(patch.label)));
+  return [...stored.filter((patch) => !refreshed.has(familyOf(patch.label))), ...fetched].sort(
+    (a, b) => a.since - b.since,
+  );
 }
 
 /**

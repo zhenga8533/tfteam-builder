@@ -3,7 +3,7 @@ import {
   articlesToRead,
   buildTimeline,
   mergeTimelines,
-  midPatchText,
+  midPatchSection,
   nextData,
   parseMidPatches,
   parsePatchList,
@@ -40,10 +40,15 @@ const listing = {
   },
 };
 
-// Modelled on the 18.3 notes: a b patch on the 24th and a later hotfix that isn't a new patch.
+const BALANCE = "<p>Mana: 30 ⇒ 20</p><p>Health: 500 ⇒ 550</p><p>Armor: 40 ⇒ 45</p>";
+
+// Modelled on the 18.3 notes: a b patch on the 24th and a later bug fix that doesn't start a patch.
 const article = page({
   props: {
-    body: "<h2>MID-PATCH UPDATE</h2><h4>SEPTEMBER 28TH</h4><p>We've temporarily disabled this until 18.4.</p><h4>SEPTEMBER 24TH</h4><p>Our 18.3 B patch responds to the meta. See you September 30.</p>",
+    body:
+      "<h2>MID-PATCH UPDATE</h2><h4>SEPTEMBER 28TH</h4><p>We've temporarily disabled this until 18.4.</p>" +
+      `<h4>SEPTEMBER 24TH</h4><p>Our 18.3 B patch responds to the meta. See you September 30.</p>${BALANCE}` +
+      `<h2>PATCH HIGHLIGHTS</h2><h4>SEPTEMBER 21ST</h4>${BALANCE}`,
   },
 });
 
@@ -57,9 +62,50 @@ describe("TFT patch notes", () => {
     ]);
   });
 
-  it("reads b patches from dated mid-patch headings, treating later unnamed entries as hotfixes", () => {
-    const mid = parseMidPatches(midPatchText(nextData(article)), articles[0]!);
+  it("reads b patches from dated mid-patch headings, folding bug fixes and ignoring the main notes", () => {
+    const mid = parseMidPatches(midPatchSection(nextData(article)), articles[0]!);
     expect(mid).toEqual([{ letter: "b", since: Date.UTC(2026, 8, 24, 18) }]);
+  });
+
+  it("counts every update toward the letter, as Riot does, but only starts a patch at balance changes", () => {
+    // Modelled on the 18.1 notes: two bug fix updates, then "our third mid-patch update" with the balance changes.
+    const notes = page({
+      props: {
+        body:
+          `<h2>Mid-Patch Updates</h2><h3>AUGUST 31ST AND SEPTEMBER 1ST</h3>${BALANCE}` +
+          "<h3>AUGUST 28TH</h3><h4>NEW FEATURE</h4><p>Faster loading.</p><h3>AUGUST 27TH</h3><p>Bug fixes.</p>" +
+          `<h2>ENCHANTED WILDS RELEASE NOTES</h2>${BALANCE}`,
+      },
+    });
+    const patch181: PatchArticle = { set: 18, minor: 1, publishedAt: Date.UTC(2026, 7, 25, 18), url: "18.1" };
+    expect(parseMidPatches(midPatchSection(nextData(notes)), patch181)).toEqual([
+      { letter: "d", since: Date.UTC(2026, 7, 31, 18) },
+    ]);
+  });
+
+  it("reads an update dated in the section's own heading", () => {
+    // Modelled on the 17.3 notes: one update, dated in the heading, with no dated subheadings.
+    const notes = page({
+      props: { body: `<h2>17.3 MAY 13TH MID-PATCH UPDATE</h2>${BALANCE}<h2>PATCH HIGHLIGHTS</h2>` },
+    });
+    const patch173: PatchArticle = { set: 17, minor: 3, publishedAt: Date.UTC(2026, 4, 12, 18), url: "17.3" };
+    expect(parseMidPatches(midPatchSection(nextData(notes)), patch173)).toEqual([
+      { letter: "b", since: Date.UTC(2026, 4, 13, 18) },
+    ]);
+  });
+
+  it("uses the letter an update names over the count", () => {
+    const notes = page({
+      props: {
+        body:
+          `<h2>MID-PATCH UPDATE</h2><h4>OCTOBER 14TH</h4><p>Our 18.3 D patch.</p>${BALANCE}` +
+          `<h4>OCTOBER 8TH</h4><p>The 18.3 B-Patch.</p>${BALANCE}`,
+      },
+    });
+    expect(parseMidPatches(midPatchSection(nextData(notes)), articles[0]!).map((entry) => entry.letter)).toEqual([
+      "b",
+      "d",
+    ]);
   });
 
   it("re-reads every article of the newest set, and at least the three newest", () => {
@@ -83,13 +129,14 @@ describe("TFT patch notes", () => {
     expect(articlesToRead(newSet).map((entry) => entry.url)).toEqual(["19.1", "18.8", "18.7"]);
   });
 
-  it("starts a new letter only when an update names it", () => {
-    const text = "MID-PATCH UPDATE OCTOBER 2ND our 18.3 C patch OCTOBER 1ST first fixes";
-    expect(parseMidPatches(text, articles[0]!).map((entry) => entry.letter)).toEqual(["b", "c"]);
-  });
-
   it("builds a timeline and finds the patch live at a game's time", () => {
-    const timeline = buildTimeline(articles, new Map([["18.3", [{ letter: "b", since: Date.UTC(2026, 8, 24, 18) }]]]));
+    const timeline = buildTimeline(
+      articles,
+      new Map([
+        ["18.3", [{ letter: "b", since: Date.UTC(2026, 8, 24, 18) }]],
+        ["18.2", []],
+      ]),
+    );
     expect(timeline.map((entry) => entry.label)).toEqual(["18.2", "18.3", "18.3b"]);
     expect(patchAt(timeline, 18, Date.UTC(2026, 8, 23, 20))).toBe("18.3");
     expect(patchAt(timeline, 18, Date.UTC(2026, 8, 25))).toBe("18.3b");
@@ -122,10 +169,18 @@ describe("TFT patch notes", () => {
     expect(patchAt(timeline, 18, day(8))).toBe("18.4b");
   });
 
-  it("keeps older patches that drop off the page, and labels the patch switcher", () => {
-    const stored: TftPatch[] = [{ label: "18.1", set: 18, since: 1 }];
-    const merged = mergeTimelines(stored, [{ label: "18.3b", set: 18, since: 5 }]);
-    expect(merged.map((entry) => entry.label)).toEqual(["18.1", "18.3b"]);
+  it("keeps patches it didn't re-read, replaces the ones it did as a family, and labels the patch switcher", () => {
+    const stored: TftPatch[] = [
+      { label: "18.1", set: 18, since: 1 },
+      { label: "18.3", set: 18, since: 3 },
+      // A letter the notes no longer support (e.g. read by an older parser) doesn't linger.
+      { label: "18.3c", set: 18, since: 4 },
+    ];
+    const merged = mergeTimelines(stored, [
+      { label: "18.3", set: 18, since: 3 },
+      { label: "18.3b", set: 18, since: 5 },
+    ]);
+    expect(merged.map((entry) => entry.label)).toEqual(["18.1", "18.3", "18.3b"]);
     expect(switcherLabels(merged, 18, 18, 10)).toEqual({ latest: "18.3b", pbe: "18.4" });
     expect(switcherLabels(merged, 18, 19, 10)).toEqual({ latest: "18.3b", pbe: "19.1" });
   });

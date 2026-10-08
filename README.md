@@ -202,7 +202,9 @@ match data, so the augment tier list and comp guides stay hand-written.
   games, 0.2% of boards and a first place. Match data has no positions, so comp boards are laid out by unit range.
 - **Patches:** stats are split by TFT patch, b patches included (18.3, 18.3b), using the release dates in
   [Riot's patch notes](https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/), because match data no
-  longer reports a version. Right after a patch or b patch, the previous one is shown until there are enough games.
+  longer reports a version. Mid-patch updates are lettered the way Riot counts them (18.1's third update is 18.1d),
+  but only those that change the balance start a patch; bug and performance fixes stay part of the patch before.
+  Right after a patch or b patch, the previous one is shown until there are enough games.
   Each deploy re-checks every stored game's patch against the newest dates, so games crawled before a b patch was
   announced move to it. A patch replaced on its release day (its b patch is dated the same day) is left out, and
   boards filed under it count as the replacing patch's when the crawler prunes old patches.
