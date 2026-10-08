@@ -30,8 +30,8 @@ const PATCH_TITLE = /^Teamfight Tactics patch (\d+)\.(\d+)$/i;
 const RELEASE_DELAY_MS = 24 * 60 * 60 * 1000;
 /** Mid-patch updates are dated by day; they usually land late morning in the Americas. */
 const MID_PATCH_HOUR_UTC = 18;
-/** Only the newest articles matter for current stats, and each is a separate request. */
-const ARTICLES_TO_READ = 3;
+/** Re-read at least this many of the newest articles, so a new set's first patch still covers the last set's latest. */
+const MIN_ARTICLES_TO_READ = 3;
 
 const MONTHS = [
   "JANUARY",
@@ -156,11 +156,21 @@ async function fetchPage(url: string) {
   return nextData(await response.text());
 }
 
+/**
+ * The articles to re-read for mid-patch updates, each a separate request: every patch of the newest set, since an
+ * update can be added to any of its notes while the set is live, and at least the few newest overall. Older sets'
+ * updates are kept from the stored timeline (see `mergeTimelines`).
+ */
+export function articlesToRead(articles: PatchArticle[]): PatchArticle[] {
+  const newestSet = articles[0]?.set;
+  return articles.filter((article, index) => index < MIN_ARTICLES_TO_READ || article.set === newestSet);
+}
+
 export async function fetchTftPatches(): Promise<TftPatch[]> {
   const articles = parsePatchList(await fetchPage(NOTES_LIST));
   if (articles.length === 0) throw new Error("No TFT patch notes found; Riot's site layout may have changed");
   const midPatches = new Map<string, { letter: string; since: number }[]>();
-  for (const article of articles.slice(0, ARTICLES_TO_READ)) {
+  for (const article of articlesToRead(articles)) {
     midPatches.set(
       `${article.set}.${article.minor}`,
       parseMidPatches(midPatchText(await fetchPage(article.url)), article),

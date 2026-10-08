@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  articlesToRead,
   buildTimeline,
   mergeTimelines,
   midPatchText,
@@ -10,6 +11,7 @@ import {
   patchReplacements,
   supersededPatches,
   switcherLabels,
+  type PatchArticle,
   type TftPatch,
 } from "./tft-patches.ts";
 
@@ -58,6 +60,27 @@ describe("TFT patch notes", () => {
   it("reads b patches from dated mid-patch headings, treating later unnamed entries as hotfixes", () => {
     const mid = parseMidPatches(midPatchText(nextData(article)), articles[0]!);
     expect(mid).toEqual([{ letter: "b", since: Date.UTC(2026, 8, 24, 18) }]);
+  });
+
+  it("re-reads every article of the newest set, and at least the three newest", () => {
+    const article = (set: number, minor: number): PatchArticle => ({
+      set,
+      minor,
+      publishedAt: 0,
+      url: `${set}.${minor}`,
+    });
+    const newestFirst = [
+      article(18, 5),
+      article(18, 4),
+      article(18, 3),
+      article(18, 2),
+      article(18, 1),
+      article(17, 8),
+    ];
+    expect(articlesToRead(newestFirst).map((entry) => entry.url)).toEqual(["18.5", "18.4", "18.3", "18.2", "18.1"]);
+    // Early in a set, the last set's latest patches are still read.
+    const newSet = [article(19, 1), article(18, 8), article(18, 7), article(18, 6)];
+    expect(articlesToRead(newSet).map((entry) => entry.url)).toEqual(["19.1", "18.8", "18.7"]);
   });
 
   it("starts a new letter only when an update names it", () => {
