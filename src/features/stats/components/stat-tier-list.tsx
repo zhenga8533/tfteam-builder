@@ -52,7 +52,7 @@ function EntryList({ keys, renderEntry, lines, pinned }: EntryListProps) {
           {renderEntry(key, lines.get(key))}
           {pinned?.has(key) && (
             <span
-              className="pointer-events-none absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-background text-muted-foreground shadow-xs ring-1 ring-border"
+              className="pointer-events-none absolute -top-1 -left-1 flex size-4 items-center justify-center rounded-full bg-background text-muted-foreground shadow-xs ring-1 ring-border"
               title={PINNED_HINT}
             >
               <Pin className="size-2.5" aria-hidden />

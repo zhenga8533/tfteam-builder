@@ -3,6 +3,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { AugmentTier, ItemKind } from "@/lib/data/schema";
 import type { AugmentFilters, ChampionFilters, ItemFilters } from "./filter-params";
 import { cn } from "@/lib/utils";
+import { ChoiceFilter } from "./choice-filter";
 import { EntityPicker } from "./entity-picker";
 import { useChampionOptions, useTraitOptions } from "./entity-options";
 import { AUGMENT_TIER_LABEL, AUGMENT_TIER_TEXT, AUGMENT_TIERS, COST_TEXT, COSTS, ITEM_KIND_LABELS } from "./styles";
@@ -68,7 +69,7 @@ export function ChampionFilter({
   );
 }
 
-/** Item category toggles; `allowNone` lets pressing the selected one again clear the filter. */
+/** The item category (see `ChoiceFilter`); `allowNone` lets it be cleared to show every category. */
 export function ItemKindFilter({
   kinds,
   value,
@@ -81,20 +82,13 @@ export function ItemKindFilter({
   allowNone?: boolean;
 }) {
   return (
-    <ToggleGroup
-      type="single"
-      variant="outline"
-      value={value ?? ""}
-      onValueChange={(next) => (next || allowNone) && onChange((next as ItemKind) || undefined)}
-      className="flex-wrap"
-      aria-label="Item category"
-    >
-      {kinds.map((kind) => (
-        <ToggleGroupItem key={kind} value={kind} className="px-3">
-          {ITEM_KIND_LABELS[kind]}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+    <ChoiceFilter
+      options={kinds.map((kind) => ({ value: kind, label: ITEM_KIND_LABELS[kind] }))}
+      value={value}
+      onChange={onChange}
+      label="Item category"
+      noneLabel={allowNone ? "All categories" : undefined}
+    />
   );
 }
 

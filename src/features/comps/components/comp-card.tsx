@@ -28,7 +28,10 @@ interface CompCardViewProps {
   aside: ReactNode;
 }
 
-/** Placement stats in a fixed column, so they line up from card to card. */
+/**
+ * Placement stats in a fixed column, so they line up from card to card: the average with its trend, then the rest in
+ * a grid, kept shorter than the board beside it.
+ */
 function CompStats({ line, trend }: { line: StatLine; trend?: ReactNode }) {
   const rows = [
     ["Top 4", percent(line.top4)],
@@ -38,15 +41,15 @@ function CompStats({ line, trend }: { line: StatLine; trend?: ReactNode }) {
   ];
   return (
     <>
-      <div className="flex items-baseline gap-1.5 sm:flex-col sm:items-center sm:gap-0.5">
-        <AvgPlacement line={line} className="font-display text-2xl leading-none" />
-        <span className="text-[11px] text-muted-foreground">avg place</span>
+      <div className="flex items-baseline gap-1.5" title="Average placement">
+        <AvgPlacement line={line} className="font-display text-xl leading-none" />
+        <span className="text-[11px] text-muted-foreground">avg</span>
         {trend}
       </div>
-      <dl className="flex gap-3 text-xs sm:flex-col sm:gap-0.5 sm:border-t sm:pt-2">
+      <dl className="grid grid-cols-4 gap-x-3 gap-y-1 text-xs sm:grid-cols-2 sm:border-t sm:pt-2">
         {rows.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-1.5">
-            <dt className="text-muted-foreground">{label}</dt>
+          <div key={label} className="whitespace-nowrap">
+            <dt className="text-[10px] text-muted-foreground">{label}</dt>
             <dd className="font-medium tabular-nums">{value}</dd>
           </div>
         ))}
@@ -139,7 +142,7 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
           ))}
         </ul>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 sm:w-24 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-2 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 sm:w-32 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-2 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
         {aside}
       </div>
     </article>
