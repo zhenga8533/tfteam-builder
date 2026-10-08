@@ -34,9 +34,8 @@ the whole list as the fallback, keeping the file's other sections. Copy or downl
 
 ## Adding a comp
 
-1. Build the board in the Team Builder, then choose **Share → Write a comp guide**. Or start from a detected comp:
-   **Write a guide** on its page loads its board and fills in the name, carries, tier and a playstyle.
-   With more than one level board, the highest becomes `board` and the lowest `early`.
+1. Build the board in the Team Builder, then choose **Share → Write a comp guide**. To start from a detected comp,
+   use **Open in Team Builder** on its page first. With more than one level board, the highest becomes `board` and the lowest `early`.
 2. Fill in the tier, playstyle, difficulty, summary, carries, augments and tips. Optional slots (`flex: true`) and
    `alternatives` come from the board.
 3. Copy or download the file into `comps/set{N}/` and run `npm test`. It's already formatted, so `npm run format` has

@@ -11,8 +11,6 @@ import {
   Save,
   Share2,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatIcon } from "@/components/game/stat-icon";
@@ -26,11 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { GuideDetails } from "@/content/serialize";
-import { guideFromComp } from "@/features/comps/guide-from-comp";
-import { useActiveSet, useGameData } from "@/lib/data/hooks";
-import { findComp } from "@/lib/game/comp-signature";
-import { autoCompsQuery } from "@/lib/data/queries";
+import { useGameData } from "@/lib/data/hooks";
 import { cn } from "@/lib/utils";
 import { imageFileName } from "@/lib/canvas";
 import { copyImage, copyText, saveImage, siteUrl } from "@/lib/share";
@@ -57,30 +51,11 @@ function MenuHeading({ children }: { children: string }) {
 
 type Panel = "import" | "save" | "saved" | "guide" | null;
 
-interface GuideStart {
-  /** Remounts the editor when a different comp seeds it. */
-  key: string;
-  initial?: Partial<GuideDetails>;
-}
-
-/** The detected comp a "Write a guide" link names in the URL, once its comps have loaded. */
-function useGuideFromSearch(): GuideStart | undefined {
-  const { patch } = useActiveSet();
-  const { guide } = useSearch({ from: "/builder" });
-  const { set } = useBuilder();
-  const comps = useQuery({ ...autoCompsQuery(patch, set), enabled: Boolean(guide) }).data?.comps;
-  const comp = guide && comps ? findComp(comps, guide) : undefined;
-  return comp && { key: comp.id, initial: guideFromComp(comp) };
-}
-
 export function TeamToolbar() {
   const { champions, championsByApi, itemsByApi } = useGameData();
   const { set, board, boards, level, clear, setBoard } = useBuilder();
   const { units, traits, cost } = useBoardSummary();
   const [panel, setPanel] = useState<Panel>(null);
-  const navigate = useNavigate({ from: "/builder" });
-  const fromSearch = useGuideFromSearch();
-  const [guideStart, setGuideStart] = useState<GuideStart>({ key: "blank" });
   const codesSupported = supportsTeamCodes(champions);
   const flexUnits = units.filter((unit) => unit.flex).length;
   const coreUnits = units.length - flexUnits;
@@ -123,19 +98,6 @@ export function TeamToolbar() {
     open: panel === name,
     onOpenChange: (open: boolean) => setPanel(open ? name : null),
   });
-
-  // A guide link opens the editor once; closing it keeps that comp's draft and drops the link's parameter.
-  const guideProps = {
-    open: panel === "guide" || Boolean(fromSearch),
-    onOpenChange: (open: boolean) => {
-      if (fromSearch) {
-        setGuideStart(fromSearch);
-        void navigate({ search: (previous) => ({ ...previous, guide: undefined }), replace: true });
-      }
-      setPanel(open ? "guide" : null);
-    },
-  };
-  const editorStart = fromSearch ?? guideStart;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -221,7 +183,7 @@ export function TeamToolbar() {
       <ImportTeamCodeDialog {...panelProps("import")} />
       <SaveTeamDialog {...panelProps("save")} />
       <SavedTeamsSheet {...panelProps("saved")} />
-      <GuideEditorDialog key={editorStart.key} initial={editorStart.initial} {...guideProps} />
+      <GuideEditorDialog {...panelProps("guide")} />
     </div>
   );
 }

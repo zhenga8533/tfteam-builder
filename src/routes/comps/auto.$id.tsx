@@ -1,7 +1,7 @@
 import { parseRank } from "@/features/stats/scope";
 import type { AutoComp, RankFloor, SetStats } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Hammer, NotebookPen } from "lucide-react";
+import { ArrowLeft, Hammer } from "lucide-react";
 import { ChampionCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ChampionIcon } from "@/components/game/icons";
@@ -150,12 +150,6 @@ function AutoCompDetail({ comp, stats, rank }: { comp: AutoComp; stats: SetStats
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name, { guide: comp.id })}
-          >
-            <NotebookPen /> Write a guide
-          </Button>
           <CopyTeamCodeButton apiNames={units.map((unit) => unit.apiName)} />
           <ExploreCompButton signature={comp.signature} rank={rank} />
           <Button onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name)}>

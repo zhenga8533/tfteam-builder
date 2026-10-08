@@ -32,8 +32,6 @@ const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
 interface GuideEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Details to start from, e.g. a detected comp's name and carries. */
-  initial?: Partial<GuideDetails>;
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -49,7 +47,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
  * Turns the Team Builder's board into a comp guide: the details are filled in here, and the result is a
  * formatted `src/content/comps` module to download or copy into the repository.
  */
-export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDialogProps) {
+export function GuideEditorDialog({ open, onOpenChange }: GuideEditorDialogProps) {
   const { set, boards } = useBuilder();
   const { championsByApi, augments, augmentsByApi } = useGameData();
   // Comp guides hold a final board and an optional early board: the highest and lowest levels.
@@ -61,7 +59,6 @@ export function GuideEditorDialog({ open, onOpenChange, initial }: GuideEditorDi
   const [draft, setDraft] = useState<Omit<GuideDetails, "carries"> & { carries?: string[] }>(() => ({
     ...EMPTY_GUIDE,
     carries: undefined,
-    ...initial,
   }));
   const guide: GuideDetails = {
     ...draft,
