@@ -169,6 +169,16 @@ export async function fetchTftPatches(): Promise<TftPatch[]> {
   return buildTimeline(articles, midPatches);
 }
 
+/**
+ * Whether `time` is within `margin` ms of one of `set`'s patch changes. The notes give only a day for each change, so
+ * games that close to one may belong to either side. A set's first patch isn't a change: matches report their set.
+ */
+export function nearPatchChange(timeline: TftPatch[], set: number, time: number, margin: number): boolean {
+  const changes = timeline.filter((patch) => patch.set === set).map((patch) => patch.since);
+  const first = Math.min(...changes);
+  return changes.some((since) => since !== first && Math.abs(time - since) < margin);
+}
+
 /** The patch live at `time` for `set`, or null when the timeline has none for that set yet. */
 export function patchAt(timeline: TftPatch[], set: number, time: number): string | null {
   const ofSet = timeline.filter((patch) => patch.set === set);
