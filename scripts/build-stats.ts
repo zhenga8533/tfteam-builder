@@ -25,6 +25,7 @@ import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { compTrends, otherPatchStats, patchHistory, patchTrend } from "./lib/trends.ts";
+import { patchAt, supersededPatches, type TftPatch } from "./lib/tft-patches.ts";
 import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
 import { buildKey, restoreBuild, saveBuild } from "./lib/build-cache.ts";
@@ -67,6 +68,32 @@ const top = (names: Map<string, number>) =>
 
 type ReadBoards = (chunk: BoardChunk) => Promise<BoardRow[]>;
 
+/** A stored board's patch: by its game time on the newest timeline, or the crawler's label without one. */
+type PatchOf = (row: BoardRow, chunk: BoardChunk) => string;
+
+/**
+ * Counters for each patch in a set's chunks, by each board's own patch, and the chunks holding each patch. The crawler
+ * labels boards with the timeline it had then, which a mid-patch update announced later can change.
+ */
+async function loadPatches(read: ReadBoards, set: number, chunks: BoardChunk[], patchOf: PatchOf) {
+  const counters = new Map<string, PatchCounters>();
+  const holders = new Map<string, BoardChunk[]>();
+  for (const chunk of chunks) {
+    const time = chunkTime(chunk.name);
+    for (const row of await read(chunk)) {
+      const patch = patchOf(row, chunk);
+      let entry = counters.get(patch);
+      if (!entry) counters.set(patch, (entry = { set, patch, updatedAt: "", buckets: {} }));
+      addBoardToPatch(entry, row);
+      if (time > entry.updatedAt) entry.updatedAt = time;
+      const held = holders.get(patch);
+      if (!held) holders.set(patch, [chunk]);
+      else if (held.at(-1) !== chunk) held.push(chunk);
+    }
+  }
+  return { counters, holders };
+}
+
 /** Streams a patch's chunks one at a time, so memory holds counters rather than every board. */
 async function loadPatch(read: ReadBoards, set: number, patch: string, chunks: BoardChunk[]): Promise<PatchCounters> {
   const counters: PatchCounters = { set, patch, updatedAt: "", buckets: {} };
@@ -81,13 +108,15 @@ async function loadPatch(read: ReadBoards, set: number, patch: string, chunks: B
 /** A pass over the boards behind the published stats (chosen patch and rank floor). */
 type EachBoard = (visit: (board: ResolvedBoard) => void) => Promise<void>;
 
-/** Visits the boards behind `stats` (its patch and rank floor), re-reading chunks for each pass. */
+/**
+ * Visits the boards behind `stats` at its rank floor, re-reading chunks for each pass. `read` and `chunks` cover the
+ * stats' patch only.
+ */
 function boardsOf(read: ReadBoards, data: SetData, stats: SetStats, chunks: BoardChunk[]): EachBoard {
   const buckets = new Set(FLOOR_BUCKETS[stats.rankFloor]);
   const resolver = new BoardResolver(data);
-  const sample = chunks.filter((chunk) => chunk.patch === stats.patch);
   return async (visit) => {
-    for (const chunk of sample) {
+    for (const chunk of chunks) {
       for (const row of await read(chunk)) if (buckets.has(row[2])) visit(resolver.board(row));
     }
   };
@@ -143,7 +172,7 @@ async function writeExplorer(dir: string, read: ReadBoards, data: SetData, stats
   const buckets = new Set(FLOOR_BUCKETS[lowest]);
   const collector = new ExplorerCollector();
   const resolver = new BoardResolver(data);
-  for (const chunk of chunks.filter((entry) => entry.patch === stats.patch)) {
+  for (const chunk of chunks) {
     for (const row of await read(chunk)) if (buckets.has(row[2])) collector.add(row[2], resolver.board(row));
   }
 
@@ -287,7 +316,7 @@ async function writeFloorFiles(
   read: ReadBoards,
   data: SetData,
   floorStats: SetStats[],
-  setChunks: BoardChunk[],
+  chunks: BoardChunk[],
 ): Promise<SetReport["floors"]> {
   if (floorStats.length === 0) return [];
   const set = data.number;
@@ -298,7 +327,7 @@ async function writeFloorFiles(
       join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.json`),
       JSON.stringify(setStatsSchema.parse(entry)),
     );
-    const floorComps = await detectComps(boardsOf(read, data, entry, setChunks), data);
+    const floorComps = await detectComps(boardsOf(read, data, entry, chunks), data);
     await writeFile(
       join(OUT_DIR, `set${set}`, "ranks", `${entry.rankFloor}.comps.json`),
       JSON.stringify(await withCompTrends(store, entry, floorComps, entry.rankFloor)),
@@ -321,19 +350,29 @@ async function writePatchFiles(set: number, patchStats: SetStats[]) {
 }
 
 /** Builds and writes one set's stats from its newest patches' boards; nothing for a set without boards. */
-async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): Promise<SetReport | undefined> {
+async function buildSet(
+  store: StatsStore,
+  chunks: BoardChunk[],
+  set: number,
+  timeline: TftPatch[],
+): Promise<SetReport | undefined> {
   const setChunks = chunks.filter((chunk) => chunk.set === set);
-  const byPatch = Map.groupBy(setChunks, (chunk) => chunk.patch);
-  const newest = [...byPatch.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
-  if (newest.length === 0) return undefined;
+  if (setChunks.length === 0) return undefined;
 
   const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
   const forms = new FormInference(data);
   const read: ReadBoards = async (chunk) => (await store.readBoards(chunk)).map((row) => forms.row(row));
-  const patches = await Promise.all(newest.map((patch) => loadPatch(read, set, patch, byPatch.get(patch)!)));
+  const patchOf: PatchOf = (row, chunk) => patchAt(timeline, set, row[1] * 1000) ?? chunk.patch;
+  const { counters, holders } = await loadPatches(read, set, setChunks, patchOf);
+  const newest = [...counters.keys()].sort((a, b) => comparePatches(b, a)).slice(0, PATCHES_PER_SET);
+  const patches = newest.map((patch) => counters.get(patch)!);
   // Saved while the patch still has boards, so the last save before they're pruned covers all of them.
   for (const counters of patches) await store.putCounters(counters);
   const { stats, unknown } = buildSetStats(data, patches);
+  // Every later pass reads only the boards behind the published stats.
+  const sample = holders.get(stats.patch) ?? [];
+  const readSample: ReadBoards = async (chunk) =>
+    (await read(chunk)).filter((row) => patchOf(row, chunk) === stats.patch);
   const summaries = (await store.summaries(set)).filter((summary) => summary.patch !== stats.patch);
   const trend = patchTrend(stats, summaries);
   if (trend) stats.trend = trend;
@@ -341,7 +380,7 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
   // Tier lists can switch to another rank floor, or narrow to one region at the default floor.
   const ready = stats.status === "ready";
   const floorStats = ready ? floorStatsFor(data, patches, stats) : [];
-  const regionStats = ready ? await regionStatsFor(read, data, stats, byPatch.get(stats.patch) ?? []) : [];
+  const regionStats = ready ? await regionStatsFor(readSample, data, stats, sample) : [];
   if (floorStats.length) stats.ranks = floorStats.map((entry) => entry.rankFloor);
   if (regionStats.length) stats.regions = regionStats.map((entry) => entry.region!);
   await saveFloorSummaries(store, set, floorStats);
@@ -352,10 +391,10 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
   await writeFile(join(OUT_DIR, `set${set}.json`), json);
   if (ready) await store.putSummary(set, stats.patch, json);
   // Clears and rewrites the set's folder, so the region and floor files are written after it.
-  const figures = await writeDetails(store, read, data, stats, setChunks);
+  const figures = await writeDetails(store, readSample, data, stats, sample);
   await writeRegionFiles(set, regionStats);
   await writePatchFiles(set, patchStats);
-  const floors = await writeFloorFiles(store, read, data, floorStats, setChunks);
+  const floors = await writeFloorFiles(store, readSample, data, floorStats, sample);
   if (ready) {
     const history = patchHistory([...summaries, stats]);
     await writeFile(join(OUT_DIR, `set${set}`, "history.json"), JSON.stringify(patchHistorySchema.parse(history)));
@@ -413,6 +452,9 @@ async function main() {
   // Each set's boards are read in several passes (counters, champion and comp details, the Explorer's files).
   const store = new StatsStore(new CachingBlobStore(source.blobs, "boards/"));
   const chunks = await store.listBoardChunks();
+  // Boards are filed under the patch the crawler knew at the time; the newest timeline decides.
+  const timeline = await store.patchTimeline();
+  store.ignoredPatches = supersededPatches(timeline);
 
   // Stats describe live ranked games, so they're built against live-patch game data only. Frozen sets keep the game
   // data they were frozen with, and stay listed after the client drops them.
@@ -429,6 +471,7 @@ async function main() {
         chunks: chunks.map((chunk) => chunk.key).sort(),
         sets,
         liveSet,
+        timeline,
         // A set due to freeze changes the build even without new boards.
         freezing: bucket ? sets.filter((set) => shouldFreeze(set, liveSet, chunks, now)) : [],
       })
@@ -451,7 +494,7 @@ async function main() {
       continue;
     }
     const freezing = bucket !== null && shouldFreeze(set, liveSet, chunks, now);
-    const report = await buildSet(store, chunks, set);
+    const report = await buildSet(store, chunks, set, timeline);
     if (!report) continue;
     reports.push(report);
     if (freezing && report.status === "ready") {

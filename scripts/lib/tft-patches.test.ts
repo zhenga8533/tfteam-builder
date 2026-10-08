@@ -7,6 +7,7 @@ import {
   parseMidPatches,
   parsePatchList,
   patchAt,
+  supersededPatches,
   switcherLabels,
   type TftPatch,
 } from "./tft-patches.ts";
@@ -70,6 +71,20 @@ describe("TFT patch notes", () => {
     expect(patchAt(timeline, 18, Date.UTC(2026, 8, 25))).toBe("18.3b");
     expect(patchAt(timeline, 18, Date.UTC(2026, 0, 1))).toBe("18.2");
     expect(patchAt(timeline, 19, Date.UTC(2026, 8, 25))).toBeNull();
+  });
+
+  it("finds patches replaced before they had any time live", () => {
+    const day = (date: number) => Date.UTC(2026, 9, date, 18);
+    const timeline: TftPatch[] = [
+      { label: "18.3", set: 18, since: day(1) },
+      { label: "18.3b", set: 18, since: day(2) },
+      // A b patch dated the patch's release day.
+      { label: "18.4", set: 18, since: day(7) },
+      { label: "18.4b", set: 18, since: day(7) },
+      { label: "19.1", set: 19, since: day(7) },
+    ];
+    expect([...supersededPatches(timeline)]).toEqual(["18.4"]);
+    expect(patchAt(timeline, 18, day(8))).toBe("18.4b");
   });
 
   it("keeps older patches that drop off the page, and labels the patch switcher", () => {

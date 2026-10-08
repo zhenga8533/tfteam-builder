@@ -4,6 +4,8 @@
  * match data reports "TFT Unreal Version ?.?.?.?".
  */
 
+import { comparePatches } from "../stats/state.ts";
+
 export interface TftPatch {
   /** e.g. "18.3" or "18.3b". */
   label: string;
@@ -161,6 +163,23 @@ export async function fetchTftPatches(): Promise<TftPatch[]> {
 export function patchAt(timeline: TftPatch[], set: number, time: number): string | null {
   const ofSet = timeline.filter((patch) => patch.set === set);
   return (ofSet.findLast((patch) => patch.since <= time) ?? ofSet[0])?.label ?? null;
+}
+
+/**
+ * Patches a later one replaced before they had any time live, e.g. a patch whose b patch is dated its release day.
+ * No game falls in them, so their saved stats are only games the crawler labelled before the b patch was announced.
+ */
+export function supersededPatches(timeline: TftPatch[]): Set<string> {
+  return new Set(
+    timeline
+      .filter((patch) =>
+        timeline.some(
+          (other) =>
+            other.set === patch.set && other.since <= patch.since && comparePatches(other.label, patch.label) > 0,
+        ),
+      )
+      .map((patch) => patch.label),
+  );
 }
 
 /** Keeps patches from the stored timeline that a fresh fetch no longer lists (older articles drop off). */
