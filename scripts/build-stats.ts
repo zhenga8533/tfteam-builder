@@ -26,7 +26,7 @@ import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
 import { confirmSetItems } from "./lib/set-items.ts";
-import { compTrends, otherPatchStats, patchHistory, patchTrend } from "./lib/trends.ts";
+import { compTrends, droppedComps, otherPatchStats, patchHistory, patchTrend } from "./lib/trends.ts";
 import { patchAt, supersededPatches, type TftPatch } from "./lib/tft-patches.ts";
 import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
@@ -147,7 +147,7 @@ async function compsFile(store: StatsStore, stats: SetStats, comps: AutoComp[], 
   const previous = await store.previousComps(stats.set, stats.patch, floor);
   return autoCompsSchema.parse({
     comps: previous ? compTrends(comps, previous.comps) : comps,
-    ...(previous && { trendPatch: previous.patch }),
+    ...(previous && { trendPatch: previous.patch, dropped: droppedComps(comps, previous.comps) }),
   });
 }
 
@@ -409,6 +409,8 @@ async function buildSet(
   if (regionStats.length) stats.regions = regionStats.map((entry) => entry.region!);
   await saveFloorSummaries(store, set, floorStats);
   const patchStats = ready ? otherPatchStats(data, patches, stats, summaries) : [];
+  for (const entry of [stats, ...patchStats])
+    entry.notes = timeline.find((patch) => patch.label === entry.patch)?.notes;
   if (patchStats.length) stats.patches = patchStats.map((entry) => entry.patch);
 
   const json = JSON.stringify(setStatsSchema.parse(stats));

@@ -12,6 +12,8 @@ export interface TftPatch {
   set: number;
   /** Epoch ms when the patch went live (approximate; regions roll out over a few hours). */
   since: number;
+  /** Riot's patch notes article; a b patch's are in its patch's article. Absent on patches stored before it was kept. */
+  notes?: string;
 }
 
 const NOTES_ORIGIN = "https://teamfighttactics.leagueoflegends.com";
@@ -130,9 +132,10 @@ export function buildTimeline(articles: PatchArticle[], midPatches: Map<string, 
   const timeline: TftPatch[] = [];
   for (const article of articles) {
     const label = `${article.set}.${article.minor}`;
-    timeline.push({ label, set: article.set, since: article.publishedAt + RELEASE_DELAY_MS });
+    const notes = article.url;
+    timeline.push({ label, set: article.set, since: article.publishedAt + RELEASE_DELAY_MS, notes });
     for (const { letter, since } of midPatches.get(label) ?? []) {
-      timeline.push({ label: `${label}${letter}`, set: article.set, since });
+      timeline.push({ label: `${label}${letter}`, set: article.set, since, notes });
     }
   }
   return timeline.sort((a, b) => a.since - b.since);

@@ -71,6 +71,8 @@ describe("TFT patch notes", () => {
     expect(patchAt(timeline, 18, Date.UTC(2026, 8, 25))).toBe("18.3b");
     expect(patchAt(timeline, 18, Date.UTC(2026, 0, 1))).toBe("18.2");
     expect(patchAt(timeline, 19, Date.UTC(2026, 8, 25))).toBeNull();
+    // A b patch's notes are in its patch's article.
+    expect(timeline.find((entry) => entry.label === "18.3b")?.notes).toBe(articles[0]!.url);
   });
 
   it("finds patches replaced before they had any time live", () => {

@@ -23,6 +23,9 @@ export type Region = (typeof REGIONS)[number];
 
 export const isRegion = (value: unknown): value is Region => REGIONS.includes(value as Region);
 
+export const isItemKind = (value: unknown): value is (typeof ITEM_KINDS)[number] =>
+  ITEM_KINDS.includes(value as (typeof ITEM_KINDS)[number]);
+
 export const isRankFloor = (value: unknown): value is (typeof RANK_OPTIONS)[number] =>
   RANK_OPTIONS.includes(value as (typeof RANK_OPTIONS)[number]);
 

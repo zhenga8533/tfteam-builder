@@ -149,6 +149,10 @@ export type StatLine = z.infer<typeof statLineSchema>;
 export const traitStatSchema = statLineSchema.extend({ trait: z.string(), minUnits: z.number().int() });
 export type TraitStat = z.infer<typeof traitStatSchema>;
 
+/** An entry on the earlier patch: `[avg, play, games]`, compact since every stats file carries them. */
+const priorLineSchema = z.tuple([z.number(), z.number(), z.number().int()]);
+const priorLinesSchema = z.record(z.string(), priorLineSchema);
+
 /** Change in average placement since `patch` (negative = placing better), keyed like the stats. */
 export const patchTrendSchema = z.object({
   patch: z.string(),
@@ -156,6 +160,8 @@ export const patchTrendSchema = z.object({
   items: numberRecord,
   /** Keyed `apiName:minUnits`. */
   traits: numberRecord,
+  /** Every entry's line on `patch`, however few games, for play rate changes and entries new or gone since. */
+  before: z.object({ units: priorLinesSchema, items: priorLinesSchema, traits: priorLinesSchema }).optional(),
 });
 export type PatchTrend = z.infer<typeof patchTrendSchema>;
 
@@ -200,6 +206,8 @@ export const setStatsSchema = z.object({
   bestItems: z.record(z.string(), z.array(statLineSchema.extend({ item: z.string() }))),
   /** Movement since the previous patch with saved stats; absent until there is one. */
   trend: patchTrendSchema.optional(),
+  /** Riot's notes for this patch (a b patch's are in its patch's article). */
+  notes: z.string().optional(),
   /** Final stats of a finished set, published from its archive rather than rebuilt. */
   frozen: z.boolean().optional(),
 });
@@ -289,6 +297,10 @@ export const autoCompsSchema = z.object({
   comps: z.array(autoCompSchema),
   /** The previous patch `trend` compares with, when there is one. */
   trendPatch: z.string().optional(),
+  /** Comps on `trendPatch` that no comp here covers any more. */
+  dropped: z
+    .array(autoCompSchema.pick({ id: true, name: true, carries: true, avg: true, play: true, games: true }))
+    .optional(),
 });
 export type AutoComps = z.infer<typeof autoCompsSchema>;
 

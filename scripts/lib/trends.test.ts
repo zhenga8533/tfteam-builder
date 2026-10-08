@@ -3,7 +3,7 @@ import type { AutoComp, SetData, SetStats, StatLine } from "../../src/lib/data/s
 import { emptyCounters } from "../stats/aggregate.ts";
 import type { PatchCounters } from "../stats/types.ts";
 import { MIN_EARLY_MATCHES, MIN_GAMES } from "./stats.ts";
-import { compTrends, otherPatchStats, patchHistory, patchTrend } from "./trends.ts";
+import { compTrends, droppedComps, otherPatchStats, patchHistory, patchTrend } from "./trends.ts";
 
 const line = (avg: number, games: number = MIN_GAMES.unit): StatLine => ({
   games,
@@ -34,11 +34,19 @@ describe("patch trends", () => {
 
   it("compares with the newest earlier patch, skipping entries with too few games", () => {
     const older = stats("18.2", { Ahri: line(5) });
-    expect(patchTrend(p183b, [older, p183])).toEqual({
+    expect(patchTrend(p183b, [older, p183])).toMatchObject({
       patch: "18.3",
       units: { Ahri: -0.25, Sett: 0.2 },
       items: {},
       traits: { "Blossom:5": 0 },
+    });
+  });
+
+  it("keeps every entry's earlier average, play rate and games, however few games it had", () => {
+    expect(patchTrend(p183b, [p183])?.before?.units).toEqual({
+      Ahri: [4.6, 0.1, MIN_GAMES.unit],
+      Sett: [4.2, 0.1, MIN_GAMES.unit],
+      Rare: [3, 0.1, 10],
     });
   });
 
@@ -78,6 +86,11 @@ describe("comp trends", () => {
   it("compares a merged comp with every previous comp it now covers, weighted by games", () => {
     const [merged] = compTrends([comp("a", 4, 400, ["b"])], [comp("a", 3, 300), comp("b", 7, 100)]);
     expect(merged!.trend).toBe(0);
+  });
+
+  it("lists previous comps no current comp covers", () => {
+    const dropped = droppedComps([comp("a", 4, 400, ["b"])], [comp("a", 3), comp("b", 7), comp("gone", 4.2)]);
+    expect(dropped.map((entry) => entry.id)).toEqual(["gone"]);
   });
 });
 
