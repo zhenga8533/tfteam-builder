@@ -29,8 +29,8 @@ interface CompCardViewProps {
 }
 
 /**
- * Placement stats in a fixed column, so they line up from card to card: the average, then the rest in a grid, kept
- * shorter than the board beside it.
+ * Placement stats in a column as wide as they are: the average, then the rest in a grid, kept shorter than the board
+ * beside it.
  */
 function CompStats({ line }: { line: StatLine }) {
   const rows = [
@@ -45,7 +45,7 @@ function CompStats({ line }: { line: StatLine }) {
         <AvgPlacement line={line} className="font-display text-xl leading-none" />
         <span className="text-[11px] text-muted-foreground">avg</span>
       </div>
-      <dl className="grid grid-cols-4 gap-x-3 gap-y-1 text-xs sm:grid-cols-2 sm:border-t sm:pt-2">
+      <dl className="grid grid-cols-4 gap-x-3 gap-y-1 text-xs sm:grid-cols-[auto_auto] sm:gap-x-4 sm:border-t sm:pt-2">
         {rows.map(([label, value]) => (
           <div key={label} className="whitespace-nowrap">
             <dt className="text-[10px] text-muted-foreground">{label}</dt>
@@ -141,7 +141,7 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
           ))}
         </ul>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 sm:w-28 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-2 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 sm:w-auto sm:min-w-24 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-2 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
         {aside}
       </div>
     </article>
