@@ -99,7 +99,10 @@ const plainText = (html: string) =>
 /** The heading that opens an article's mid-patch updates, however it's capitalised ("Mid-Patch Updates"). */
 const MID_PATCH_HEADING = /<h2[^>]*>(?:(?!<\/h2>)[\s\S])*mid-patch update(?:(?!<\/h2>)[\s\S])*<\/h2>/i;
 
-/** The HTML of an article's mid-patch section, from its heading to the next top-level one; empty without one. */
+/**
+ * The HTML of an article's mid-patch section: its heading (which may carry the update's date, "17.3 MAY 13TH MID-PATCH
+ * UPDATE") up to the next top-level heading. Empty without one.
+ */
 export function midPatchSection(data: unknown): string {
   const sections: string[] = [];
   const walk = (node: unknown) => {
@@ -108,7 +111,7 @@ export function midPatchSection(data: unknown): string {
       if (!heading) return;
       const rest = node.slice(heading.index! + heading[0].length);
       const end = rest.search(/<h2[\s>]/i);
-      sections.push(end === -1 ? rest : rest.slice(0, end));
+      sections.push(heading[0] + (end === -1 ? rest : rest.slice(0, end)));
     } else if (node && typeof node === "object") {
       for (const value of Object.values(node)) walk(value);
     }
@@ -122,10 +125,10 @@ const BALANCE_CHANGE = /⇒/g;
 /** An update with at least this many balance changes changes the balance; fewer is bug and performance fixes. */
 const MIN_BALANCE_CHANGES = 3;
 
-/** The dated updates in a mid-patch section (each under a heading with its date), oldest first, with their text. */
+/** The dated updates in a mid-patch section (each from a heading with its date), oldest first, with their text. */
 function midPatchEntries(section: string, article: PatchArticle): { since: number; text: string }[] {
   const published = new Date(article.publishedAt);
-  const headings = [...section.matchAll(/<h[3-6][^>]*>([\s\S]*?)<\/h[3-6]>/gi)].flatMap((heading) => {
+  const headings = [...section.matchAll(/<h[2-6][^>]*>([\s\S]*?)<\/h[2-6]>/gi)].flatMap((heading) => {
     const date = plainText(heading[1]!).match(HEADING_DATE);
     if (!date) return [];
     const month = MONTHS.indexOf(date[1]!.toUpperCase());
@@ -167,11 +170,15 @@ export function parseMidPatches(section: string, article: PatchArticle): { lette
   return patches;
 }
 
-/** Builds the timeline, oldest first, from the article list and the newest articles' mid-patch updates. */
+/**
+ * Builds the timeline, oldest first, from the articles that were read (the keys of `midPatches`) and their mid-patch
+ * updates. Articles not read are left to the stored timeline (see `mergeTimelines`).
+ */
 export function buildTimeline(articles: PatchArticle[], midPatches: Map<string, { letter: string; since: number }[]>) {
   const timeline: TftPatch[] = [];
   for (const article of articles) {
     const label = `${article.set}.${article.minor}`;
+    if (!midPatches.has(label)) continue;
     const notes = article.url;
     timeline.push({ label, set: article.set, since: article.publishedAt + RELEASE_DELAY_MS, notes });
     for (const { letter, since } of midPatches.get(label) ?? []) {
@@ -242,11 +249,17 @@ export function patchReplacements(timeline: TftPatch[]): Map<string, string> {
 /** The patches `patchReplacements` finds replaced. */
 export const supersededPatches = (timeline: TftPatch[]): Set<string> => new Set(patchReplacements(timeline).keys());
 
-/** Keeps patches from the stored timeline that a fresh fetch no longer lists (older articles drop off). */
+const familyOf = (label: string) => label.replace(/[a-z]$/, "");
+
+/**
+ * The stored timeline with each patch the fetch re-read replaced as a family (18.3 with its b, c, …), so a letter its
+ * notes no longer support doesn't linger. Patches it didn't re-read, such as older sets', are kept as stored.
+ */
 export function mergeTimelines(stored: TftPatch[], fetched: TftPatch[]): TftPatch[] {
-  const byLabel = new Map(stored.map((patch) => [patch.label, patch]));
-  for (const patch of fetched) byLabel.set(patch.label, patch);
-  return [...byLabel.values()].sort((a, b) => a.since - b.since);
+  const refreshed = new Set(fetched.map((patch) => familyOf(patch.label)));
+  return [...stored.filter((patch) => !refreshed.has(familyOf(patch.label))), ...fetched].sort(
+    (a, b) => a.since - b.since,
+  );
 }
 
 /**

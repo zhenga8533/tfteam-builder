@@ -83,6 +83,17 @@ describe("TFT patch notes", () => {
     ]);
   });
 
+  it("reads an update dated in the section's own heading", () => {
+    // Modelled on the 17.3 notes: one update, dated in the heading, with no dated subheadings.
+    const notes = page({
+      props: { body: `<h2>17.3 MAY 13TH MID-PATCH UPDATE</h2>${BALANCE}<h2>PATCH HIGHLIGHTS</h2>` },
+    });
+    const patch173: PatchArticle = { set: 17, minor: 3, publishedAt: Date.UTC(2026, 4, 12, 18), url: "17.3" };
+    expect(parseMidPatches(midPatchSection(nextData(notes)), patch173)).toEqual([
+      { letter: "b", since: Date.UTC(2026, 4, 13, 18) },
+    ]);
+  });
+
   it("uses the letter an update names over the count", () => {
     const notes = page({
       props: {
@@ -119,7 +130,13 @@ describe("TFT patch notes", () => {
   });
 
   it("builds a timeline and finds the patch live at a game's time", () => {
-    const timeline = buildTimeline(articles, new Map([["18.3", [{ letter: "b", since: Date.UTC(2026, 8, 24, 18) }]]]));
+    const timeline = buildTimeline(
+      articles,
+      new Map([
+        ["18.3", [{ letter: "b", since: Date.UTC(2026, 8, 24, 18) }]],
+        ["18.2", []],
+      ]),
+    );
     expect(timeline.map((entry) => entry.label)).toEqual(["18.2", "18.3", "18.3b"]);
     expect(patchAt(timeline, 18, Date.UTC(2026, 8, 23, 20))).toBe("18.3");
     expect(patchAt(timeline, 18, Date.UTC(2026, 8, 25))).toBe("18.3b");
@@ -152,10 +169,18 @@ describe("TFT patch notes", () => {
     expect(patchAt(timeline, 18, day(8))).toBe("18.4b");
   });
 
-  it("keeps older patches that drop off the page, and labels the patch switcher", () => {
-    const stored: TftPatch[] = [{ label: "18.1", set: 18, since: 1 }];
-    const merged = mergeTimelines(stored, [{ label: "18.3b", set: 18, since: 5 }]);
-    expect(merged.map((entry) => entry.label)).toEqual(["18.1", "18.3b"]);
+  it("keeps patches it didn't re-read, replaces the ones it did as a family, and labels the patch switcher", () => {
+    const stored: TftPatch[] = [
+      { label: "18.1", set: 18, since: 1 },
+      { label: "18.3", set: 18, since: 3 },
+      // A letter the notes no longer support (e.g. read by an older parser) doesn't linger.
+      { label: "18.3c", set: 18, since: 4 },
+    ];
+    const merged = mergeTimelines(stored, [
+      { label: "18.3", set: 18, since: 3 },
+      { label: "18.3b", set: 18, since: 5 },
+    ]);
+    expect(merged.map((entry) => entry.label)).toEqual(["18.1", "18.3", "18.3b"]);
     expect(switcherLabels(merged, 18, 18, 10)).toEqual({ latest: "18.3b", pbe: "18.4" });
     expect(switcherLabels(merged, 18, 19, 10)).toEqual({ latest: "18.3b", pbe: "19.1" });
   });
