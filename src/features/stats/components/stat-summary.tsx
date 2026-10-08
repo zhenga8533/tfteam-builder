@@ -1,7 +1,7 @@
 import type { StatLine } from "@/lib/data/schema";
 import { isLowSample, LOW_SAMPLE_GAMES } from "@/lib/game/stat-line";
 import { cn } from "@/lib/utils";
-import { avgPlacementClass, count, percent, share } from "../format";
+import { avgPlacementClass, count, percent, placement, share } from "../format";
 
 export const LOW_SAMPLE_HINT = `Fewer than ${LOW_SAMPLE_GAMES} games, so this average can change a lot`;
 
@@ -17,7 +17,25 @@ export function AvgPlacement({ line, className }: { line: StatLine; className?: 
       )}
       title={low ? LOW_SAMPLE_HINT : "Average placement"}
     >
-      {line.avg.toFixed(2)}
+      {placement(line.avg)}
+    </span>
+  );
+}
+
+/**
+ * Marks a stat with too few games to trust. Muted with a dashed outline, like the tier lists' low sample section:
+ * uncertain rather than bad, which the site's orange and red already mean.
+ */
+export function LowSampleBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border border-dashed px-1.5 text-[10px] leading-4 font-medium whitespace-nowrap text-muted-foreground",
+        className,
+      )}
+      title={LOW_SAMPLE_HINT}
+    >
+      Low sample
     </span>
   );
 }

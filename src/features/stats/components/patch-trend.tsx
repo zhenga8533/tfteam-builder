@@ -3,7 +3,7 @@ import { usePatchHistory, useStats } from "@/lib/data/hooks";
 import type { PatchTrend } from "@/lib/data/schema";
 import { traitKey } from "@/lib/game/traits";
 import { cn } from "@/lib/utils";
-import { MIN_TREND, share } from "../format";
+import { MIN_TREND, placement, share } from "../format";
 
 /**
  * Change in average placement since the previous patch. Lower placements are better, so a negative
@@ -50,6 +50,7 @@ export function StatTrend({
 
 /** A change in play rate, in percentage points, colored like `TrendBadge` (more play is green). */
 export function PlayTrend({ change, className }: { change: number; className?: string }) {
+  if (!change) return null;
   return (
     <span
       className={cn(
@@ -116,8 +117,6 @@ function Sparkline({
   );
 }
 
-const avgText = (avg: number) => avg.toFixed(2);
-
 /**
  * An entry's change since the previous patch (average placement and play rate, before → after), then both over every
  * patch with saved stats.
@@ -155,7 +154,7 @@ export function PatchHistoryChart({ kind, entry }: { kind: HistoryKind; entry: s
           <div>
             <dt className="text-[11px] text-muted-foreground">Avg place since {trend.patch}</dt>
             <dd className="flex items-center gap-1.5 tabular-nums">
-              {avgText(before[0])} → <span className="font-medium">{avgText(line.avg)}</span>
+              {placement(before[0])} → <span className="font-medium">{placement(line.avg)}</span>
               <TrendBadge delta={trend[kind][entry]} patch={trend.patch} />
             </dd>
           </div>
@@ -172,14 +171,14 @@ export function PatchHistoryChart({ kind, entry }: { kind: HistoryKind; entry: s
         <p className="text-sm text-muted-foreground">Trends appear once there are stats for more than one patch.</p>
       ) : (
         <>
-          <Sparkline points={avgPoints} y={avgY} reference={4.5} label="Average placement" format={avgText} />
+          <Sparkline points={avgPoints} y={avgY} reference={4.5} label="Average placement" format={placement} />
           {playPoints.length >= 2 && <Sparkline points={playPoints} y={playY} label="Play rate" format={share} />}
           <table className="w-full text-[11px] tabular-nums">
             <tbody>
               {(
                 [
                   ["Patch", (column: (typeof columns)[number]) => column.patch],
-                  ["Avg", (column: (typeof columns)[number]) => (column.avg === null ? "–" : avgText(column.avg))],
+                  ["Avg", (column: (typeof columns)[number]) => (column.avg === null ? "–" : placement(column.avg))],
                   ["Play", (column: (typeof columns)[number]) => (column.play === null ? "–" : share(column.play))],
                 ] as const
               ).map(([label, value]) => (

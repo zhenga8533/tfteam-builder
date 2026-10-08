@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
+import { type ChoiceOption, ChoiceFilter } from "@/components/game/choice-filter";
 import { ChampionFilterBar } from "@/components/game/filters";
 import { type ChampionFilters, matchesChampionFilters, parseChampionFilters } from "@/components/game/filter-params";
 import { ChampionIcon, TraitIcon } from "@/components/game/icons";
@@ -11,12 +12,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { share } from "@/features/stats/format";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
+import { oneOf } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +25,17 @@ interface ChampionSearch extends ChampionFilters {
   sort?: "avg" | "play";
 }
 
+const SORTS: ChoiceOption<"cost" | "avg" | "play">[] = [
+  { value: "cost", label: "By cost" },
+  { value: "avg", label: "By placement" },
+  { value: "play", label: "By play rate" },
+];
+
 export const Route = createFileRoute("/champions")({
   head: () => ({ meta: [{ title: "Champions · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionSearch => ({
     ...parseChampionFilters(search),
-    sort: search.sort === "avg" || search.sort === "play" ? search.sort : undefined,
+    sort: oneOf(["avg", "play"] as const, search.sort),
   }),
   component: ChampionsPage,
 });
@@ -138,25 +145,12 @@ function ChampionsPage() {
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <ChampionFilterBar value={search} onChange={update} />
         {stats?.status === "ready" && (
-          <ToggleGroup
-            type="single"
-            variant="outline"
+          <ChoiceFilter
+            options={SORTS}
             value={search.sort ?? "cost"}
-            onValueChange={(value) =>
-              value && update({ sort: value === "avg" || value === "play" ? value : undefined })
-            }
-            aria-label="Sort"
-          >
-            <ToggleGroupItem value="cost" className="px-3">
-              By cost
-            </ToggleGroupItem>
-            <ToggleGroupItem value="avg" className="px-3">
-              By placement
-            </ToggleGroupItem>
-            <ToggleGroupItem value="play" className="px-3">
-              By play rate
-            </ToggleGroupItem>
-          </ToggleGroup>
+            onChange={(sort) => update({ sort: sort === "cost" ? undefined : sort })}
+            label="Sort"
+          />
         )}
       </div>
 

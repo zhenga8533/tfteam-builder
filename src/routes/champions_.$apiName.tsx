@@ -1,6 +1,6 @@
-import { MissingEntry } from "@/components/game/missing-entry";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { MissingEntry } from "@/components/game/missing-entry";
 import { ChampionCard } from "@/components/game/cards";
 import { ChampionLink, TraitLink } from "@/components/game/links";
 import { ChampionIcon } from "@/components/game/icons";
@@ -8,6 +8,7 @@ import { COST_TEXT } from "@/components/game/styles";
 import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
+import { championGames } from "@/features/stats/format";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { otherForms } from "@/lib/game/forms";
 import { ItemBuilds } from "@/features/stats/components/item-builds";
@@ -19,7 +20,7 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion, ChampionStats } from "@/lib/data/schema";
-import { traitKey, traitStyle } from "@/lib/game/traits";
+import { traitBreakpoint, traitKey, traitStyle } from "@/lib/game/traits";
 
 export const Route = createFileRoute("/champions_/$apiName")({
   head: () => ({ meta: [{ title: "Champion Stats · TFTeam" }] }),
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/champions_/$apiName")({
 
 /** What the champion's tables' play rates are a share of. */
 const gamesOf = (stats: ChampionStats, championsByApi: Map<string, Champion>) =>
-  `${championsByApi.get(stats.apiName)?.name ?? "this champion"}'s games`;
+  championGames(championsByApi.get(stats.apiName)?.name);
 
 function Partners({ stats }: { stats: ChampionStats }) {
   const { championsByApi } = useGameData();
@@ -59,9 +60,9 @@ function Traits({ stats }: { stats: ChampionStats }) {
       search="Search traits"
       playBaseline={gamesOf(stats, championsByApi)}
       rows={stats.traits.flatMap((entry) => {
-        const trait = traitsByApi.get(entry.trait);
-        const breakpoint = trait?.breakpoints.find((b) => b.minUnits === entry.minUnits);
-        if (!trait || !breakpoint) return [];
+        const found = traitBreakpoint(traitKey(entry.trait, entry.minUnits), traitsByApi);
+        if (!found) return [];
+        const { trait, breakpoint } = found;
         return [
           {
             key: traitKey(entry.trait, entry.minUnits),
@@ -141,6 +142,7 @@ function ChampionPage() {
   const champion = championsByApi.get(apiName);
 
   if (!champion) return <MissingEntry kind="champion" apiName={apiName} />;
+  const places = setStats?.units[champion.apiName]?.places;
 
   return (
     <div className="space-y-6">
@@ -188,9 +190,9 @@ function ChampionPage() {
             </Section>
           )}
           <FormsSection champion={champion} />
-          {setStats?.units[champion.apiName]?.places && (
+          {places && (
             <Section title="Placements">
-              <PlacementChart places={setStats.units[champion.apiName]!.places!} />
+              <PlacementChart places={places} />
             </Section>
           )}
           {stats && (

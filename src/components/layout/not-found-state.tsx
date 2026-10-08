@@ -11,6 +11,7 @@ export function NotFoundState({
   description,
   children,
   footer,
+  heading: Heading = "h1",
 }: {
   icon: LucideIcon;
   title: string;
@@ -18,6 +19,8 @@ export function NotFoundState({
   children?: ReactNode;
   /** Below the actions, e.g. quick links. */
   footer?: ReactNode;
+  /** `h2` when the page already has its own heading. */
+  heading?: "h1" | "h2";
 }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center sm:py-24">
@@ -25,7 +28,7 @@ export function NotFoundState({
         <Icon className="size-7" />
       </span>
       <div className="space-y-1.5">
-        <h1 className="font-display text-2xl font-bold tracking-tight">{title}</h1>
+        <Heading className="font-display text-2xl font-bold tracking-tight">{title}</Heading>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       {children && <div className="flex flex-wrap justify-center gap-2">{children}</div>}

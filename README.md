@@ -264,8 +264,8 @@ game data.
 
 ### Comps and Tier Lists
 
-Comps and tier lists are typed modules in [`src/content`](src/content/README.md). The Team Builder's **Share → Export as
-comp file** generates a comp file from the current board. Tests check every champion, item and augment reference against the latest
+Comps and tier lists are typed modules in [`src/content`](src/content/README.md). The Team Builder's **Share → Write a
+comp guide** fills in a guide's details and generates its file from the current board. Tests check every champion, item and augment reference against the latest
 data, so a patch that removes or renames something fails CI instead of breaking a guide.
 
 ### Deployment

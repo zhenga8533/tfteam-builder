@@ -1,6 +1,6 @@
-import { MissingEntry } from "@/components/game/missing-entry";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { MissingEntry } from "@/components/game/missing-entry";
 import { ItemCard, ItemRecipe } from "@/components/game/cards";
 import { ItemIcon } from "@/components/game/icons";
 import { ChampionLink, ItemLink, TraitLink } from "@/components/game/links";
@@ -109,6 +109,7 @@ function ItemPage() {
   const item = itemsByApi.get(apiName);
 
   if (!item) return <MissingEntry kind="item" apiName={apiName} />;
+  const places = setStats?.items[item.apiName]?.places;
 
   return (
     <div className="space-y-6">
@@ -153,9 +154,9 @@ function ItemPage() {
             <ItemCard item={item} />
           </Section>
           {item.kind === "component" && <BuildsInto item={item} />}
-          {setStats?.items[item.apiName]?.places && (
+          {places && (
             <Section title="Placements">
-              <PlacementChart places={setStats.items[item.apiName]!.places!} />
+              <PlacementChart places={places} />
             </Section>
           )}
           {stats && (

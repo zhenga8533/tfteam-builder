@@ -44,7 +44,7 @@ function ChampionTierListPage() {
       fallback={tierListForSet(set)?.fallback?.champions}
       visible={visible}
       stats={stats}
-      {...scopeChoices(search, update)}
+      {...scopeChoices(update)}
       toolbar={<ChampionFilterBar value={search} onChange={update} />}
       renderEntry={(apiName, line) => {
         const champion = championsByApi.get(apiName);

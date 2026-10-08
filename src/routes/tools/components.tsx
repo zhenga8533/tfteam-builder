@@ -18,7 +18,7 @@ import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import type { Item, StatLine } from "@/lib/data/schema";
 import { bestBuildable, buildableItems, type ComponentCounts, componentValues } from "@/lib/game/components";
-import { avgPlacementClass, count } from "@/features/stats/format";
+import { avgPlacementClass, count, placement } from "@/features/stats/format";
 import { cn } from "@/lib/utils";
 import { stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
@@ -175,7 +175,7 @@ function CarouselPriority() {
               ))}
             </span>
             <span className={cn("w-10 text-right font-semibold tabular-nums", avgPlacementClass(avg))}>
-              {avg.toFixed(2)}
+              {placement(avg)}
             </span>
           </li>
         ))}

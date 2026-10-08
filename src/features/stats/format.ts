@@ -33,6 +33,12 @@ export const share = (value: number) => (value < 0.001 ? "<0.1%" : value < 0.1 ?
 
 export const count = (value: number) => value.toLocaleString("en-US");
 
+/** What a champion's play rates are a share of, e.g. "Ahri's games". */
+export const championGames = (name: string | undefined) => `${name ?? "this champion"}'s games`;
+
+/** An average placement, to two decimals. */
+export const placement = (avg: number) => avg.toFixed(2);
+
 const RELATIVE = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
 export function timeAgo(iso: string, now = Date.now()) {

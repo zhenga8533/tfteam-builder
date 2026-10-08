@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGameData } from "@/lib/data/hooks";
 import type { ExplorerFilter } from "@/lib/explorer/engine";
-import { traitStyle } from "@/lib/game/traits";
+import { breakpointOf, traitStyle } from "@/lib/game/traits";
 import { PickerDialog } from "@/components/game/picker-dialog";
 
 type Picker = { kind: "champion" } | { kind: "trait" } | { kind: "item"; index: number } | null;
@@ -139,7 +139,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           if (filter.type === "trait") {
             const trait = traitsByApi.get(filter.trait);
             if (!trait) return null;
-            const breakpoint = trait.breakpoints.find((b) => b.minUnits === filter.minUnits) ?? trait.breakpoints[0];
+            const breakpoint = breakpointOf(trait, filter.minUnits) ?? trait.breakpoints[0];
             return (
               <div key={index} className="flex items-center gap-1.5 rounded-lg border bg-card py-1 pr-1 pl-1.5">
                 <TraitIcon

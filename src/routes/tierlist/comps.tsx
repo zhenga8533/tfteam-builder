@@ -17,6 +17,7 @@ import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/dat
 import { parsePatch, parseRank } from "@/features/stats/scope";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
+import { oneOf } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 
 type View = "stats" | "guides";
@@ -28,14 +29,12 @@ interface CompSearch extends CompFilters {
   patch?: string;
 }
 
-const isPlaystyle = (value: unknown): value is Playstyle => PLAYSTYLES.includes(value as Playstyle);
-
 export const Route = createFileRoute("/tierlist/comps")({
   head: () => ({ meta: [{ title: "Comp Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): CompSearch => ({
     ...parseCompFilters(search),
-    playstyle: isPlaystyle(search.playstyle) ? search.playstyle : undefined,
-    view: search.view === "stats" || search.view === "guides" ? search.view : undefined,
+    playstyle: oneOf(PLAYSTYLES, search.playstyle),
+    view: oneOf(["stats", "guides"] as const, search.view),
     rank: parseRank(search.rank),
     patch: parsePatch(search.patch),
   }),
@@ -177,7 +176,7 @@ function CompTierListPage() {
               stats={stats}
               // Other patches' comps exist at the default floor only, so a rank and a patch don't combine.
               onRankChange={(rank) => update({ rank, patch: undefined })}
-              patch={{ value: search.patch, onChange: (patch) => update({ patch, rank: undefined }) }}
+              patch={{ onChange: (patch) => update({ patch, rank: undefined }) }}
             />
           )}
           {!stats ? (

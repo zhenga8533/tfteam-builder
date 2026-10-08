@@ -1,4 +1,5 @@
 import { bump, type Counter, counterFor, emptyCounter } from "../game/stat-line";
+import { traitKey } from "../game/traits";
 import type { ExplorerBoard } from "./format";
 
 /** Counts for every board at one rank (an index into `RANK_BUCKETS`) and player level. */
@@ -42,7 +43,7 @@ export class TotalsAccumulator {
       bump(counterFor(group.units, apiName), board.placement);
     }
     for (const trait of board.traits)
-      bump(counterFor(group.traits, `${trait.apiName}:${trait.minUnits}`), board.placement);
+      bump(counterFor(group.traits, traitKey(trait.apiName, trait.minUnits)), board.placement);
   }
 
   results(defaultRank: number): ExplorerTotals {

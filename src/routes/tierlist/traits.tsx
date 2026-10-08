@@ -12,7 +12,7 @@ import { TierEntry } from "@/features/stats/components/tier-entry";
 import { useActiveSet, useGameData, useTierStats } from "@/lib/data/hooks";
 import { traitBreakpoint, traitKey, type TraitStyle, traitStyle } from "@/lib/game/traits";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches, stringParam } from "@/lib/search";
+import { matches, oneOf, stringParam } from "@/lib/search";
 
 const STYLES = ["bronze", "silver", "gold", "prismatic", "unique"] as const satisfies TraitStyle[];
 type BreakpointStyle = (typeof STYLES)[number];
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/tierlist/traits")({
   validateSearch: (search: Record<string, unknown>): TraitTierSearch => ({
     ...parseStatsScope(search),
     q: stringParam(search.q),
-    style: STYLES.includes(search.style as BreakpointStyle) ? (search.style as BreakpointStyle) : undefined,
+    style: oneOf(STYLES, search.style),
   }),
   component: TraitTierListPage,
 });
@@ -67,7 +67,7 @@ function TraitTierListPage() {
       fallback={tierListForSet(set)?.fallback?.traits}
       visible={visible}
       stats={stats}
-      {...scopeChoices(search, update)}
+      {...scopeChoices(update)}
       toolbar={
         <>
           <SearchInput

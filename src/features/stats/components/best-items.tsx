@@ -4,7 +4,7 @@ import { ItemIcon } from "@/components/game/icons";
 import { useChampionStats, useGameData, useStats } from "@/lib/data/hooks";
 import { Button } from "@/components/ui/button";
 import { bestBuild, nextItems, remainder } from "../builds";
-import { percent } from "../format";
+import { championGames, count, percent, placement } from "../format";
 import { AvgPlacement, StatSummary } from "./stat-summary";
 
 interface BestItemsProps {
@@ -52,7 +52,7 @@ export function BestItems({ champion, equipped, onPick, onPickBuild }: BestItems
             size="sm"
             className="h-7 gap-1 px-2 text-xs"
             onClick={() => onPickBuild?.(rest)}
-            title={`${build.avg.toFixed(2)} average placement over ${build.games} games`}
+            title={`${placement(build.avg)} average placement over ${count(build.games)} games`}
           >
             Equip best build
             <span className="flex">
@@ -77,7 +77,7 @@ export function BestItems({ champion, equipped, onPick, onPickBuild }: BestItems
                     <StatSummary
                       line={line}
                       className="border-t pt-3"
-                      play={`of ${championsByApi.get(champion)?.name ?? "this champion"}'s games`}
+                      play={`of ${championGames(championsByApi.get(champion)?.name)}`}
                     />
                   </div>
                 }
@@ -85,7 +85,7 @@ export function BestItems({ champion, equipped, onPick, onPickBuild }: BestItems
                 <button
                   type="button"
                   onClick={() => onPick(item.apiName)}
-                  aria-label={`Equip ${item.name} (${line.avg.toFixed(2)} average placement, ${percent(line.top4)} top 4)`}
+                  aria-label={`Equip ${item.name} (${placement(line.avg)} average placement, ${percent(line.top4)} top 4)`}
                   className="flex w-full flex-col items-center gap-0.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <ItemIcon item={item} className="w-full" />

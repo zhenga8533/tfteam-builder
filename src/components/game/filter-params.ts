@@ -1,4 +1,4 @@
-import { ITEM_KINDS } from "@/lib/data/constants";
+import { isItemKind, ITEM_KINDS } from "@/lib/data/constants";
 import type { Augment, AugmentTier, Champion, Item, ItemKind } from "@/lib/data/schema";
 import { matches, numberParam, stringParam } from "@/lib/search";
 import { isAugmentTier } from "./styles";
@@ -26,6 +26,11 @@ export interface ItemFilters {
   q?: string;
   kind?: ItemKind;
 }
+
+export const parseItemFilters = (search: Record<string, unknown>): ItemFilters => ({
+  q: stringParam(search.q),
+  kind: isItemKind(search.kind) ? search.kind : undefined,
+});
 
 /**
  * Whether an item, or a build of several, passes: the search matches one of its items, and the "completed" category

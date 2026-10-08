@@ -13,7 +13,7 @@ import { ExploreCompButton } from "@/features/comps/components/explore-comp-butt
 import { Section } from "@/components/layout/section";
 import { Carries, CompTraits } from "@/features/comps/components/comp-sections";
 import { SetGuard } from "@/features/comps/components/set-guard";
-import { TierBadge, TrendBadge } from "@/features/comps/components/tier-badge";
+import { GuideTrendBadge, TierBadge } from "@/features/comps/components/tier-badge";
 import { DIFFICULTY_TEXT } from "@/features/comps/styles";
 import { useCompSignature } from "@/features/comps/use-comp-signature";
 import { useOpenInBuilder } from "@/features/comps/use-open-in-builder";
@@ -97,7 +97,7 @@ function CompGuidePage() {
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-display text-3xl font-bold tracking-tight">{comp.name}</h1>
-            {comp.trend && <TrendBadge trend={comp.trend} />}
+            {comp.trend && <GuideTrendBadge trend={comp.trend} />}
           </div>
           <p className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
             <span>{comp.playstyle}</span>

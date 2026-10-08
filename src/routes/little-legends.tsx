@@ -9,14 +9,14 @@ import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count, share } from "@/features/stats/format";
 import { useLittleLegends, useStats } from "@/lib/data/hooks";
 import type { LittleLegend } from "@/lib/data/schema";
-import { matches, stringParam } from "@/lib/search";
+import { matches, oneOf, stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 
 type Kind = LittleLegend["kind"];
 
 const KIND_LABEL: Record<Kind, string> = { legend: "Little Legends", chibi: "Chibis" };
 
-const isKind = (value: unknown): value is Kind => value === "legend" || value === "chibi";
+const KINDS = Object.keys(KIND_LABEL) as Kind[];
 
 interface LittleLegendSearch {
   q?: string;
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/little-legends")({
   head: () => ({ meta: [{ title: "Little Legends · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): LittleLegendSearch => ({
     q: stringParam(search.q),
-    kind: isKind(search.kind) ? search.kind : undefined,
+    kind: oneOf(KINDS, search.kind),
   }),
   component: LittleLegendsPage,
 });
@@ -64,7 +64,7 @@ function LittleLegendsPage() {
               type="single"
               variant="outline"
               value={search.kind ?? ""}
-              onValueChange={(kind) => update({ kind: isKind(kind) ? kind : undefined })}
+              onValueChange={(kind) => update({ kind: oneOf(KINDS, kind) })}
               aria-label="Filter by kind"
             >
               {Object.entries(KIND_LABEL).map(([kind, label]) => (
