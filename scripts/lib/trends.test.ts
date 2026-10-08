@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { AutoComp, SetStats, StatLine } from "../../src/lib/data/schema.ts";
-import { MIN_GAMES } from "./stats.ts";
-import { compTrends, patchHistory, patchTrend } from "./trends.ts";
+import type { AutoComp, SetData, SetStats, StatLine } from "../../src/lib/data/schema.ts";
+import { emptyCounters } from "../stats/aggregate.ts";
+import type { PatchCounters } from "../stats/types.ts";
+import { MIN_EARLY_MATCHES, MIN_GAMES } from "./stats.ts";
+import { compTrends, otherPatchStats, patchHistory, patchTrend } from "./trends.ts";
 
 const line = (avg: number, games: number = MIN_GAMES.unit): StatLine => ({
   games,
@@ -76,5 +78,50 @@ describe("comp trends", () => {
   it("compares a merged comp with every previous comp it now covers, weighted by games", () => {
     const [merged] = compTrends([comp("a", 4, 400, ["b"])], [comp("a", 3, 300), comp("b", 7, 100)]);
     expect(merged!.trend).toBe(0);
+  });
+});
+
+describe("otherPatchStats", () => {
+  const data = {
+    number: 18,
+    champions: [],
+    traits: [],
+    items: [],
+    itemAliases: {},
+    championAliases: {},
+  } as unknown as SetData;
+  const counters = (patch: string, matches: number): PatchCounters => ({
+    set: 18,
+    patch,
+    updatedAt: "",
+    buckets: { diamond: { ...emptyCounters(), matches, boards: matches * 8 } },
+  });
+  const summaries = [stats("18.2", {}), stats("18.3", {}), { ...stats("18.1", {}), ranks: ["master" as const] }];
+  const current = () => ({ ...stats("18.3", {}), previousPatch: true });
+
+  it("offers the newest patch early once it has enough matches, then earlier patches newest first", () => {
+    const base = current();
+    const others = otherPatchStats(
+      data,
+      [counters("18.4", MIN_EARLY_MATCHES), counters("18.3", 3000)],
+      base,
+      summaries,
+    );
+    expect(others.map((entry) => entry.patch)).toEqual(["18.4", "18.2", "18.1"]);
+    expect(base.newestPatch).toEqual({ patch: "18.4", matches: MIN_EARLY_MATCHES });
+    // An earlier patch's floors were built for that patch and are gone.
+    expect(others[2]!.ranks).toBeUndefined();
+  });
+
+  it("still reports a newest patch too thin to offer", () => {
+    const base = current();
+    const others = otherPatchStats(
+      data,
+      [counters("18.4", MIN_EARLY_MATCHES - 1), counters("18.3", 3000)],
+      base,
+      summaries,
+    );
+    expect(others.map((entry) => entry.patch)).toEqual(["18.2", "18.1"]);
+    expect(base.newestPatch?.matches).toBe(MIN_EARLY_MATCHES - 1);
   });
 });

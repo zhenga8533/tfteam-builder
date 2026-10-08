@@ -9,8 +9,8 @@ import {
   itemStatsQuery,
   littleLegendsQuery,
   manifestQuery,
-  newestPatchStatsQuery,
   patchHistoryQuery,
+  patchStatsQuery,
   rankStatsQuery,
   regionStatsQuery,
   setDataQuery,
@@ -83,7 +83,7 @@ function useOfferedFloor(rank: RankFloor | undefined) {
 
 /**
  * Stats for the tier lists at `rank` when that floor has its own stats, otherwise the default stats; `gamePatch`
- * picks the newest patch's early stats while the default ones fall back to the previous patch.
+ * picks another patch with its own stats: the newest patch early, or an earlier one.
  * Detail pages and detected comps always use the default floor and patch.
  */
 export function useTierStats(rank: RankFloor | undefined, region?: Region, gamePatch?: string) {
@@ -93,12 +93,12 @@ export function useTierStats(rank: RankFloor | undefined, region?: Region, gameP
   const deferredRegion = useDeferredValue(region);
   const area = deferredRegion && base?.regions?.includes(deferredRegion) ? deferredRegion : null;
   const deferredPatch = useDeferredValue(gamePatch);
-  const newest = !!deferredPatch && deferredPatch === base?.newestPatch?.patch;
+  const other = deferredPatch && base?.patches?.includes(deferredPatch) ? deferredPatch : null;
   const ranked = useSuspenseQuery(rankStatsQuery(patch, set, floor)).data;
   const regional = useSuspenseQuery(regionStatsQuery(patch, set, area)).data;
-  const early = useSuspenseQuery(newestPatchStatsQuery(patch, set, newest)).data;
-  // Regional and newest-patch stats exist at the default floor only, so either wins over a rank.
-  return early ?? regional ?? ranked ?? base;
+  const patched = useSuspenseQuery(patchStatsQuery(patch, set, other)).data;
+  // Regional and other patches' stats exist at the default floor only, so either wins over a rank.
+  return patched ?? regional ?? ranked ?? base;
 }
 
 /** Per-champion builds, partners and traits; null when not published (or on PBE). */

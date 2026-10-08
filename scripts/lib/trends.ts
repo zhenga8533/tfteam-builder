@@ -1,8 +1,9 @@
-import type { AutoComp, PatchHistory, PatchTrend, SetStats, StatLine } from "../../src/lib/data/schema.ts";
+import type { AutoComp, PatchHistory, PatchTrend, SetData, SetStats, StatLine } from "../../src/lib/data/schema.ts";
 import { comparePatches } from "../stats/state.ts";
 import { round } from "../../src/lib/game/stat-line.ts";
 import { traitKey } from "../../src/lib/game/traits.ts";
-import { MIN_GAMES } from "./stats.ts";
+import type { PatchCounters } from "../stats/types.ts";
+import { buildNewestPatchStats, MIN_EARLY_MATCHES, MIN_GAMES } from "./stats.ts";
 
 type Lines = Record<string, StatLine>;
 
@@ -77,4 +78,35 @@ export function compTrends(current: AutoComp[], previous: AutoComp[]): AutoComp[
     const avg = old.reduce((sum, entry) => sum + entry.avg * entry.games, 0) / games;
     return { ...comp, trend: round(comp.avg - avg, 2) };
   });
+}
+
+/**
+ * Tier list stats for the set's other patches, newest first: the newest patch's early stats while `stats` falls back
+ * to the previous one (once it has `MIN_EARLY_MATCHES`), then earlier patches' saved summaries. Sets `newestPatch`.
+ */
+export function otherPatchStats(data: SetData, patches: PatchCounters[], stats: SetStats, summaries: SetStats[]) {
+  const others: SetStats[] = [];
+  // Never saved as a summary: the patch's own stats replace it once it has enough games.
+  const newest = buildNewestPatchStats(data, patches, stats);
+  if (newest) {
+    stats.newestPatch = { patch: newest.patch, matches: newest.matches };
+    const trend = patchTrend(newest, summaries);
+    if (trend) newest.trend = trend;
+    if (newest.matches >= MIN_EARLY_MATCHES) others.push(newest);
+  }
+  const earlier = summaries
+    .filter((summary) => comparePatches(summary.patch, stats.patch) < 0)
+    .sort((a, b) => comparePatches(b.patch, a.patch));
+  // Saved as their patch's stats at the time: what they pointed to then (floors, regions, other patches) is gone.
+  for (const summary of earlier) {
+    others.push({
+      ...summary,
+      previousPatch: false,
+      patches: undefined,
+      newestPatch: undefined,
+      ranks: undefined,
+      regions: undefined,
+    });
+  }
+  return others;
 }

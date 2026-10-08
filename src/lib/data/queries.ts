@@ -59,11 +59,11 @@ export const regionStatsQuery = (patch: Patch, set: number, region: Region | nul
     queryFn: () => (region ? fetchStats<SetStats>(patch, `set${set}/regions/${region}.json`) : null),
   });
 
-/** The newest patch's early tier list stats (see `SetStats.newestPatch`); null when not chosen. */
-export const newestPatchStatsQuery = (patch: Patch, set: number, chosen: boolean) =>
+/** A set's tier list stats on another of its patches (see `SetStats.patches`); null for the default stats. */
+export const patchStatsQuery = (patch: Patch, set: number, gamePatch: string | null) =>
   queryOptions({
-    queryKey: ["stats", patch, set, "newest-patch", chosen],
-    queryFn: () => (chosen ? fetchStats<SetStats>(patch, `set${set}/newest-patch.json`) : null),
+    queryKey: ["stats", patch, set, "patch", gamePatch],
+    queryFn: () => (gamePatch ? fetchStats<SetStats>(patch, `set${set}/patches/${gamePatch}.json`) : null),
   });
 
 export const statsQuery = (patch: Patch, set: number) =>

@@ -161,6 +161,12 @@ export function buildFloorStats(
 }
 
 /**
+ * The newest patch's early stats are offered from this many matches: enough for a champion in 10% of games to reach
+ * `MIN_GAMES.unit`, so most of the tier list is ranked rather than low sample.
+ */
+export const MIN_EARLY_MATCHES = 250;
+
+/**
  * While `base` falls back to the previous patch: the newest patch's stats at the same rank floor, however few games it
  * has so far, for the tier lists' early look at it. Null when `base` is already on the newest patch or it has no games
  * at that floor.
