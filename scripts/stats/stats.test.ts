@@ -350,6 +350,28 @@ describe("StatsStore", () => {
     expect(await store.blobs.get("summaries/set18/16.9.json")).not.toBeNull();
   });
 
+  it("prunes boards filed under a patch replaced on its release day as the replacing patch's", async () => {
+    root = await mkdtemp(join(tmpdir(), "tft-stats-"));
+    const store = new StatsStore(new FileBlobStore(root));
+    const rows = matchToRows(match(), "diamond");
+    for (const patch of ["18.3b", "18.4", "18.4b", "18.5"]) {
+      await store.appendBoards(18, patch, "20261001T120000Z-americas", rows);
+    }
+    const day = (date: number) => Date.UTC(2026, 9, date, 18);
+    await store.pruneBoards(2, [
+      { label: "18.3b", set: 18, since: day(1) },
+      { label: "18.4", set: 18, since: day(7) },
+      { label: "18.4b", set: 18, since: day(7) },
+      { label: "18.5", set: 18, since: day(21) },
+    ]);
+    // 18.4's boards are 18.4b's, so they stay with it as one of the two newest patches.
+    expect((await store.listBoardChunks()).map((chunk) => chunk.patch).sort(comparePatches)).toEqual([
+      "18.4",
+      "18.4b",
+      "18.5",
+    ]);
+  });
+
   it("orders TFT patch labels, b patches included", () => {
     expect(["18.10", "18.3b", "17.9", "18.3", "18.4"].sort(comparePatches)).toEqual([
       "17.9",

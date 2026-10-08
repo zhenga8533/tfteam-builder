@@ -7,6 +7,7 @@ import {
   parseMidPatches,
   parsePatchList,
   patchAt,
+  patchReplacements,
   supersededPatches,
   switcherLabels,
   type TftPatch,
@@ -86,6 +87,15 @@ describe("TFT patch notes", () => {
       { label: "19.1", set: 19, since: day(7) },
     ];
     expect([...supersededPatches(timeline)]).toEqual(["18.4"]);
+    expect(patchReplacements(timeline)).toEqual(new Map([["18.4", "18.4b"]]));
+    // A chain of same-day b patches resolves to the one that was live.
+    const chain = [...timeline, { label: "18.4c", set: 18, since: day(7) }];
+    expect(patchReplacements(chain)).toEqual(
+      new Map([
+        ["18.4", "18.4c"],
+        ["18.4b", "18.4c"],
+      ]),
+    );
     expect(patchAt(timeline, 18, day(8))).toBe("18.4b");
   });
 
