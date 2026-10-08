@@ -1,3 +1,4 @@
+import { MissingEntry } from "@/components/game/missing-entry";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { ItemCard, ItemRecipe } from "@/components/game/cards";
@@ -107,7 +108,7 @@ function ItemPage() {
   const stats = useItemStats(apiName);
   const item = itemsByApi.get(apiName);
 
-  if (!item) return <EmptyState>That item isn't in the selected set.</EmptyState>;
+  if (!item) return <MissingEntry kind="item" apiName={apiName} />;
 
   return (
     <div className="space-y-6">

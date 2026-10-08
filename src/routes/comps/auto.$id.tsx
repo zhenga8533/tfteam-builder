@@ -1,11 +1,11 @@
+import { NotFoundState, SearchButton } from "@/components/layout/not-found-state";
 import { parsePatch, parseRank } from "@/features/stats/scope";
 import type { AutoComp, RankFloor, SetStats } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Hammer } from "lucide-react";
+import { ArrowLeft, Hammer, Trophy } from "lucide-react";
 import { ChampionCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ChampionIcon } from "@/components/game/icons";
-import { EmptyState } from "@/components/layout/empty-state";
 import { Button } from "@/components/ui/button";
 import { CompBoard } from "@/features/comps/components/comp-board";
 import { CopyTeamCodeButton } from "@/features/comps/components/copy-team-code-button";
@@ -114,9 +114,18 @@ function AutoCompPage() {
     return (
       <>
         <StatsMeta stats={stats} />
-        <EmptyState>
-          This comp isn't in the stats for patch {stats.patch}. It may have been below the thresholds there.
-        </EmptyState>
+        <NotFoundState
+          icon={Trophy}
+          title="Comp not found"
+          description={`This comp isn't among patch ${stats.patch}'s detected comps. It may have had too few games there, or merged into another comp.`}
+        >
+          <Button asChild>
+            <Link to="/tierlist/comps" search={{ rank, patch }}>
+              Browse comps
+            </Link>
+          </Button>
+          <SearchButton />
+        </NotFoundState>
       </>
     );
   }
