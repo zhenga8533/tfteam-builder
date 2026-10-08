@@ -9,7 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AutoCompCard } from "@/features/comps/components/comp-card";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend, TrendBadge } from "@/features/stats/components/patch-trend";
-import { LOW_SAMPLE_HINT } from "@/features/stats/components/stat-summary";
+import { LowSampleBadge } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { count, percent, share } from "@/features/stats/format";
 import { parseRank } from "@/features/stats/scope";
@@ -94,8 +94,8 @@ function CompareTable({ sides }: { sides: [Side | undefined, Side | undefined] }
         if (!side?.line) return "–";
         const text = format(value(side.line));
         return sampled && isLowSample(side.line) ? (
-          <span className="text-muted-foreground" title={LOW_SAMPLE_HINT}>
-            {text} · low sample
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            {text} <LowSampleBadge />
           </span>
         ) : (
           text
