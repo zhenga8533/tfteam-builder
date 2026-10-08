@@ -18,8 +18,6 @@ export interface CrawlReport {
   pools: { platform: string; byBucket: Partial<Record<RankBucket, number>> }[];
   /** New boards per set and patch, e.g. `["set 18 patch 18.3b", 27264]`. */
   newBoards: [label: string, boards: number][];
-  /** Mid-patch updates the patch timeline may have counted wrong (see `unnamedBalanceUpdates`). */
-  patchWarnings?: string[];
 }
 
 const BUCKET_LABEL: Record<RankBucket, string> = {
@@ -37,18 +35,10 @@ const bucketsIn = (rows: Partial<Record<RankBucket, number>>[]) =>
   RANK_BUCKETS.filter((bucket) => rows.some((row) => row[bucket]));
 
 /** The crawl's summary as Markdown, for the Actions run page. */
-export function renderCrawlReport({
-  minutesUsed,
-  budgetMinutes,
-  regions,
-  pools,
-  newBoards,
-  patchWarnings = [],
-}: CrawlReport): string {
+export function renderCrawlReport({ minutesUsed, budgetMinutes, regions, pools, newBoards }: CrawlReport): string {
   const lines = [
     "## Crawl",
     "",
-    ...patchWarnings.flatMap((warning) => [`> [!WARNING]`, `> ${warning}`, ""]),
     `Used ${Math.round(minutesUsed)} of ${budgetMinutes} minutes` +
       // Finishing well early means every tracked player was checked: the pools, not the key, limit how much is crawled.
       (minutesUsed < budgetMinutes * 0.75 ? ", finishing early: larger player pools would collect more." : "."),

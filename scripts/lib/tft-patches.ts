@@ -47,8 +47,8 @@ const MONTHS = [
   "NOVEMBER",
   "DECEMBER",
 ];
-// Section headings are uppercase ("SEPTEMBER 24TH"); prose mentions ("September 30") are not.
-const DATED_HEADING = new RegExp(`\\b(${MONTHS.join("|")}) (\\d{1,2})(?:ST|ND|RD|TH)?\\b`, "g");
+// A date in a mid-patch update's heading: "SEPTEMBER 24TH", "August 31st and September 1st" (the first counts).
+const HEADING_DATE = new RegExp(`\\b(${MONTHS.join("|")}) (\\d{1,2})(?:ST|ND|RD|TH)?\\b`, "i");
 
 export interface PatchArticle {
   set: number;
@@ -89,42 +89,55 @@ export function parsePatchList(data: unknown): PatchArticle[] {
   return [...articles.values()].sort((a, b) => b.publishedAt - a.publishedAt);
 }
 
-/** Plain text of every string in the page data that contains a mid-patch update section. */
-export function midPatchText(data: unknown): string {
-  const parts: string[] = [];
+const plainText = (html: string) =>
+  html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** The heading that opens an article's mid-patch updates, however it's capitalised ("Mid-Patch Updates"). */
+const MID_PATCH_HEADING = /<h2[^>]*>(?:(?!<\/h2>)[\s\S])*mid-patch update(?:(?!<\/h2>)[\s\S])*<\/h2>/i;
+
+/** The HTML of an article's mid-patch section, from its heading to the next top-level one; empty without one. */
+export function midPatchSection(data: unknown): string {
+  const sections: string[] = [];
   const walk = (node: unknown) => {
     if (typeof node === "string") {
-      if (node.includes("MID-PATCH UPDATE")) parts.push(node.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+      const heading = node.match(MID_PATCH_HEADING);
+      if (!heading) return;
+      const rest = node.slice(heading.index! + heading[0].length);
+      const end = rest.search(/<h2[\s>]/i);
+      sections.push(end === -1 ? rest : rest.slice(0, end));
     } else if (node && typeof node === "object") {
       for (const value of Object.values(node)) walk(value);
     }
   };
   walk(data);
-  return parts.join(" ");
+  return sections.join("");
 }
 
-/** Where an article's main notes start, after its mid-patch updates. */
-const MAIN_NOTES = "PATCH HIGHLIGHTS";
 /** A balance change in the notes: `Mana: 30/120 ⇒ 20/110`. */
 const BALANCE_CHANGE = /⇒/g;
-/** An update with at least this many balance changes is a real balance patch rather than a hotfix. */
+/** An update with at least this many balance changes changes the balance; fewer is bug and performance fixes. */
 const MIN_BALANCE_CHANGES = 3;
 
-/** The dated updates in an article's mid-patch section, oldest first, each with its text. */
-function midPatchEntries(text: string, article: PatchArticle): { since: number; text: string }[] {
-  const start = text.indexOf("MID-PATCH UPDATE");
-  if (start === -1) return [];
-  const end = text.indexOf(MAIN_NOTES, start);
-  const section = text.slice(start, end === -1 ? undefined : end);
+/** The dated updates in a mid-patch section (each under a heading with its date), oldest first, with their text. */
+function midPatchEntries(section: string, article: PatchArticle): { since: number; text: string }[] {
   const published = new Date(article.publishedAt);
-  const headings = [...section.matchAll(DATED_HEADING)].map((match) => {
-    const month = MONTHS.indexOf(match[1]!);
+  const headings = [...section.matchAll(/<h[3-6][^>]*>([\s\S]*?)<\/h[3-6]>/gi)].flatMap((heading) => {
+    const date = plainText(heading[1]!).match(HEADING_DATE);
+    if (!date) return [];
+    const month = MONTHS.indexOf(date[1]!.toUpperCase());
     // Notes published in December can have January updates.
     const year = published.getUTCFullYear() + (month < published.getUTCMonth() ? 1 : 0);
-    return { index: match.index, since: Date.UTC(year, month, Number(match[2]), MID_PATCH_HOUR_UTC) };
+    return [{ index: heading.index!, since: Date.UTC(year, month, Number(date[2]), MID_PATCH_HOUR_UTC) }];
   });
   return headings
-    .map((heading, i) => ({ since: heading.since, text: section.slice(heading.index, headings[i + 1]?.index) }))
+    .map((heading, i) => ({
+      since: heading.since,
+      text: plainText(section.slice(heading.index, headings[i + 1]?.index)),
+    }))
     .sort((a, b) => a.since - b.since);
 }
 
@@ -136,31 +149,22 @@ function namedLetter(text: string, article: PatchArticle): string | undefined {
   return (named?.[1] ?? named?.[2])?.toLowerCase();
 }
 
-/**
- * Mid-patch ("b") updates listed in an article, oldest first. The first is the b patch; later entries
- * only start a new letter when they name one ("our 18.3 C patch"), otherwise they're hotfixes within it.
- */
-export function parseMidPatches(text: string, article: PatchArticle): { letter: string; since: number }[] {
-  const patches: { letter: string; since: number }[] = [];
-  for (const entry of midPatchEntries(text, article)) {
-    const letter = namedLetter(entry.text, article);
-    if (patches.length === 0) patches.push({ letter: letter ?? "b", since: entry.since });
-    else if (letter && letter > patches.at(-1)!.letter) patches.push({ letter, since: entry.since });
-  }
-  return patches;
-}
+const nextLetter = (letter: string) => String.fromCharCode(letter.charCodeAt(0) + 1);
 
 /**
- * Later updates counted as hotfixes (they name no new letter) that still change the balance. Riot may have shipped
- * them as a new lettered patch without saying so, so the crawl flags them rather than guessing a letter.
+ * Patches started by the mid-patch updates in a section, oldest first. Riot counts every update as the next letter
+ * (18.1's third update is "18.1d") unless it names one. Only updates that change the balance start a patch; bug and
+ * performance fixes stay part of the patch before, rather than splitting off a few days with nothing to compare.
  */
-export function unnamedBalanceUpdates(text: string, article: PatchArticle): { since: number; changes: number }[] {
-  return midPatchEntries(text, article).flatMap((entry, index) => {
+export function parseMidPatches(section: string, article: PatchArticle): { letter: string; since: number }[] {
+  const patches: { letter: string; since: number }[] = [];
+  let letter = "a";
+  for (const entry of midPatchEntries(section, article)) {
+    letter = namedLetter(entry.text, article) ?? nextLetter(letter);
     const changes = entry.text.match(BALANCE_CHANGE)?.length ?? 0;
-    return index > 0 && !namedLetter(entry.text, article) && changes >= MIN_BALANCE_CHANGES
-      ? [{ since: entry.since, changes }]
-      : [];
-  });
+    if (changes >= MIN_BALANCE_CHANGES) patches.push({ letter, since: entry.since });
+  }
+  return patches;
 }
 
 /** Builds the timeline, oldest first, from the article list and the newest articles' mid-patch updates. */
@@ -195,29 +199,17 @@ export function articlesToRead(articles: PatchArticle[]): PatchArticle[] {
   return articles.filter((article, index) => index < MIN_ARTICLES_TO_READ || article.set === newestSet);
 }
 
-/**
- * The patch timeline from Riot's notes, and warnings about mid-patch updates it may have counted wrong (see
- * `unnamedBalanceUpdates`).
- */
-export async function fetchTftPatches(): Promise<{ timeline: TftPatch[]; warnings: string[] }> {
+export async function fetchTftPatches(): Promise<TftPatch[]> {
   const articles = parsePatchList(await fetchPage(NOTES_LIST));
   if (articles.length === 0) throw new Error("No TFT patch notes found; Riot's site layout may have changed");
   const midPatches = new Map<string, { letter: string; since: number }[]>();
-  const warnings: string[] = [];
   for (const article of articlesToRead(articles)) {
-    const label = `${article.set}.${article.minor}`;
-    const text = midPatchText(await fetchPage(article.url));
-    const patches = parseMidPatches(text, article);
-    midPatches.set(label, patches);
-    for (const { since, changes } of unnamedBalanceUpdates(text, article)) {
-      const counted = patches.findLast((patch) => patch.since <= since);
-      warnings.push(
-        `Patch ${label}'s update of ${new Date(since).toISOString().slice(0, 10)} has ${changes} balance changes but ` +
-          `names no patch letter, so it's counted as part of ${label}${counted?.letter ?? ""}.`,
-      );
-    }
+    midPatches.set(
+      `${article.set}.${article.minor}`,
+      parseMidPatches(midPatchSection(await fetchPage(article.url)), article),
+    );
   }
-  return { timeline: buildTimeline(articles, midPatches), warnings };
+  return buildTimeline(articles, midPatches);
 }
 
 /** The patch live at `time` for `set`, or null when the timeline has none for that set yet. */

@@ -64,7 +64,7 @@ async function main() {
   // A b patch keeps the same client version, so labels are refreshed on every run.
   try {
     const labels = switcherLabels(
-      (await fetchTftPatches()).timeline,
+      await fetchTftPatches(),
       patches.latest.sets[0] ?? 0,
       patches.pbe.sets[0] ?? 0,
       Date.now(),

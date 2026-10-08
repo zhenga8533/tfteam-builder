@@ -3,14 +3,13 @@ import {
   articlesToRead,
   buildTimeline,
   mergeTimelines,
-  midPatchText,
+  midPatchSection,
   nextData,
   parseMidPatches,
   parsePatchList,
   patchAt,
   patchReplacements,
   supersededPatches,
-  unnamedBalanceUpdates,
   switcherLabels,
   type PatchArticle,
   type TftPatch,
@@ -41,10 +40,15 @@ const listing = {
   },
 };
 
-// Modelled on the 18.3 notes: a b patch on the 24th and a later hotfix that isn't a new patch.
+const BALANCE = "<p>Mana: 30 ⇒ 20</p><p>Health: 500 ⇒ 550</p><p>Armor: 40 ⇒ 45</p>";
+
+// Modelled on the 18.3 notes: a b patch on the 24th and a later bug fix that doesn't start a patch.
 const article = page({
   props: {
-    body: "<h2>MID-PATCH UPDATE</h2><h4>SEPTEMBER 28TH</h4><p>We've temporarily disabled this until 18.4.</p><h4>SEPTEMBER 24TH</h4><p>Our 18.3 B patch responds to the meta. See you September 30.</p>",
+    body:
+      "<h2>MID-PATCH UPDATE</h2><h4>SEPTEMBER 28TH</h4><p>We've temporarily disabled this until 18.4.</p>" +
+      `<h4>SEPTEMBER 24TH</h4><p>Our 18.3 B patch responds to the meta. See you September 30.</p>${BALANCE}` +
+      `<h2>PATCH HIGHLIGHTS</h2><h4>SEPTEMBER 21ST</h4>${BALANCE}`,
   },
 });
 
@@ -58,9 +62,39 @@ describe("TFT patch notes", () => {
     ]);
   });
 
-  it("reads b patches from dated mid-patch headings, treating later unnamed entries as hotfixes", () => {
-    const mid = parseMidPatches(midPatchText(nextData(article)), articles[0]!);
+  it("reads b patches from dated mid-patch headings, folding bug fixes and ignoring the main notes", () => {
+    const mid = parseMidPatches(midPatchSection(nextData(article)), articles[0]!);
     expect(mid).toEqual([{ letter: "b", since: Date.UTC(2026, 8, 24, 18) }]);
+  });
+
+  it("counts every update toward the letter, as Riot does, but only starts a patch at balance changes", () => {
+    // Modelled on the 18.1 notes: two bug fix updates, then "our third mid-patch update" with the balance changes.
+    const notes = page({
+      props: {
+        body:
+          `<h2>Mid-Patch Updates</h2><h3>AUGUST 31ST AND SEPTEMBER 1ST</h3>${BALANCE}` +
+          "<h3>AUGUST 28TH</h3><h4>NEW FEATURE</h4><p>Faster loading.</p><h3>AUGUST 27TH</h3><p>Bug fixes.</p>" +
+          `<h2>ENCHANTED WILDS RELEASE NOTES</h2>${BALANCE}`,
+      },
+    });
+    const patch181: PatchArticle = { set: 18, minor: 1, publishedAt: Date.UTC(2026, 7, 25, 18), url: "18.1" };
+    expect(parseMidPatches(midPatchSection(nextData(notes)), patch181)).toEqual([
+      { letter: "d", since: Date.UTC(2026, 7, 31, 18) },
+    ]);
+  });
+
+  it("uses the letter an update names over the count", () => {
+    const notes = page({
+      props: {
+        body:
+          `<h2>MID-PATCH UPDATE</h2><h4>OCTOBER 14TH</h4><p>Our 18.3 D patch.</p>${BALANCE}` +
+          `<h4>OCTOBER 8TH</h4><p>The 18.3 B-Patch.</p>${BALANCE}`,
+      },
+    });
+    expect(parseMidPatches(midPatchSection(nextData(notes)), articles[0]!).map((entry) => entry.letter)).toEqual([
+      "b",
+      "d",
+    ]);
   });
 
   it("re-reads every article of the newest set, and at least the three newest", () => {
@@ -82,30 +116,6 @@ describe("TFT patch notes", () => {
     // Early in a set, the last set's latest patches are still read.
     const newSet = [article(19, 1), article(18, 8), article(18, 7), article(18, 6)];
     expect(articlesToRead(newSet).map((entry) => entry.url)).toEqual(["19.1", "18.8", "18.7"]);
-  });
-
-  it("flags later updates that change the balance without naming a letter, and ignores the main notes", () => {
-    const balance = "Mana: 30 ⇒ 20 Health: 500 ⇒ 550 Armor: 40 ⇒ 45";
-    const text =
-      "MID-PATCH UPDATE OCTOBER 14TH " +
-      balance +
-      " OCTOBER 10TH small fixes Health: 1 ⇒ 2 OCTOBER 8TH B-Patch notes " +
-      "PATCH HIGHLIGHTS OCTOBER 20TH our c patch " +
-      balance;
-    const article = articles[0]!;
-    expect(
-      unnamedBalanceUpdates(text, article).map((entry) => [new Date(entry.since).getUTCDate(), entry.changes]),
-    ).toEqual([[14, 3]]);
-    // The main notes' "c patch" isn't a mid-patch update.
-    expect(parseMidPatches(text, article).map((entry) => entry.letter)).toEqual(["b"]);
-    expect(
-      unnamedBalanceUpdates("MID-PATCH UPDATE OCTOBER 14TH our 18.3 C patch " + balance + " OCTOBER 8TH b", article),
-    ).toEqual([]);
-  });
-
-  it("starts a new letter only when an update names it", () => {
-    const text = "MID-PATCH UPDATE OCTOBER 2ND our 18.3 C patch OCTOBER 1ST first fixes";
-    expect(parseMidPatches(text, articles[0]!).map((entry) => entry.letter)).toEqual(["b", "c"]);
   });
 
   it("builds a timeline and finds the patch live at a game's time", () => {

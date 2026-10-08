@@ -61,13 +61,8 @@ async function main() {
   // Match data doesn't report the patch, so matches are assigned to the TFT patch live when they were
   // played, from Riot's patch notes. If those can't be read, the last known timeline is used.
   let timeline = await store.patchTimeline();
-  let patchWarnings: string[] = [];
   try {
-    const fetched = await fetchTftPatches();
-    timeline = mergeTimelines(timeline, fetched.timeline);
-    patchWarnings = fetched.warnings;
-    // As workflow annotations, so they show on the run without opening its summary.
-    for (const warning of patchWarnings) console.log(`::warning::${warning}`);
+    timeline = mergeTimelines(timeline, await fetchTftPatches());
   } catch (error) {
     if (timeline.length === 0) throw error;
     console.warn("Couldn't read Riot's patch notes; using the last known patch timeline.", error);
@@ -189,7 +184,6 @@ async function main() {
           ),
         ),
       })),
-      patchWarnings,
       newBoards: [...newBoards].map(([key, entries]) => [
         `set ${key.replace("/", " patch ")}`,
         entries.reduce((total, [, rows]) => total + rows.length, 0),

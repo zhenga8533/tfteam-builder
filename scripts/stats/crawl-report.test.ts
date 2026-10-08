@@ -23,12 +23,6 @@ describe("renderCrawlReport", () => {
     expect(markdown).toContain("- set 18 patch 18.3b: 43,312 new boards");
   });
 
-  it("puts patch timeline warnings first", () => {
-    const markdown = renderCrawlReport({ ...report, patchWarnings: ["Patch 18.4's update has 12 balance changes."] });
-    expect(markdown).toContain("## Crawl\n\n> [!WARNING]\n> Patch 18.4's update has 12 balance changes.\n");
-    expect(renderCrawlReport(report)).not.toContain("[!WARNING]");
-  });
-
   it("points out when the pools, not the key, are the limit", () => {
     expect(renderCrawlReport({ ...report, minutesUsed: 12 })).toContain(
       "Used 12 of 45 minutes, finishing early: larger player pools would collect more.",
