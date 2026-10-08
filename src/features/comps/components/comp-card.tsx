@@ -141,7 +141,7 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
           ))}
         </ul>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 sm:w-32 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-2 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 sm:w-28 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-2 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
         {aside}
       </div>
     </article>
