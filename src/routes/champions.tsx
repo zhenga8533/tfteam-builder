@@ -67,20 +67,40 @@ function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: ()
   );
 }
 
-/** Below this width the splash would be visibly upscaled in the dialog; older sets only ship small splashes. */
+/** Below this width the splash would be visibly upscaled as a banner; older sets only ship small splashes. */
 const SHARP_SPLASH_WIDTH = 512;
 
+/**
+ * The champion's splash across the top of the dialog. A small splash (older sets) is shown at its own size, over a
+ * blurred copy that fills the banner, rather than stretched.
+ */
 function SplashBanner({ champion }: { champion: Champion }) {
-  const [sharp, setSharp] = useState(true);
-  if (!champion.splash || !sharp) return null;
+  const [width, setWidth] = useState<number | null>(null);
+  const [failed, setFailed] = useState(false);
+  if (!champion.splash || failed) return null;
+  const small = width !== null && width < SHARP_SPLASH_WIDTH;
   return (
-    <img
-      src={champion.splash}
-      alt=""
-      onLoad={(event) => setSharp(event.currentTarget.naturalWidth >= SHARP_SPLASH_WIDTH)}
-      onError={() => setSharp(false)}
-      className="-mx-6 -mt-6 aspect-[2/1] w-[calc(100%+3rem)] max-w-none rounded-t-lg object-cover object-top"
-    />
+    <div className="relative -mx-6 -mt-6 flex aspect-[2/1] w-[calc(100%+3rem)] max-w-none items-center justify-center overflow-hidden rounded-t-lg bg-muted">
+      {small && (
+        <img
+          src={champion.splash}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 size-full scale-125 object-cover opacity-60 blur-xl"
+        />
+      )}
+      <img
+        src={champion.splash}
+        alt=""
+        onLoad={(event) => setWidth(event.currentTarget.naturalWidth)}
+        onError={() => setFailed(true)}
+        className={cn(
+          "transition-opacity",
+          width === null && "opacity-0",
+          small ? "relative max-h-[85%] max-w-[85%] rounded-md shadow-lg" : "size-full object-cover object-top",
+        )}
+      />
+    </div>
   );
 }
 
