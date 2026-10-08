@@ -1,0 +1,36 @@
+name: R2 maintenance
+
+# Run by hand: cleans up what patches replaced on their release day left in the stats store. A dry run lists the
+# changes; tick "apply" to make them.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Make the changes (otherwise only list them)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Moves board chunks, so it never runs alongside a crawl writing them.
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+
+jobs:
+  superseded-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/r2-maintenance.ts ${{ inputs.apply && '--apply' || '' }}
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
