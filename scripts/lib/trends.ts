@@ -48,30 +48,41 @@ export function patchTrend(current: SetStats, summaries: SetStats[]): PatchTrend
   };
 }
 
-/** Average placement per patch (oldest first) for every entry; null where a patch had too few games. */
+/**
+ * Average placement and play rate per patch (oldest first) for every entry. Averages are null where a patch had too
+ * few games; play rates only where the entry wasn't played at all.
+ */
 export function patchHistory(summaries: SetStats[]): PatchHistory {
   const ready = summaries
     .filter((summary) => summary.status === "ready")
     .sort((a, b) => comparePatches(a.patch, b.patch));
-  const series = (linesOf: (stats: SetStats) => Lines, minGames: number) => {
+  const series = (linesOf: (stats: SetStats) => Lines, value: (line: StatLine) => number | null) => {
     const keys = new Set(ready.flatMap((stats) => Object.keys(linesOf(stats))));
     return Object.fromEntries(
       [...keys].map((key) => [
         key,
         ready.map((stats) => {
           const line = linesOf(stats)[key];
-          return line && line.games >= minGames ? line.avg : null;
+          return line ? value(line) : null;
         }),
       ]),
     );
   };
+  const avg = (minGames: number) => (line: StatLine) => (line.games >= minGames ? line.avg : null);
+  const play = (line: StatLine) => line.play;
   // Patches whose items were counted differently from the newest's are left out of the item history.
   const itemCounting = ready.at(-1)?.itemsPerBoard;
+  const items = (stats: SetStats) => (stats.itemsPerBoard === itemCounting ? stats.items : {});
   return {
     patches: ready.map((stats) => stats.patch),
-    units: series((stats) => stats.units, MIN_GAMES.unit),
-    items: series((stats) => (stats.itemsPerBoard === itemCounting ? stats.items : {}), MIN_GAMES.item),
-    traits: series(traitLines, MIN_GAMES.trait),
+    units: series((stats) => stats.units, avg(MIN_GAMES.unit)),
+    items: series(items, avg(MIN_GAMES.item)),
+    traits: series(traitLines, avg(MIN_GAMES.trait)),
+    play: {
+      units: series((stats) => stats.units, play),
+      items: series(items, play),
+      traits: series(traitLines, play),
+    },
   };
 }
 

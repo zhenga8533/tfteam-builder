@@ -28,7 +28,7 @@ import {
   playMovers,
 } from "@/features/stats/changes";
 import { NoStats } from "@/features/stats/components/no-stats";
-import { TrendBadge } from "@/features/stats/components/patch-trend";
+import { PlayTrend, TrendBadge } from "@/features/stats/components/patch-trend";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { share } from "@/features/stats/format";
 import { parsePatch, parseRank } from "@/features/stats/scope";
@@ -38,7 +38,6 @@ import type { AutoComps, RankFloor, SetStats } from "@/lib/data/schema";
 import { traitBreakpoint, traitKey, traitStyle } from "@/lib/game/traits";
 import { matches, stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { cn } from "@/lib/utils";
 
 const VIEWS = ["champions", "items", "traits", "comps"] as const;
 type View = (typeof VIEWS)[number];
@@ -129,19 +128,6 @@ function RowPair({
 
 const avgText = (avg: number) => avg.toFixed(2);
 
-/** A change in play rate, in percentage points. */
-function PlayChange({ change }: { change: number }) {
-  return (
-    <span
-      className={cn("text-[11px] font-semibold tabular-nums", change > 0 ? "text-cost-2" : "text-destructive")}
-      title="Change in play rate, in percentage points"
-    >
-      {change > 0 ? "+" : "−"}
-      {share(Math.abs(change)).replace("%", "")} pts
-    </span>
-  );
-}
-
 /** Rows for each list, from `entries` and how to label one. */
 function useRows(entries: ChangeEntry[], label: (key: string) => ReactNode, before: string, after: string) {
   const games = (entry: ChangeEntry) =>
@@ -162,7 +148,7 @@ function useRows(entries: ChangeEntry[], label: (key: string) => ReactNode, befo
     key: entry.key,
     label: label(entry.key),
     values: `${share(entry.before![1])} → ${share(entry.now!.play)}`,
-    change: <PlayChange change={playChange(entry)!} />,
+    change: <PlayTrend change={playChange(entry)!} />,
     title: games(entry),
   });
   const onlyRow = (entry: ChangeEntry): Row => ({

@@ -9,7 +9,7 @@ import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { PlacementChart } from "@/features/stats/components/placement-chart";
-import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
+import { PatchHistoryChart } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { NoStats } from "@/features/stats/components/no-stats";
@@ -93,12 +93,7 @@ function ItemHeader({ item }: { item: Item }) {
           <ItemRecipe item={item} />
           {trait && <TraitLink trait={trait} iconClassName="size-4" />}
         </p>
-        {line && (
-          <span className="flex items-center gap-2">
-            <StatSummary line={line} play="of games" />
-            <StatTrend trend={stats?.trend} kind="items" entry={item.apiName} />
-          </span>
-        )}
+        {line && <StatSummary line={line} play="of games" />}
       </div>
       {line?.tier && <TierBadge tier={line.tier} className="size-14 text-3xl" />}
     </header>

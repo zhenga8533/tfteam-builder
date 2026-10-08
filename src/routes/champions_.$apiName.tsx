@@ -12,7 +12,7 @@ import { ChampionForms } from "@/features/stats/components/champion-forms";
 import { otherForms } from "@/lib/game/forms";
 import { ItemBuilds } from "@/features/stats/components/item-builds";
 import { PlacementChart } from "@/features/stats/components/placement-chart";
-import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
+import { PatchHistoryChart } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { NoStats } from "@/features/stats/components/no-stats";
@@ -116,12 +116,7 @@ function ChampionHeader({ champion }: { champion: Champion }) {
             ) : null;
           })}
         </p>
-        {line && (
-          <span className="flex items-center gap-2">
-            <StatSummary line={line} play="of games" />
-            <StatTrend trend={stats?.trend} kind="units" entry={champion.apiName} />
-          </span>
-        )}
+        {line && <StatSummary line={line} play="of games" />}
       </div>
       {line?.tier && <TierBadge tier={line.tier} className="size-14 text-3xl" />}
     </header>

@@ -59,6 +59,8 @@ describe("patch trends", () => {
     expect(history.patches).toEqual(["18.3", "18.3b"]);
     expect(history.units["Ahri"]).toEqual([4.6, 4.35]);
     expect(history.units["Rare"]).toEqual([null, null]);
+    // Play rates are kept however few games, since they say how rarely it was played.
+    expect(history.play?.units["Rare"]).toEqual([0.1, 0.1]);
   });
 
   it("doesn't compare items counted per board with items counted per copy", () => {
