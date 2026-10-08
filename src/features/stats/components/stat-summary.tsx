@@ -22,6 +22,24 @@ export function AvgPlacement({ line, className }: { line: StatLine; className?: 
   );
 }
 
+/**
+ * Marks a stat with too few games to trust. Muted with a dashed outline, like the tier lists' low sample section:
+ * uncertain rather than bad, which the site's orange and red already mean.
+ */
+export function LowSampleBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border border-dashed px-1.5 text-[10px] leading-4 font-medium whitespace-nowrap text-muted-foreground",
+        className,
+      )}
+      title={LOW_SAMPLE_HINT}
+    >
+      Low sample
+    </span>
+  );
+}
+
 /** One-line stat readout: average placement, top-4 rate and games. */
 export function StatSummary({
   line,
@@ -45,11 +63,7 @@ export function StatSummary({
           {share(line.play)} {play}
         </span>
       )}
-      {isLowSample(line) && (
-        <span className="text-[10px] font-semibold tracking-wide uppercase" title={LOW_SAMPLE_HINT}>
-          Low sample
-        </span>
-      )}
+      {isLowSample(line) && <LowSampleBadge />}
     </span>
   );
 }
