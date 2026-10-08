@@ -137,7 +137,7 @@ async function main() {
       await store.saveSeen(platform.id, seen.get(platform.id)!, nowSeconds - 10 * DAY);
     }
     await store.savePatchTimeline(timeline);
-    await store.pruneBoards(2);
+    await store.pruneBoards(2, timeline);
   }
 
   results.forEach((result, index) => {

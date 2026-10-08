@@ -4,7 +4,14 @@
  * match data reports "TFT Unreal Version ?.?.?.?".
  */
 
-import { comparePatches } from "../stats/state.ts";
+const PATCH_LABEL = /^(\d+)\.(\d+)([a-z]?)$/;
+
+/** Orders TFT patch labels: `18.3` < `18.3b` < `18.4` < `18.10`. */
+export function comparePatches(a: string, b: string) {
+  const [, aSet = "0", aMinor = "0", aLetter = ""] = a.match(PATCH_LABEL) ?? [];
+  const [, bSet = "0", bMinor = "0", bLetter = ""] = b.match(PATCH_LABEL) ?? [];
+  return Number(aSet) - Number(bSet) || Number(aMinor) - Number(bMinor) || aLetter.localeCompare(bLetter);
+}
 
 export interface TftPatch {
   /** e.g. "18.3" or "18.3b". */
@@ -169,21 +176,28 @@ export function patchAt(timeline: TftPatch[], set: number, time: number): string
 }
 
 /**
- * Patches a later one replaced before they had any time live, e.g. a patch whose b patch is dated its release day.
- * No game falls in them, so their saved stats are only games the crawler labelled before the b patch was announced.
+ * Patches a later one replaced before they had any time live, e.g. a patch whose b patch is dated its release day,
+ * each with the patch that was live instead (the newest of those that replaced it). No game falls in a replaced patch:
+ * what's filed under it is games the crawler labelled before the b patch was announced.
  */
-export function supersededPatches(timeline: TftPatch[]): Set<string> {
-  return new Set(
-    timeline
-      .filter((patch) =>
-        timeline.some(
-          (other) =>
-            other.set === patch.set && other.since <= patch.since && comparePatches(other.label, patch.label) > 0,
-        ),
+export function patchReplacements(timeline: TftPatch[]): Map<string, string> {
+  const replacements = new Map<string, string>();
+  for (const patch of timeline) {
+    const newest = timeline
+      .filter(
+        (other) =>
+          other.set === patch.set && other.since <= patch.since && comparePatches(other.label, patch.label) > 0,
       )
-      .map((patch) => patch.label),
-  );
+      .map((other) => other.label)
+      .sort(comparePatches)
+      .at(-1);
+    if (newest) replacements.set(patch.label, newest);
+  }
+  return replacements;
 }
+
+/** The patches `patchReplacements` finds replaced. */
+export const supersededPatches = (timeline: TftPatch[]): Set<string> => new Set(patchReplacements(timeline).keys());
 
 /** Keeps patches from the stored timeline that a fresh fetch no longer lists (older articles drop off). */
 export function mergeTimelines(stored: TftPatch[], fetched: TftPatch[]): TftPatch[] {

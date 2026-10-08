@@ -2,7 +2,9 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import { type BlobStore, FileBlobStore } from "./blob.ts";
 import { R2BlobStore, r2ConfigFromEnv } from "./r2.ts";
 import type { AutoComp, RankFloor, SetStats } from "../../src/lib/data/schema.ts";
-import type { TftPatch } from "../lib/tft-patches.ts";
+import { comparePatches, patchReplacements, type TftPatch } from "../lib/tft-patches.ts";
+
+export { comparePatches };
 import type { BoardRow, PatchCounters, PlatformState } from "./types.ts";
 
 export interface BoardChunk {
@@ -105,13 +107,18 @@ export class StatsStore {
       .map((line) => JSON.parse(line) as BoardRow);
   }
 
-  /** Keeps boards for the newest `keep` patches of each set; summaries are never pruned. */
-  async pruneBoards(keep: number) {
+  /**
+   * Keeps boards for the newest `keep` patches of each set; summaries are never pruned. Boards filed under a patch
+   * `timeline` shows was replaced on its release day count as the replacing patch's, which they really are.
+   */
+  async pruneBoards(keep: number, timeline: TftPatch[] = []) {
+    const replacements = patchReplacements(timeline);
+    const patchOf = (chunk: BoardChunk) => replacements.get(chunk.patch) ?? chunk.patch;
     const bySet = Map.groupBy(await this.listBoardChunks(), (chunk) => chunk.set);
     for (const chunks of bySet.values()) {
-      const patches = [...new Set(chunks.map((chunk) => chunk.patch))].sort((a, b) => comparePatches(b, a));
+      const patches = [...new Set(chunks.map(patchOf))].sort((a, b) => comparePatches(b, a));
       const stale = new Set(patches.slice(keep));
-      for (const chunk of chunks) if (stale.has(chunk.patch)) await this.blobs.delete(chunk.key);
+      for (const chunk of chunks) if (stale.has(patchOf(chunk))) await this.blobs.delete(chunk.key);
     }
   }
 
@@ -190,15 +197,6 @@ export function createStatsStore(dir: string | undefined): StatsStore | null {
   const r2 = r2ConfigFromEnv();
   if (r2) return new StatsStore(new R2BlobStore(r2));
   return dir ? new StatsStore(new FileBlobStore(dir)) : null;
-}
-
-const PATCH_LABEL = /^(\d+)\.(\d+)([a-z]?)$/;
-
-/** Orders TFT patch labels: `18.3` < `18.3b` < `18.4` < `18.10`. */
-export function comparePatches(a: string, b: string) {
-  const [, aSet = "0", aMinor = "0", aLetter = ""] = a.match(PATCH_LABEL) ?? [];
-  const [, bSet = "0", bMinor = "0", bLetter = ""] = b.match(PATCH_LABEL) ?? [];
-  return Number(aSet) - Number(bSet) || Number(aMinor) - Number(bMinor) || aLetter.localeCompare(bLetter);
 }
 
 /** `2026-10-01T12:00:00.123Z` → `20261001T120000Z`, safe in object keys and chronologically sortable. */

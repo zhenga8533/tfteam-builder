@@ -204,7 +204,8 @@ match data, so the augment tier list and comp guides stay hand-written.
   [Riot's patch notes](https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/), because match data no
   longer reports a version. Right after a patch or b patch, the previous one is shown until there are enough games.
   Each deploy re-checks every stored game's patch against the newest dates, so games crawled before a b patch was
-  announced move to it. A patch replaced on its release day (its b patch is dated the same day) is left out.
+  announced move to it. A patch replaced on its release day (its b patch is dated the same day) is left out, and
+  boards filed under it count as the replacing patch's when the crawler prunes old patches.
 - **Finished sets:** once a set is no longer the live set and no new boards have come in for 7 days, the next deploy
   builds it one last time and freezes it. Its built files are archived in the stats bucket (`archive/set{N}/`) and its
   Explorer files in the public bucket (`archive/set{N}/explorer/`), and later deploys publish the archive instead of
