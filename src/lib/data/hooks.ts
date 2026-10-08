@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useDeferredValue } from "react";
 import { useSettings } from "@/stores/settings";
 import { resolveActiveSet } from "./active-set";
@@ -68,6 +68,18 @@ export function useGameData(): GameData {
 export function useStats() {
   const { patch, set } = useActiveSet();
   return useSuspenseQuery(statsQuery(patch, set)).data;
+}
+
+/**
+ * The patch the active set is shown at: the live or PBE patch for the current set, and for an older set the patch its
+ * stats come from (null without stats), since the live patch says nothing about it. The header shows it, so the stats
+ * are read without suspending: while they load or if they fail, an older set just has no patch.
+ */
+export function useSetPatch(): { label: string | null; final: boolean } {
+  const { patch, set, label, current } = useActiveSet();
+  const stats = useQuery({ ...statsQuery(patch, set), enabled: !current }).data;
+  if (current) return { label, final: false };
+  return { label: stats?.patch ?? null, final: Boolean(stats?.frozen) };
 }
 
 /**

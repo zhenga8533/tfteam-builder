@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PATCHES } from "@/lib/data/constants";
 import { resolveActiveSet } from "@/lib/data/active-set";
-import { useActiveSet, useManifest } from "@/lib/data/hooks";
+import { useActiveSet, useManifest, useSetPatch } from "@/lib/data/hooks";
 import type { Patch } from "@/lib/data/schema";
 import { useSettings } from "@/stores/settings";
 
@@ -20,10 +20,14 @@ const PATCH_NAMES: Record<Patch, { name: string; hint: string }> = {
   pbe: { name: "PBE", hint: "Upcoming changes on the test server" },
 };
 
-/** One control for which game data the site shows: live or PBE, and which set. */
+/**
+ * One control for which game data the site shows: live or PBE, and which set. Older sets always show live data, at the
+ * patch their stats come from.
+ */
 export function PatchSwitcher() {
   const manifest = useManifest();
-  const { patch, set, sets, label } = useActiveSet();
+  const { patch, set, sets, current } = useActiveSet();
+  const { label, final } = useSetPatch();
   const settings = useSettings();
   const { setPatch, setSet } = settings;
   const newest = sets[0];
@@ -38,11 +42,16 @@ export function PatchSwitcher() {
           variant="outline"
           size="sm"
           className="gap-1.5"
-          aria-label={`Set ${set}, ${PATCH_NAMES[patch].name} ${label}`}
+          aria-label={`Set ${set}${label ? `, ${current ? PATCH_NAMES[patch].name : "patch"} ${label}` : ""}${final ? ", final" : ""}`}
           aria-busy={loading}
         >
           <span className="font-semibold">Set {set}</span>
-          <span className="text-muted-foreground max-sm:hidden">· {label}</span>
+          {label && <span className="text-muted-foreground max-sm:hidden">· {label}</span>}
+          {final && (
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-muted-foreground">
+              FINAL
+            </span>
+          )}
           {patch === "pbe" && (
             <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-primary">
               PBE
@@ -56,8 +65,18 @@ export function PatchSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Game data</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={patch} onValueChange={(value) => setPatch(value as Patch)}>
+        <DropdownMenuLabel className="text-xs text-muted-foreground">
+          Game data
+          {!current && <span className="block font-normal">Older sets always use live data.</span>}
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={patch}
+          // Switching game data goes to its newest set: the PBE only changes that one.
+          onValueChange={(value) => {
+            setPatch(value as Patch);
+            setSet(null);
+          }}
+        >
           {PATCHES.map((value) => (
             <DropdownMenuRadioItem key={value} value={value} className="flex-col items-start gap-0">
               <span className="flex w-full items-baseline justify-between gap-3">
