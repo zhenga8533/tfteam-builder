@@ -8,6 +8,7 @@ import {
   championStatsSchema,
   itemStatsSchema,
   littleLegendsSchema,
+  manifestSchema,
   patchHistorySchema,
   type Manifest,
   type RankFloor,
@@ -27,12 +28,12 @@ import { compTrends, patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
 import { buildKey, restoreBuild, saveBuild } from "./lib/build-cache.ts";
-import { createArchiveBucket, freezeSet, restoreArchive, shouldFreeze } from "./lib/freeze.ts";
+import { createArchiveBucket, freezeSet, restoreArchive, restoreFrozenGameData, shouldFreeze } from "./lib/freeze.ts";
 import { type FileSize, type FrozenSet, renderReport, type SetReport } from "./lib/report.ts";
 import { RANK_OPTIONS, REGIONS } from "../src/lib/data/constants.ts";
 import { buildFloorStats, buildRegionStats, buildSetStats, distinctFloors, FLOOR_BUCKETS } from "./lib/stats.ts";
 import { addBoardToPatch } from "./stats/aggregate.ts";
-import { CachingBlobStore } from "./stats/blob.ts";
+import { type BlobStore, CachingBlobStore } from "./stats/blob.ts";
 import { type BoardChunk, chunkTime, comparePatches, createStatsStore, StatsStore } from "./stats/state.ts";
 import type { BoardRow, PatchCounters } from "./stats/types.ts";
 
@@ -365,6 +366,20 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
   };
 }
 
+/** Restores frozen sets' game data and adds them to the manifest's live sets; returns the manifest. */
+async function withFrozenGameData(store: BlobStore): Promise<Manifest> {
+  const frozen = await restoreFrozenGameData(store, join(DATA_DIR, "latest"));
+  const manifest = await readJson<Manifest>(join(DATA_DIR, "manifest.json"));
+  const live = manifest.patches.latest;
+  const dropped = frozen.filter((set) => !live.sets.includes(set));
+  if (dropped.length) {
+    live.sets = [...live.sets, ...dropped].sort((a, b) => b - a);
+    await writeFile(join(DATA_DIR, "manifest.json"), JSON.stringify(manifestSchema.parse(manifest), null, 2));
+    console.log(`Listed frozen sets the game client no longer has: ${dropped.join(", ")}`);
+  }
+  return manifest;
+}
+
 async function main() {
   const source = createStatsStore(args.stats);
   if (!source) {
@@ -383,8 +398,9 @@ async function main() {
   const store = new StatsStore(new CachingBlobStore(source.blobs, "boards/"));
   const chunks = await store.listBoardChunks();
 
-  // Stats describe live ranked games, so they're built against live-patch game data only.
-  const manifest = await readJson<Manifest>(join(DATA_DIR, "manifest.json"));
+  // Stats describe live ranked games, so they're built against live-patch game data only. Frozen sets keep the game
+  // data they were frozen with, and stay listed after the client drops them.
+  const manifest = await withFrozenGameData(source.blobs);
   await mkdir(OUT_DIR, { recursive: true });
 
   const now = new Date();
@@ -423,7 +439,15 @@ async function main() {
     if (!report) continue;
     reports.push(report);
     if (freezing && report.status === "ready") {
-      const { files, explorerFiles } = await freezeSet(source.blobs, bucket, OUT_DIR, set, report.patch, now);
+      const { files, explorerFiles } = await freezeSet(
+        source.blobs,
+        bucket,
+        OUT_DIR,
+        join(DATA_DIR, "latest"),
+        set,
+        report.patch,
+        now,
+      );
       console.log(`set ${set}: frozen at patch ${report.patch} (${files} files, ${explorerFiles} Explorer files)`);
       frozen.push({ set, patch: report.patch, frozenAt: now.toISOString() });
     }
