@@ -138,6 +138,11 @@ export class StatsStore {
     return this.blobs.put(`${compsPrefix(set, floor)}${patch}.json`, json);
   }
 
+  /** A patch's saved comps (at `floor`, or the default stats); null when none were saved. */
+  async comps(set: number, patch: string, floor?: RankFloor): Promise<AutoComp[] | null> {
+    return (await this.readJson<{ comps: AutoComp[] }>(`${compsPrefix(set, floor)}${patch}.json`))?.comps ?? null;
+  }
+
   /** The comps of the newest saved patch before `patch`, with that patch; null when there's none. */
   async previousComps(
     set: number,

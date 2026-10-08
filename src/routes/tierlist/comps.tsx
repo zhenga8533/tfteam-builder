@@ -14,7 +14,7 @@ import { TierRows } from "@/features/comps/components/tier-rows";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
-import { parseRank } from "@/features/stats/scope";
+import { parsePatch, parseRank } from "@/features/stats/scope";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
 import { useUpdateSearch } from "@/lib/use-update-search";
@@ -25,6 +25,7 @@ interface CompSearch extends CompFilters {
   playstyle?: Playstyle;
   view?: View;
   rank?: RankFloor;
+  patch?: string;
 }
 
 const isPlaystyle = (value: unknown): value is Playstyle => PLAYSTYLES.includes(value as Playstyle);
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/tierlist/comps")({
     playstyle: isPlaystyle(search.playstyle) ? search.playstyle : undefined,
     view: search.view === "stats" || search.view === "guides" ? search.view : undefined,
     rank: parseRank(search.rank),
+    patch: parsePatch(search.patch),
   }),
   component: CompTierListPage,
 });
@@ -95,10 +97,12 @@ const StatRows = memo(function StatRows({
   comps,
   filters,
   rank,
+  patch,
 }: {
   comps: AutoComp[];
   filters: CompFilters;
   rank?: RankFloor;
+  patch?: string;
 }) {
   const { championsByApi } = useGameData();
   const championName = (apiName: string) => championsByApi.get(apiName)?.name ?? "";
@@ -123,7 +127,7 @@ const StatRows = memo(function StatRows({
       renderRow={(entries) => (
         <div className="grid gap-2 xl:grid-cols-2">
           {entries.map((comp) => (
-            <AutoCompCard key={comp.id} comp={comp} rank={rank} />
+            <AutoCompCard key={comp.id} comp={comp} rank={rank} patch={patch} />
           ))}
         </div>
       )}
@@ -136,8 +140,8 @@ function CompTierListPage() {
   const search = Route.useSearch();
   // The comp lists render with the previous filters while a keystroke's update is pending, so typing stays responsive.
   const filters = useDeferredValue(search);
-  const stats = useTierStats(search.rank);
-  const detected = useAutoComps(search.rank) ?? [];
+  const stats = useTierStats(search.rank, undefined, search.patch);
+  const detected = useAutoComps(search.rank, search.patch) ?? [];
   const guides = compsForSet(set);
   const view: View = search.view ?? (detected.length > 0 ? "stats" : "guides");
 
@@ -175,13 +179,20 @@ function CompTierListPage() {
           </CompFilterBar>
         </div>
         <TabsContent value="stats">
-          {stats && <StatsMeta stats={stats} onRankChange={(rank) => update({ rank })} />}
+          {stats && (
+            <StatsMeta
+              stats={stats}
+              // Other patches' comps exist at the default floor only, so a rank and a patch don't combine.
+              onRankChange={(rank) => update({ rank, patch: undefined })}
+              patch={{ value: search.patch, onChange: (patch) => update({ patch, rank: undefined }) }}
+            />
+          )}
           {!stats ? (
             <NoStats />
           ) : detected.length === 0 ? (
             <EmptyState>No comps have enough games to be detected for Set {set} yet.</EmptyState>
           ) : (
-            <StatRows comps={detected} filters={filters} rank={search.rank} />
+            <StatRows comps={detected} filters={filters} rank={search.rank} patch={search.patch} />
           )}
         </TabsContent>
         <TabsContent value="guides">

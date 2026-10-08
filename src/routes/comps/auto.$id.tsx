@@ -1,4 +1,4 @@
-import { parseRank } from "@/features/stats/scope";
+import { parsePatch, parseRank } from "@/features/stats/scope";
 import type { AutoComp, RankFloor, SetStats } from "@/lib/data/schema";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Hammer } from "lucide-react";
@@ -23,13 +23,14 @@ import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { percent, share } from "@/features/stats/format";
 import { findComp } from "@/lib/game/comp-signature";
 import { stageRound } from "@/lib/game/rounds";
-import { useActiveSet, useAutoComps, useCompTrendPatch, useGameData, useTierStats } from "@/lib/data/hooks";
+import { useActiveSet, useAutoComps, useCompTrendPatch, useGameData, useStats, useTierStats } from "@/lib/data/hooks";
 import { TrendBadge } from "@/features/stats/components/patch-trend";
 
 export const Route = createFileRoute("/comps/auto/$id")({
   head: () => ({ meta: [{ title: "Comp Stats · TFTeam" }] }),
-  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor } => ({
+  validateSearch: (search: Record<string, unknown>): { rank?: RankFloor; patch?: string } => ({
     rank: parseRank(search.rank),
+    patch: parsePatch(search.patch),
   }),
   component: AutoCompPage,
 });
@@ -103,9 +104,9 @@ function CarryProgression({ progression }: { progression: AutoComp["progression"
 
 function AutoCompPage() {
   const { id } = Route.useParams();
-  const { rank } = Route.useSearch();
-  const stats = useTierStats(rank);
-  const comps = useAutoComps(rank);
+  const { rank, patch } = Route.useSearch();
+  const stats = useTierStats(rank, undefined, patch);
+  const comps = useAutoComps(rank, patch);
   const comp = comps && findComp(comps, id);
 
   if (!stats) return <NoStats subject="this comp" />;
@@ -113,25 +114,39 @@ function AutoCompPage() {
     return (
       <>
         <StatsMeta stats={stats} />
-        <EmptyState>This comp isn't in the current stats. It may have dropped below the thresholds.</EmptyState>
+        <EmptyState>
+          This comp isn't in the stats for patch {stats.patch}. It may have been below the thresholds there.
+        </EmptyState>
       </>
     );
   }
-  return <AutoCompDetail comp={comp} stats={stats} rank={rank} />;
+  return <AutoCompDetail comp={comp} stats={stats} rank={rank} patch={patch} />;
 }
 
-function AutoCompDetail({ comp, stats, rank }: { comp: AutoComp; stats: SetStats; rank?: RankFloor }) {
+function AutoCompDetail({
+  comp,
+  stats,
+  rank,
+  patch,
+}: {
+  comp: AutoComp;
+  stats: SetStats;
+  rank?: RankFloor;
+  patch?: string;
+}) {
   const { set } = useActiveSet();
+  // The Explorer only has the published stats' boards.
+  const otherPatch = stats.patch !== useStats()?.patch;
   const { units, guide } = useAutoCompUnits(comp);
   const openInBuilder = useOpenInBuilder();
   const navigate = Route.useNavigate();
-  const trendPatch = useCompTrendPatch(rank);
+  const trendPatch = useCompTrendPatch(rank, patch);
 
   return (
     <div className="space-y-6">
       <Link
         to="/tierlist/comps"
-        search={rank ? { rank } : {}}
+        search={{ rank, patch }}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> Comp Tier List
@@ -151,13 +166,17 @@ function AutoCompDetail({ comp, stats, rank }: { comp: AutoComp; stats: SetStats
         </div>
         <div className="flex flex-wrap gap-2">
           <CopyTeamCodeButton apiNames={units.map((unit) => unit.apiName)} />
-          <ExploreCompButton signature={comp.signature} rank={rank} />
+          {!otherPatch && <ExploreCompButton signature={comp.signature} rank={rank} />}
           <Button onClick={() => openInBuilder(set, [{ level: comp.level, units }], comp.name)}>
             <Hammer /> Open in Team Builder
           </Button>
         </div>
       </header>
-      <StatsMeta stats={stats} onRankChange={(next) => navigate({ search: { rank: next }, replace: true })} />
+      <StatsMeta
+        stats={stats}
+        onRankChange={(next) => navigate({ search: { rank: next }, replace: true })}
+        patch={{ value: patch, onChange: (next) => navigate({ search: { patch: next }, replace: true }) }}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">

@@ -102,9 +102,25 @@ export const littleLegendsQuery = (patch: Patch, set: number) =>
     queryFn: () => fetchStats<LittleLegends>(patch, `set${set}/little-legends.json`),
   });
 
-/** Detected comps, at a rank floor with its own comps or (`null`) the default floor. */
-export const autoCompsQuery = (patch: Patch, set: number, floor: RankFloor | null = null) =>
+/**
+ * Detected comps, at a rank floor with its own comps or (`null`) the default floor, or on another of the set's patches
+ * (`gamePatch`, at the default floor).
+ */
+export const autoCompsQuery = (
+  patch: Patch,
+  set: number,
+  floor: RankFloor | null = null,
+  gamePatch: string | null = null,
+) =>
   queryOptions({
-    queryKey: ["stats", patch, set, "comps", floor],
-    queryFn: () => fetchStats<AutoComps>(patch, floor ? `set${set}/ranks/${floor}.comps.json` : `set${set}/comps.json`),
+    queryKey: ["stats", patch, set, "comps", floor, gamePatch],
+    queryFn: () =>
+      fetchStats<AutoComps>(
+        patch,
+        gamePatch
+          ? `set${set}/patches/${gamePatch}.comps.json`
+          : floor
+            ? `set${set}/ranks/${floor}.comps.json`
+            : `set${set}/comps.json`,
+      ),
   });
