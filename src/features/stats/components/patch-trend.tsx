@@ -40,7 +40,7 @@ export function StatTrend({
   className,
 }: {
   trend: PatchTrend | undefined;
-  kind: keyof Omit<PatchTrend, "patch">;
+  kind: "units" | "items" | "traits";
   entry: string;
   className?: string;
 }) {

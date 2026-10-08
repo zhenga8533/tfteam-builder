@@ -21,6 +21,11 @@ function differences(current: Lines, previous: Lines, minGames: number): Record<
   );
 }
 
+const priorLines = (lines: Lines) =>
+  Object.fromEntries(
+    Object.entries(lines).map(([key, line]) => [key, [line.avg, line.play, line.games] as [number, number, number]]),
+  );
+
 /** How the published stats moved since the newest earlier patch with a summary, or null without one. */
 export function patchTrend(current: SetStats, summaries: SetStats[]): PatchTrend | null {
   const previous = summaries
@@ -35,6 +40,11 @@ export function patchTrend(current: SetStats, summaries: SetStats[]): PatchTrend
         ? differences(current.items, previous.items, MIN_GAMES.item)
         : {},
     traits: differences(traitLines(current), traitLines(previous), MIN_GAMES.trait),
+    before: {
+      units: priorLines(previous.units),
+      items: current.itemsPerBoard === previous.itemsPerBoard ? priorLines(previous.items) : {},
+      traits: priorLines(traitLines(previous)),
+    },
   };
 }
 
@@ -80,6 +90,14 @@ export function compTrends(current: AutoComp[], previous: AutoComp[]): AutoComp[
   });
 }
 
+/** Comps on the previous patch that no current comp covers (by signature, as in `compTrends`). */
+export function droppedComps(current: AutoComp[], previous: AutoComp[]) {
+  const covered = new Set(current.flatMap((comp) => [comp.signature, ...comp.variants]));
+  return previous
+    .filter((comp) => !covered.has(comp.signature))
+    .map(({ id, name, carries, avg, play, games }) => ({ id, name, carries, avg, play, games }));
+}
+
 /**
  * Tier list stats for the set's other patches, newest first: the newest patch's early stats while `stats` falls back
  * to the previous one (once it has `MIN_EARLY_MATCHES`), then earlier patches' saved summaries. Sets `newestPatch`.
@@ -97,10 +115,12 @@ export function otherPatchStats(data: SetData, patches: PatchCounters[], stats: 
   const earlier = summaries
     .filter((summary) => comparePatches(summary.patch, stats.patch) < 0)
     .sort((a, b) => comparePatches(b.patch, a.patch));
-  // Saved as their patch's stats at the time: what they pointed to then (floors, regions, other patches) is gone.
+  // Saved as their patch's stats at the time: what they pointed to then (floors, regions, other patches) is gone, and
+  // their trend is recomputed so it has everything a current one has.
   for (const summary of earlier) {
     others.push({
       ...summary,
+      trend: patchTrend(summary, summaries) ?? undefined,
       previousPatch: false,
       patches: undefined,
       newestPatch: undefined,

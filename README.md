@@ -65,7 +65,8 @@ TFTeam was created to simplify planning team compositions in Teamfight Tactics. 
 - **Tier Lists** – comps detected from ranked games plus hand-written guides, and champion, item and trait tier lists ranked by average placement, with filters. Tier lists, detected comps and Patch Changes can switch rank (Master+, Diamond+, …), and the champion, item and trait tier lists can narrow to a region. Pages show placement distributions, comps show placement by final level, and the home page highlights comps rising since the last patch. Open any comp in the Team Builder with one click.
 - **Stats pages** – every champion, item and trait has a page: item builds and a best-next-item finder, best holders and partners, breakpoints and the comps that use it.
 - **Explorer** – filter ranked boards by champions, items, traits and level, and see what else does well with them.
-- **Patch Changes** – what got better or worse since the last patch.
+- **Patch Changes** – what changed since the last patch for champions, items, traits and comps: average placement
+  (before → after), play rate, and what's new or gone, with filters, full lists and a link to Riot's patch notes.
 - **Tools** – Explorer, Compare (two champions, items or comps side by side), Roll Odds (your chance to hit a 2★ or 3★, from the set's shop odds and pool) and a Component Planner (what your components build into, ranked for your carry).
 - **Database** – searchable champions, traits, items (with a crafting table) and augments, with filters kept in the URL so views can be shared.
 - **Live and PBE data** – switch between the live patch and PBE, and between every set CommunityDragon has. Light, dark or system theme.

@@ -151,7 +151,7 @@ export function useLittleLegends() {
 
 /** Comps detected from match data (at `rank` when it has its own), best first; null when not published (or on PBE). */
 /** Detected comps' file at `rank`, or on another of the set's patches (`gamePatch`, at the default floor). */
-function useAutoCompsFile(rank?: RankFloor, gamePatch?: string) {
+export function useAutoCompsFile(rank?: RankFloor, gamePatch?: string) {
   const { patch, set } = useActiveSet();
   const floor = useOfferedFloor(rank);
   const other = useOfferedPatch(gamePatch);

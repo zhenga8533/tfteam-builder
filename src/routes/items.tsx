@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ITEM_KINDS } from "@/lib/data/constants";
+import { isItemKind, ITEM_KINDS } from "@/lib/data/constants";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { bestHolders } from "@/features/stats/builds";
 import { useGameData, useStats } from "@/lib/data/hooks";
@@ -21,8 +21,6 @@ interface ItemSearch {
   q?: string;
   kind?: ItemKind;
 }
-
-const isItemKind = (value: unknown): value is ItemKind => ITEM_KINDS.includes(value as ItemKind);
 
 export const Route = createFileRoute("/items")({
   head: () => ({ meta: [{ title: "Items · TFTeam" }] }),
