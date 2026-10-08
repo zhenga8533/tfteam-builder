@@ -9,7 +9,7 @@ import { Section } from "@/components/layout/section";
 import { AutoCompList } from "@/features/comps/components/auto-comp-list";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { PlacementChart } from "@/features/stats/components/placement-chart";
-import { PatchHistoryChart, StatTrend } from "@/features/stats/components/patch-trend";
+import { PatchHistoryChart } from "@/features/stats/components/patch-trend";
 import { StatSummary } from "@/features/stats/components/stat-summary";
 import { StatTable } from "@/features/stats/components/stat-table";
 import { NoStats } from "@/features/stats/components/no-stats";
@@ -125,7 +125,6 @@ function TraitPage() {
             <span className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">At {busiest.minUnits}:</span>
               <StatSummary line={busiest} play="of games" />
-              <StatTrend trend={setStats?.trend} kind="traits" entry={traitKey(trait.apiName, busiest.minUnits)} />
             </span>
           )}
         </div>

@@ -165,13 +165,17 @@ export const patchTrendSchema = z.object({
 });
 export type PatchTrend = z.infer<typeof patchTrendSchema>;
 
+const historySeriesSchema = z.record(z.string(), z.array(z.number().nullable()));
+
 /** Average placement per patch, oldest first; null where a patch had too few games. */
 export const patchHistorySchema = z.object({
   patches: z.array(z.string()),
-  units: z.record(z.string(), z.array(z.number().nullable())),
-  items: z.record(z.string(), z.array(z.number().nullable())),
+  units: historySeriesSchema,
+  items: historySeriesSchema,
   /** Keyed `apiName:minUnits`. */
-  traits: z.record(z.string(), z.array(z.number().nullable())),
+  traits: historySeriesSchema,
+  /** Play rate per patch, alongside the averages; absent in history built before it was recorded. */
+  play: z.object({ units: historySeriesSchema, items: historySeriesSchema, traits: historySeriesSchema }).optional(),
 });
 export type PatchHistory = z.infer<typeof patchHistorySchema>;
 
