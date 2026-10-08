@@ -29,10 +29,10 @@ interface CompCardViewProps {
 }
 
 /**
- * Placement stats in a fixed column, so they line up from card to card: the average with its trend, then the rest in
- * a grid, kept shorter than the board beside it.
+ * Placement stats in a fixed column, so they line up from card to card: the average, then the rest in a grid, kept
+ * shorter than the board beside it.
  */
-function CompStats({ line, trend }: { line: StatLine; trend?: ReactNode }) {
+function CompStats({ line }: { line: StatLine }) {
   const rows = [
     ["Top 4", percent(line.top4)],
     ["Win", percent(line.win)],
@@ -44,7 +44,6 @@ function CompStats({ line, trend }: { line: StatLine; trend?: ReactNode }) {
       <div className="flex items-baseline gap-1.5" title="Average placement">
         <AvgPlacement line={line} className="font-display text-xl leading-none" />
         <span className="text-[11px] text-muted-foreground">avg</span>
-        {trend}
       </div>
       <dl className="grid grid-cols-4 gap-x-3 gap-y-1 text-xs sm:grid-cols-2 sm:border-t sm:pt-2">
         {rows.map(([label, value]) => (
@@ -186,7 +185,15 @@ export const AutoCompCard = memo(function AutoCompCard({
       title={comp.name}
       link={{ to: "/comps/auto/$id", params: { id: comp.id }, search: { rank, patch } }}
       units={units}
-      aside={<CompStats line={comp} trend={<PatchTrendBadge delta={comp.trend} patch={trendPatch} />} />}
+      // In the title row, where guide cards show their trend.
+      badge={
+        <PatchTrendBadge
+          delta={comp.trend}
+          patch={trendPatch}
+          className="rounded-full px-1.5 py-0.5 ring-1 ring-border"
+        />
+      }
+      aside={<CompStats line={comp} />}
     />
   );
 });
