@@ -10,6 +10,7 @@ import {
   patchAt,
   patchReplacements,
   supersededPatches,
+  unnamedBalanceUpdates,
   switcherLabels,
   type PatchArticle,
   type TftPatch,
@@ -81,6 +82,25 @@ describe("TFT patch notes", () => {
     // Early in a set, the last set's latest patches are still read.
     const newSet = [article(19, 1), article(18, 8), article(18, 7), article(18, 6)];
     expect(articlesToRead(newSet).map((entry) => entry.url)).toEqual(["19.1", "18.8", "18.7"]);
+  });
+
+  it("flags later updates that change the balance without naming a letter, and ignores the main notes", () => {
+    const balance = "Mana: 30 ⇒ 20 Health: 500 ⇒ 550 Armor: 40 ⇒ 45";
+    const text =
+      "MID-PATCH UPDATE OCTOBER 14TH " +
+      balance +
+      " OCTOBER 10TH small fixes Health: 1 ⇒ 2 OCTOBER 8TH B-Patch notes " +
+      "PATCH HIGHLIGHTS OCTOBER 20TH our c patch " +
+      balance;
+    const article = articles[0]!;
+    expect(
+      unnamedBalanceUpdates(text, article).map((entry) => [new Date(entry.since).getUTCDate(), entry.changes]),
+    ).toEqual([[14, 3]]);
+    // The main notes' "c patch" isn't a mid-patch update.
+    expect(parseMidPatches(text, article).map((entry) => entry.letter)).toEqual(["b"]);
+    expect(
+      unnamedBalanceUpdates("MID-PATCH UPDATE OCTOBER 14TH our 18.3 C patch " + balance + " OCTOBER 8TH b", article),
+    ).toEqual([]);
   });
 
   it("starts a new letter only when an update names it", () => {
