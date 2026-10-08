@@ -35,7 +35,7 @@ function ItemTierListPage() {
   const { set } = useActiveSet();
   const { itemsByApi } = useGameData();
   const search = Route.useSearch();
-  const stats = useTierStats(search.rank, search.region);
+  const stats = useTierStats(search.rank, search.region, search.patch);
   // Components are carried around mid-game rather than built, so they aren't ranked.
   const lines = Object.entries(stats?.items ?? {}).filter(
     ([apiName]) => itemsByApi.has(apiName) && itemsByApi.get(apiName)?.kind !== "component",

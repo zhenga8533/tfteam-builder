@@ -1,4 +1,5 @@
 import { Activity, ChevronDown, Info, TriangleAlert } from "lucide-react";
+import type { ReactNode } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,20 @@ import { count, RANK_FLOOR_LABEL, REGION_LABEL, timeAgo } from "../format";
 export interface RegionChoice {
   value?: Region;
   onChange: (region: Region | undefined) => void;
+}
+
+export interface PatchChoice {
+  value?: string;
+  onChange: (patch: string | undefined) => void;
+}
+
+/** A link-styled button inside a note. */
+function NoteAction({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} className="font-medium text-primary underline-offset-2 hover:underline">
+      {children}
+    </button>
+  );
 }
 
 interface ChipOption {
@@ -113,18 +128,44 @@ function RegionLabel({ region, regions, choice }: { region?: Region; regions?: R
   );
 }
 
+/** The patch in the stats sentence, as a menu when other patches have tier list stats. */
+function PatchLabel({ shown, base, choice }: { shown: string; base: SetStats | null; choice?: PatchChoice }) {
+  if (!choice || !base?.patches?.length) return <>{shown}</>;
+  const newest = base.newestPatch;
+  const options: ChipOption[] = base.patches.map((value) =>
+    value === newest?.patch
+      ? { value, label: value, hint: `Early: ${count(newest.matches)} matches so far` }
+      : { value, label: value, hint: "Final stats" },
+  );
+  // Other patches come newest first; the default stats sit after the newest patch's early ones.
+  const at = options[0]?.value === newest?.patch ? 1 : 0;
+  options.splice(at, 0, { value: base.patch, label: base.patch, hint: "Current stats" });
+  return (
+    <ChoiceChip
+      name="Patch"
+      label={shown}
+      value={shown}
+      options={options}
+      onChange={(value) => choice.onChange(value === base.patch ? undefined : value)}
+    />
+  );
+}
+
 /**
  * Where the numbers come from, plus notes when the data is thinner than usual. With `onRankChange` or `region`, the
- * rank floor and region become menus of the ones that have their own stats.
+ * rank floor and region become menus of the ones that have their own stats; with `patch`, so does the patch: the newest
+ * one early, while the default stats fall back to the previous one, and earlier ones.
  */
 export function StatsMeta({
   stats,
   onRankChange,
   region,
+  patch,
 }: {
   stats: SetStats;
   onRankChange?: (rank: RankFloor | undefined) => void;
   region?: RegionChoice;
+  patch?: PatchChoice;
 }) {
   const defaultStats = useStats();
   if (stats.status === "collecting") {
@@ -137,16 +178,61 @@ export function StatsMeta({
     );
   }
 
-  // A finished set's stats are final, so their age isn't a warning sign.
-  const stale = !stats.frozen && isStale(stats.updatedAt);
-  const notes = [
-    stats.previousPatch &&
-      `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`,
-    // Only the automatic fallback below the usual floor needs explaining, not a lower floor someone picked.
+  const base = defaultStats;
+  const newest = base?.newestPatch;
+  const offered = base?.patches ?? [];
+  // Another patch's stats: the newest patch's early ones, or an earlier patch's final ones.
+  const otherPatch = base && stats.patch !== base.patch ? stats.patch : undefined;
+  const early = otherPatch !== undefined && otherPatch === newest?.patch;
+  const past = otherPatch !== undefined && !early;
+  // Final stats (a finished set's, or an earlier patch's) don't get older, so their age isn't a warning sign.
+  const stale = !stats.frozen && !past && isStale(stats.updatedAt);
+  const backToCurrent = patch && base && (
+    <>
+      {" "}
+      <NoteAction onClick={() => patch.onChange(undefined)}>Back to patch {base.patch}</NoteAction>
+    </>
+  );
+  const notes: [key: string, note: ReactNode][] = [];
+  if (early) {
+    notes.push([
+      "early",
+      <>
+        Patch {otherPatch} is new, with only {count(stats.matches)} matches so far, so these tiers can still change a
+        lot.{backToCurrent}
+      </>,
+    ]);
+  } else if (past) {
+    notes.push(["past", <>Showing an earlier patch.{backToCurrent}</>]);
+  } else if (stats.previousPatch) {
+    notes.push([
+      "previous",
+      newest ? (
+        <>
+          Patch {newest.patch} has only {count(newest.matches)} {RANK_FLOOR_LABEL[stats.rankFloor]} matches so far, too
+          few to rank reliably, so these stats are from patch {stats.patch}.
+          {patch && offered.includes(newest.patch) && (
+            <>
+              {" "}
+              <NoteAction onClick={() => patch.onChange(newest.patch)}>See patch {newest.patch} anyway</NoteAction>
+            </>
+          )}
+        </>
+      ) : (
+        `The latest patch is too new to have enough games yet, so these stats are from patch ${stats.patch}.`
+      ),
+    ]);
+  }
+  // Only the automatic fallback below the usual floor needs explaining, not a lower floor someone picked.
+  if (
     stats.rankFloor === defaultStats?.rankFloor &&
-      RANK_FLOORS.indexOf(stats.rankFloor as (typeof RANK_FLOORS)[number]) > 0 &&
+    RANK_FLOORS.indexOf(stats.rankFloor as (typeof RANK_FLOORS)[number]) > 0
+  ) {
+    notes.push([
+      "floor",
       `Early in the set, few players have reached Diamond, so this includes ${RANK_FLOOR_LABEL[stats.rankFloor]} games.`,
-  ].filter(Boolean);
+    ]);
+  }
 
   return (
     <div className="mb-6 space-y-2">
@@ -171,9 +257,12 @@ export function StatsMeta({
           Based on <span className="font-medium text-foreground">{count(stats.matches * BOARDS_PER_MATCH)}</span>{" "}
           <RankLabel floor={stats.rankFloor} base={defaultStats} onChange={onRankChange} /> ranked games (
           {count(stats.matches)} matches)
-          <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch {stats.patch} ·{" "}
+          <RegionLabel region={stats.region} regions={defaultStats?.regions} choice={region} /> on patch{" "}
+          <PatchLabel shown={stats.patch} base={base} choice={patch} /> ·{" "}
           {stats.frozen ? (
             `Final stats for Set ${stats.set}`
+          ) : past ? (
+            "Final stats for this patch"
           ) : (
             <time
               dateTime={stats.updatedAt}
@@ -192,8 +281,8 @@ export function StatsMeta({
         </p>
       )}
       {/* Indented to line up with the sentence above, past its info button. */}
-      {notes.map((note) => (
-        <p key={note as string} className="pl-5.5 text-xs text-muted-foreground">
+      {notes.map(([key, note]) => (
+        <p key={key} className="pl-5.5 text-xs text-muted-foreground">
           {note}
         </p>
       ))}

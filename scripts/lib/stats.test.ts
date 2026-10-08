@@ -3,7 +3,15 @@ import type { SetData, StatLine } from "../../src/lib/data/schema.ts";
 import { emptyCounters } from "../stats/aggregate.ts";
 import type { Counters, PatchCounters, RankBucket } from "../stats/types.ts";
 import { adjustedAverage, statLine } from "../../src/lib/game/stat-line.ts";
-import { assignTiers, buildFloorStats, buildSetStats, chooseSample, distinctFloors, MIN_GAMES } from "./stats.ts";
+import {
+  assignTiers,
+  buildFloorStats,
+  buildNewestPatchStats,
+  buildSetStats,
+  chooseSample,
+  distinctFloors,
+  MIN_GAMES,
+} from "./stats.ts";
 
 const withMatches = (matches: number, extra: Partial<Counters> = {}): Counters => ({
   ...emptyCounters(),
@@ -176,5 +184,40 @@ describe("buildFloorStats", () => {
   it("is null for a floor without enough games", () => {
     const thin = [patch("18.3", { master_plus: withMatches(500), diamond: withMatches(1600) })];
     expect(buildFloorStats(data, thin, "master")).toBeNull();
+  });
+});
+
+describe("buildNewestPatchStats", () => {
+  const data = {
+    number: 18,
+    champions: [],
+    traits: [],
+    items: [],
+    itemAliases: {},
+    championAliases: {},
+  } as unknown as SetData;
+
+  it("builds the newest patch at the default floor while the stats fall back to the previous one", () => {
+    const patches = [
+      patch("18.3", { master_plus: withMatches(1500), diamond: withMatches(1500) }),
+      patch("18.4", { master_plus: withMatches(100), diamond: withMatches(200), gold: withMatches(900) }),
+    ];
+    const { stats } = buildSetStats(data, patches);
+    expect(stats).toMatchObject({ patch: "18.3", rankFloor: "diamond", previousPatch: true });
+    expect(buildNewestPatchStats(data, patches, stats)).toMatchObject({
+      patch: "18.4",
+      rankFloor: "diamond",
+      matches: 300,
+      previousPatch: false,
+      status: "ready",
+    });
+  });
+
+  it("is null when the stats are already on the newest patch, or it has no games at their floor", () => {
+    const current = [patch("18.4", { diamond: withMatches(3000) })];
+    expect(buildNewestPatchStats(data, current, buildSetStats(data, current).stats)).toBeNull();
+
+    const empty = [patch("18.3", { diamond: withMatches(3000) }), patch("18.4", { gold: withMatches(50) })];
+    expect(buildNewestPatchStats(data, empty, buildSetStats(data, empty).stats)).toBeNull();
   });
 });

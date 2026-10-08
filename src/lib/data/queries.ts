@@ -59,6 +59,13 @@ export const regionStatsQuery = (patch: Patch, set: number, region: Region | nul
     queryFn: () => (region ? fetchStats<SetStats>(patch, `set${set}/regions/${region}.json`) : null),
   });
 
+/** A set's tier list stats on another of its patches (see `SetStats.patches`); null for the default stats. */
+export const patchStatsQuery = (patch: Patch, set: number, gamePatch: string | null) =>
+  queryOptions({
+    queryKey: ["stats", patch, set, "patch", gamePatch],
+    queryFn: () => (gamePatch ? fetchStats<SetStats>(patch, `set${set}/patches/${gamePatch}.json`) : null),
+  });
+
 export const statsQuery = (patch: Patch, set: number) =>
   queryOptions({
     queryKey: ["stats", patch, set],

@@ -37,7 +37,7 @@ function TraitTierListPage() {
   const { set } = useActiveSet();
   const { traitsByApi } = useGameData();
   const search = Route.useSearch();
-  const stats = useTierStats(search.rank, search.region);
+  const stats = useTierStats(search.rank, search.region, search.patch);
   const lines = (stats?.traits ?? [])
     .filter((line) => traitsByApi.has(line.trait))
     .map((line) => [traitKey(line.trait, line.minUnits), line] as [string, typeof line]);

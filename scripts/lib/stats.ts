@@ -160,6 +160,32 @@ export function buildFloorStats(
   return buildSetStats(data, patches, now, { ...base, floor, counters }).stats;
 }
 
+/**
+ * The newest patch's early stats are offered from this many matches: enough for a champion in 10% of games to reach
+ * `MIN_GAMES.unit`, so most of the tier list is ranked rather than low sample.
+ */
+export const MIN_EARLY_MATCHES = 250;
+
+/**
+ * While `base` falls back to the previous patch: the newest patch's stats at the same rank floor, however few games it
+ * has so far, for the tier lists' early look at it. Null when `base` is already on the newest patch or it has no games
+ * at that floor.
+ */
+export function buildNewestPatchStats(
+  data: SetData,
+  patches: PatchCounters[],
+  base: SetStats,
+  now = new Date(),
+): SetStats | null {
+  if (!base.previousPatch) return null;
+  const newest = [...patches].sort((a, b) => comparePatches(b.patch, a.patch))[0];
+  if (!newest) return null;
+  const counters = countersAtFloor(newest, base.rankFloor);
+  if (counters.matches === 0) return null;
+  return buildSetStats(data, [newest], now, { patch: newest, floor: base.rankFloor, counters, previousPatch: false })
+    .stats;
+}
+
 /** Regions have a fraction of the games, so they need fewer matches than the whole sample to be shown. */
 const MIN_REGION_MATCHES = 1000;
 

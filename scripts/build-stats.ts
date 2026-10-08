@@ -24,7 +24,7 @@ import { ExplorerCollector } from "./lib/explorer.ts";
 import { ChampionAccumulator } from "./lib/champion-stats.ts";
 import { CompDetector } from "./lib/comps.ts";
 import { DatabaseAccumulator } from "./lib/database-stats.ts";
-import { compTrends, patchHistory, patchTrend } from "./lib/trends.ts";
+import { compTrends, otherPatchStats, patchHistory, patchTrend } from "./lib/trends.ts";
 import { FormInference } from "./lib/forms.ts";
 import { fetchCompanions, LittleLegendAccumulator } from "./lib/little-legends.ts";
 import { buildKey, restoreBuild, saveBuild } from "./lib/build-cache.ts";
@@ -309,6 +309,17 @@ async function writeFloorFiles(
   return floors;
 }
 
+async function writePatchFiles(set: number, patchStats: SetStats[]) {
+  if (patchStats.length === 0) return;
+  await mkdir(join(OUT_DIR, `set${set}`, "patches"), { recursive: true });
+  for (const entry of patchStats) {
+    await writeFile(
+      join(OUT_DIR, `set${set}`, "patches", `${entry.patch}.json`),
+      JSON.stringify(setStatsSchema.parse(entry)),
+    );
+  }
+}
+
 /** Builds and writes one set's stats from its newest patches' boards; nothing for a set without boards. */
 async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): Promise<SetReport | undefined> {
   const setChunks = chunks.filter((chunk) => chunk.set === set);
@@ -334,6 +345,8 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
   if (floorStats.length) stats.ranks = floorStats.map((entry) => entry.rankFloor);
   if (regionStats.length) stats.regions = regionStats.map((entry) => entry.region!);
   await saveFloorSummaries(store, set, floorStats);
+  const patchStats = ready ? otherPatchStats(data, patches, stats, summaries) : [];
+  if (patchStats.length) stats.patches = patchStats.map((entry) => entry.patch);
 
   const json = JSON.stringify(setStatsSchema.parse(stats));
   await writeFile(join(OUT_DIR, `set${set}.json`), json);
@@ -341,6 +354,7 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
   // Clears and rewrites the set's folder, so the region and floor files are written after it.
   const figures = await writeDetails(store, read, data, stats, setChunks);
   await writeRegionFiles(set, regionStats);
+  await writePatchFiles(set, patchStats);
   const floors = await writeFloorFiles(store, read, data, floorStats, setChunks);
   if (ready) {
     const history = patchHistory([...summaries, stats]);
@@ -349,7 +363,7 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
 
   console.log(
     `set ${set}: ${stats.status}, patch ${stats.patch}, ${stats.rankFloor}+, ${stats.matches} matches` +
-      (stats.previousPatch ? " (previous patch)" : ""),
+      (stats.newestPatch ? ` (patch ${stats.newestPatch.patch} has ${stats.newestPatch.matches} matches so far)` : ""),
   );
   for (const [kind, names] of Object.entries(unknown)) {
     if (names.size) console.warn(`  unmapped ${kind}: ${top(names)}`);
