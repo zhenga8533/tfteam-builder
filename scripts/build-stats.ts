@@ -319,6 +319,8 @@ async function buildSet(store: StatsStore, chunks: BoardChunk[], set: number): P
   const forms = new FormInference(data);
   const read: ReadBoards = async (chunk) => (await store.readBoards(chunk)).map((row) => forms.row(row));
   const patches = await Promise.all(newest.map((patch) => loadPatch(read, set, patch, byPatch.get(patch)!)));
+  // Saved while the patch still has boards, so the last save before they're pruned covers all of them.
+  for (const counters of patches) await store.putCounters(counters);
   const { stats, unknown } = buildSetStats(data, patches);
   const summaries = (await store.summaries(set)).filter((summary) => summary.patch !== stats.patch);
   const trend = patchTrend(stats, summaries);

@@ -171,7 +171,8 @@ match data, so the augment tier list and comp guides stay hand-written.
   crawler's state. Boards are kept for the current and previous patch of each set. Each run's summary on its Actions
   page lists players checked, games kept per tier and the pools' make-up.
 - **Build** (on deploy): `scripts/build-stats.ts` reads the stored boards and builds `public/data/stats/set{N}.json`.
-  It also saves a summary of each patch's stats to R2 permanently. It shows
+  It also saves each patch's stats and counters to R2 permanently. The counters let a patch be rebuilt after its
+  boards are pruned. It shows
   Diamond+ games when there are enough. Otherwise it falls back to the previous patch of the same set, or to lower ranks
   early in a set, when the top of the ladder is still nearly empty. The page states which ranks and patch the stats
   come from.

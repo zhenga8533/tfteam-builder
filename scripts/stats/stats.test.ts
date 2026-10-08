@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { addBoard, emptyCounters, matchToRows, isRankedStandard, mergeCounters } from "./aggregate.ts";
+import { addBoard, addBoardToPatch, emptyCounters, matchToRows, isRankedStandard, mergeCounters } from "./aggregate.ts";
 import type { Platform } from "./regions.ts";
 import {
   ApiKeyRejectedError,
@@ -16,7 +16,7 @@ import { seedPlayers } from "./seed.ts";
 import { FileBlobStore } from "./blob.ts";
 import { R2BlobStore } from "./r2.ts";
 import { comparePatches, runStamp, StatsStore } from "./state.ts";
-import type { LeagueEntry, Match } from "./types.ts";
+import type { LeagueEntry, Match, PatchCounters } from "./types.ts";
 
 function fakeClock(start = 0): Clock & { time: number } {
   const clock = {
@@ -281,6 +281,20 @@ describe("StatsStore", () => {
       ["18.3b", 3000],
     ]);
     expect((await store.summaries(18, "master")).map((entry) => entry.matches)).toEqual([2100]);
+  });
+
+  it("keeps a patch's counters after its boards are pruned", async () => {
+    root = await mkdtemp(join(tmpdir(), "tft-stats-"));
+    const store = new StatsStore(new FileBlobStore(root));
+    const counters: PatchCounters = { set: 18, patch: "16.9", updatedAt: "2026-10-01T12:00:00Z", buckets: {} };
+    for (const row of matchToRows(match(), "diamond")) addBoardToPatch(counters, row);
+    await store.putCounters(counters);
+    for (const patch of ["16.9", "16.10", "16.11"]) {
+      await store.appendBoards(18, patch, "20261001T120000Z-americas", matchToRows(match(), "diamond"));
+    }
+    await store.pruneBoards(2);
+    expect(await store.counters(18, "16.9")).toEqual(counters);
+    expect(await store.counters(18, "16.10")).toBeNull();
   });
 
   it("round-trips state and boards, and prunes old patches and match IDs", async () => {
