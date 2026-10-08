@@ -59,8 +59,9 @@ export function Footer() {
 
   return (
     <footer className="border-t text-sm">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-2">
+      {/* On phones the brand spans the width and the three short link lists share a row, rather than each taking one. */}
+      <div className="mx-auto grid max-w-7xl grid-cols-3 gap-x-4 gap-y-8 px-4 py-10 md:grid-cols-4 md:gap-x-8">
+        <div className="col-span-3 space-y-2 md:col-span-1">
           <Link to="/" className="font-display text-lg font-bold tracking-tight">
             TFTeam<span className="text-primary">.</span>
           </Link>
@@ -102,7 +103,7 @@ export function Footer() {
         </nav>
       </div>
       <div className="border-t">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-xs text-muted-foreground sm:flex-row sm:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-xs text-muted-foreground lg:flex-row lg:justify-between">
           <Suspense>
             <DataStatus />
           </Suspense>
