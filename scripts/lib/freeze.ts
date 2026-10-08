@@ -18,6 +18,12 @@ interface ArchiveMarker {
 const markerKey = (set: number) => `${archivePrefix(set)}complete.json`;
 /** The set's built files, keyed by their path under `public/data/stats`. */
 const filesPrefix = (set: number) => `${archivePrefix(set)}files/`;
+/**
+ * The set's game data as it was when frozen. Riot stops maintaining a set once it leaves the live game, so the client's
+ * copy can drift from what the stats were built against, or disappear.
+ */
+const gameDataKey = (set: number) => `${archivePrefix(set)}game-data.json`;
+const GAME_DATA_KEY = /^archive\/set(\d+)\/game-data\.json$/;
 
 /** Whether `set` is finished: not the live set, and without new boards for `FREEZE_AFTER_DAYS`. */
 export function shouldFreeze(set: number, liveSet: number, chunks: BoardChunk[], now: Date): boolean {
@@ -47,12 +53,14 @@ const isSetStats = (path: string) =>
 /**
  * Archives a set's freshly built files under `outDir`: Explorer files to `bucket` (served publicly from
  * `archive/set{N}/explorer/`, and removed locally so they aren't published with the live build), everything else to
- * `store`, then the marker. Archive files the new build no longer has are removed, so re-freezing starts clean.
+ * `store`, along with its game data from `dataDir`, then the marker. Archive files the new build no longer has are
+ * removed, so re-freezing starts clean.
  */
 export async function freezeSet(
   store: BlobStore,
   bucket: BlobStore,
   outDir: string,
+  dataDir: string,
   set: number,
   patch: string,
   now: Date,
@@ -82,6 +90,7 @@ export async function freezeSet(
   for (const key of await bucket.list(`archive/${explorerPrefix}`))
     if (!written.explorer.has(key)) await bucket.delete(key);
   await rm(join(outDir, explorerPrefix), { recursive: true, force: true });
+  await store.put(gameDataKey(set), await readFile(join(dataDir, `set${set}.json`)));
 
   const marker: ArchiveMarker = { patch, frozenAt: now.toISOString() };
   await store.put(markerKey(set), JSON.stringify(marker));
@@ -101,4 +110,22 @@ export async function restoreArchive(store: BlobStore, outDir: string, set: numb
     await writeFile(file, data);
   }
   return JSON.parse(new TextDecoder().decode(marker)) as ArchiveMarker;
+}
+
+/**
+ * Writes each archived set's game data to `dataDir` (`public/data/latest`), over the client's copy if it still has one.
+ * Returns the sets restored, so the manifest can list sets the client no longer has.
+ */
+export async function restoreFrozenGameData(store: BlobStore, dataDir: string): Promise<number[]> {
+  const sets: number[] = [];
+  for (const key of await store.list("archive/")) {
+    const set = Number(key.match(GAME_DATA_KEY)?.[1]);
+    if (!set) continue;
+    const data = await store.get(key);
+    if (!data) throw new Error(`Archived game data ${key} disappeared while restoring it`);
+    await mkdir(dataDir, { recursive: true });
+    await writeFile(join(dataDir, `set${set}.json`), data);
+    sets.push(set);
+  }
+  return sets;
 }

@@ -198,7 +198,10 @@ match data, so the augment tier list and comp guides stay hand-written.
 - **Finished sets:** once a set is no longer the live set and no new boards have come in for 7 days, the next deploy
   builds it one last time and freezes it. Its built files are archived in the stats bucket (`archive/set{N}/`) and its
   Explorer files in the public bucket (`archive/set{N}/explorer/`), and later deploys publish the archive instead of
-  rebuilding the set; its pages say the stats are final. The set's boards stay in R2 but aren't read again. To rebuild a
+  rebuilding the set; its pages say the stats are final. Its game data is archived too
+  (`archive/set{N}/game-data.json`) and replaces the client's copy on every deploy. Riot stops maintaining old sets, so
+  that copy can drift from what the stats were built against, and the set stays listed if the client drops it. The
+  set's boards stay in R2 but aren't read again. To rebuild a
   frozen set from them, delete `archive/set{N}/complete.json` from the stats bucket and run the **Deploy** workflow
   manually; it re-freezes the set.
 - **Explorer** (`/explorer`): every board of the patch, queried in the browser (in a Web Worker). A query loads its

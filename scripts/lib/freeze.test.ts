@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FileBlobStore } from "../stats/blob.ts";
 import type { BoardChunk } from "../stats/state.ts";
-import { FREEZE_AFTER_DAYS, freezeSet, restoreArchive, shouldFreeze } from "./freeze.ts";
+import { FREEZE_AFTER_DAYS, freezeSet, restoreArchive, restoreFrozenGameData, shouldFreeze } from "./freeze.ts";
 
 const chunk = (set: number, name: string): BoardChunk => ({ key: "", set, patch: "18.5", name });
 
@@ -29,6 +29,7 @@ describe("shouldFreeze", () => {
 describe("freezeSet and restoreArchive", () => {
   let root: string;
   let outDir: string;
+  let dataDir: string;
   let store: FileBlobStore;
   let bucket: FileBlobStore;
   const write = async (path: string, contents: string) => {
@@ -40,6 +41,9 @@ describe("freezeSet and restoreArchive", () => {
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), "freeze-"));
     outDir = join(root, "out");
+    dataDir = join(root, "data");
+    await mkdir(dataDir);
+    await writeFile(join(dataDir, "set18.json"), JSON.stringify({ number: 18, champions: ["Ahri"] }));
     store = new FileBlobStore(join(root, "private"));
     bucket = new FileBlobStore(join(root, "public"));
     await write("set18.json", JSON.stringify({ set: 18, patch: "18.5" }));
@@ -56,7 +60,7 @@ describe("freezeSet and restoreArchive", () => {
     expect(await restoreArchive(store, outDir, 18)).toBeNull();
 
     const now = new Date("2026-12-20T00:00:00Z");
-    expect(await freezeSet(store, bucket, outDir, 18, "18.5", now)).toEqual({ files: 4, explorerFiles: 1 });
+    expect(await freezeSet(store, bucket, outDir, dataDir, 18, "18.5", now)).toEqual({ files: 4, explorerFiles: 1 });
     expect(await bucket.list("archive/")).toEqual(["archive/set18/explorer/totals.json"]);
     expect((await store.list("archive/set18/files/")).sort()).toEqual([
       "archive/set18/files/set18.json",
@@ -73,5 +77,21 @@ describe("freezeSet and restoreArchive", () => {
     expect(await restoreArchive(store, outDir, 18)).toEqual({ patch: "18.5", frozenAt: now.toISOString() });
     expect(JSON.parse(await read("set18.json")).frozen).toBe(true);
     expect(JSON.parse(await read("set18/champions/Ahri.json"))).toEqual({ apiName: "Ahri" });
+  });
+
+  it("keeps the game data the set was frozen with, even once the client changes or drops it", async () => {
+    expect(await restoreFrozenGameData(store, dataDir)).toEqual([]);
+    await freezeSet(store, bucket, outDir, dataDir, 18, "18.5", new Date());
+
+    await writeFile(join(dataDir, "set18.json"), JSON.stringify({ number: 18, champions: ["Changed"] }));
+    expect(await restoreFrozenGameData(store, dataDir)).toEqual([18]);
+    expect(JSON.parse(await readFile(join(dataDir, "set18.json"), "utf8"))).toEqual({
+      number: 18,
+      champions: ["Ahri"],
+    });
+
+    await rm(dataDir, { recursive: true });
+    expect(await restoreFrozenGameData(store, dataDir)).toEqual([18]);
+    expect(JSON.parse(await readFile(join(dataDir, "set18.json"), "utf8")).champions).toEqual(["Ahri"]);
   });
 });
