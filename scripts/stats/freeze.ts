@@ -1,8 +1,8 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
-import { type BlobStore, FileBlobStore } from "../stats/blob.ts";
-import { R2BlobStore, r2ConfigFromEnv } from "../stats/r2.ts";
-import { archivePrefix, type BoardChunk, chunkTime } from "../stats/state.ts";
+import { type BlobStore, FileBlobStore } from "../store/blob.ts";
+import { R2BlobStore, r2ConfigFromEnv } from "../store/r2.ts";
+import { archivePrefix, type BoardChunk, chunkTime } from "../store/state.ts";
 import { explorerHeaders } from "./explorer-publish.ts";
 
 /** A set that has left the live game freezes once this long has passed without new boards. */

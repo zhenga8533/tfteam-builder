@@ -1,4 +1,4 @@
-import type { TrackedPlayer } from "./types.ts";
+import type { TrackedPlayer } from "../store/types.ts";
 
 /**
  * A pool sorted least recently crawled first. Players crawled equally recently (all of a new pool) are spread out in

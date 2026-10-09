@@ -1,4 +1,4 @@
-import { RANK_BUCKETS, type RankBucket } from "./types.ts";
+import { RANK_BUCKETS, type RankBucket } from "../store/types.ts";
 
 export interface RegionResult {
   region: string;

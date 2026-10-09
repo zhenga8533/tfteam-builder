@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { crawlOrder } from "./crawl-order.ts";
-import type { RankBucket, TrackedPlayer } from "./types.ts";
+import { crawlOrder } from "./order.ts";
+import type { RankBucket, TrackedPlayer } from "../store/types.ts";
 
 const players = (bucket: RankBucket, count: number, lastCrawledAt?: number): TrackedPlayer[] =>
   Array.from({ length: count }, (_, i) => ({ puuid: `${bucket}${i}`, bucket, lastCrawledAt }));

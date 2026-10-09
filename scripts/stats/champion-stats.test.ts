@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SetData } from "../../src/lib/data/schema.ts";
-import type { BoardRow } from "../stats/types.ts";
+import type { BoardRow } from "../store/types.ts";
 import { BoardResolver } from "./boards.ts";
 import { ChampionAccumulator, itemSubsets, MIN_CHAMPION_GAMES } from "./champion-stats.ts";
 

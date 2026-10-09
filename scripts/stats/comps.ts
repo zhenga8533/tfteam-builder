@@ -7,7 +7,7 @@ import {
   pickCoreTraits,
 } from "../../src/lib/game/comp-signature.ts";
 import { traitStyle } from "../../src/lib/game/traits.ts";
-import type { Counter } from "../stats/types.ts";
+import type { Counter } from "../store/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
 import { addCounter, bump, counterFor, emptyCounter, round, statLine } from "../../src/lib/game/stat-line.ts";
 import { assignTiers } from "./stats.ts";

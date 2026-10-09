@@ -1,14 +1,14 @@
 import { appendFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
-import { fetchTftPatches, mergeTimelines, patchAt } from "../lib/tft-patches.ts";
-import { isRankedStandard, matchToRows } from "./aggregate.ts";
-import { REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./regions.ts";
-import { crawlOrder } from "./crawl-order.ts";
-import { renderCrawlReport } from "./crawl-report.ts";
-import { ApiKeyRejectedError, BudgetExceededError, RiotClient } from "./riot.ts";
-import { seedPlayers } from "./seed.ts";
-import { createStatsStore, runStamp } from "./state.ts";
-import { type BoardRow, RANK_BUCKETS, type RankBucket } from "./types.ts";
+import { fetchTftPatches, mergeTimelines, patchAt } from "./lib/tft-patches.ts";
+import { isRankedStandard, matchToRows } from "./lib/aggregate.ts";
+import { REGIONAL_HOSTS, type RegionalHost, selectPlatforms } from "./crawl/regions.ts";
+import { crawlOrder } from "./crawl/order.ts";
+import { renderCrawlReport } from "./crawl/report.ts";
+import { ApiKeyRejectedError, BudgetExceededError, RiotClient } from "./crawl/riot.ts";
+import { seedPlayers } from "./crawl/seed.ts";
+import { createStatsStore, runStamp } from "./store/state.ts";
+import { type BoardRow, RANK_BUCKETS, type RankBucket } from "./store/types.ts";
 
 const HOUR = 3600;
 const DAY = 24 * HOUR;

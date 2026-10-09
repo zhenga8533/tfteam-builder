@@ -1,5 +1,5 @@
 import { addCounter, bump as bumpCounter, emptyCounter } from "../../src/lib/game/stat-line.ts";
-import type { BoardExtras, BoardRow, Counter, Counters, Match, PatchCounters, RankBucket } from "./types.ts";
+import type { BoardExtras, BoardRow, Counter, Counters, Match, PatchCounters, RankBucket } from "../store/types.ts";
 
 const RANKED_QUEUE_ID = 1100;
 

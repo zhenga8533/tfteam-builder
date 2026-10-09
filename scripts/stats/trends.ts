@@ -1,8 +1,8 @@
 import type { AutoComp, PatchHistory, PatchTrend, SetData, SetStats, StatLine } from "../../src/lib/data/schema.ts";
-import { comparePatches } from "../stats/state.ts";
+import { comparePatches } from "../store/state.ts";
 import { round } from "../../src/lib/game/stat-line.ts";
 import { traitKey } from "../../src/lib/game/traits.ts";
-import type { PatchCounters } from "../stats/types.ts";
+import type { PatchCounters } from "../store/types.ts";
 import { buildNewestPatchStats, MIN_EARLY_MATCHES, MIN_GAMES } from "./stats.ts";
 
 type Lines = Record<string, StatLine>;

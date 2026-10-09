@@ -1,6 +1,6 @@
 import type { ExplorerBoard } from "../../src/lib/explorer/format.ts";
 import { TotalsAccumulator } from "../../src/lib/explorer/totals.ts";
-import { RANK_BUCKETS, type RankBucket } from "../stats/types.ts";
+import { RANK_BUCKETS, type RankBucket } from "../store/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
 
 /** A growable list of non-negative integers, stored in a typed array: 16-bit for small values, else 32-bit. */

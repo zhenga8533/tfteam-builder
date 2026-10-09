@@ -1,5 +1,5 @@
 import type { RegionalHost } from "./regions.ts";
-import type { LeagueEntry, LeagueList, Match } from "./types.ts";
+import type { LeagueEntry, LeagueList, Match } from "../store/types.ts";
 
 export interface Clock {
   now: () => number;

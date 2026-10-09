@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AutoComp, SetData, SetStats, StatLine } from "../../src/lib/data/schema.ts";
-import { emptyCounters } from "../stats/aggregate.ts";
-import type { PatchCounters } from "../stats/types.ts";
+import { emptyCounters } from "../lib/aggregate.ts";
+import type { PatchCounters } from "../store/types.ts";
 import { MIN_EARLY_MATCHES, MIN_GAMES } from "./stats.ts";
 import { compTrends, droppedComps, otherPatchStats, patchHistory, patchTrend } from "./trends.ts";
 

@@ -1,6 +1,6 @@
 import type { Platform } from "./regions.ts";
 import type { RiotClient } from "./riot.ts";
-import { RANK_BUCKETS, type RankBucket, type TrackedPlayer } from "./types.ts";
+import { RANK_BUCKETS, type RankBucket, type TrackedPlayer } from "../store/types.ts";
 
 const APEX_TIERS = ["challenger", "grandmaster", "master"] as const;
 const DIVISIONS = ["I", "II", "III", "IV"];

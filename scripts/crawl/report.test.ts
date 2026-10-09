@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderCrawlReport } from "./crawl-report.ts";
+import { renderCrawlReport } from "./report.ts";
 
 describe("renderCrawlReport", () => {
   const report = {
