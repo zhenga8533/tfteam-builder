@@ -44,10 +44,11 @@ const ROOT = join(import.meta.dirname, "..");
 const DATA_DIR = join(ROOT, "public", "data");
 const OUT_DIR = join(DATA_DIR, "stats");
 /**
- * Games this close to a patch change are left out of the stats: the notes date each change but not its hour, so they
- * could be from either patch. A few hours of games per patch buys stats that don't mix two balance states.
+ * Games this many hours either side of a patch change are left out of the stats: the notes date each change but not
+ * its hour (it's taken as 18:00 UTC, when Riot publishes them), so they could be from either patch. A few hours of
+ * games per patch buys stats that don't mix two balance states.
  */
-const PATCH_CHANGE_MARGIN_MS = 6 * 3_600_000;
+const PATCH_CHANGE_MARGIN_HOURS = 3;
 /** The site shows the newest patch, falling back to the previous one right after a patch. */
 const PATCHES_PER_SET = 2;
 
@@ -387,7 +388,8 @@ async function buildSet(
 
   const data = await readJson<SetData>(join(DATA_DIR, "latest", `set${set}.json`));
   const forms = new FormInference(data);
-  const nearChange = (row: BoardRow) => nearPatchChange(timeline, set, row[1] * 1000, PATCH_CHANGE_MARGIN_MS);
+  const nearChange = (row: BoardRow) =>
+    nearPatchChange(timeline, set, row[1] * 1000, PATCH_CHANGE_MARGIN_HOURS * 3_600_000);
   // Counted once per chunk, though chunks are read in several passes.
   const skipped = new Map<string, number>();
   const read: ReadBoards = async (chunk) => {
@@ -450,7 +452,7 @@ async function buildSet(
       (stats.newestPatch ? ` (patch ${stats.newestPatch.patch} has ${stats.newestPatch.matches} matches so far)` : ""),
   );
   const left = [...skipped.values()].reduce((total, count) => total + count, 0);
-  if (left) console.log(`  left out ${left} boards played within 6 hours of a patch change`);
+  if (left) console.log(`  left out ${left} boards played within ${PATCH_CHANGE_MARGIN_HOURS} hours of a patch change`);
   for (const [kind, names] of Object.entries(unknown)) {
     if (names.size) console.warn(`  unmapped ${kind}: ${top(names)}`);
   }
