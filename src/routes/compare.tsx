@@ -11,6 +11,7 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatTrend, TrendBadge } from "@/features/stats/components/patch-trend";
 import { LowSampleBadge } from "@/features/stats/components/stat-summary";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
+import { isRegion, type Region } from "@/lib/data/constants";
 import { count, percent, placement, share } from "@/features/stats/format";
 import { parseRank } from "@/features/stats/scope";
 import { useAutoComps, useCompTrendPatch, useGameData, useTierStats } from "@/lib/data/hooks";
@@ -30,6 +31,8 @@ type Kind = (typeof KINDS)[number];
 interface CompareSearch {
   kind?: Kind;
   rank?: RankFloor;
+  /** Champions and items only: detected comps have no regional stats. */
+  region?: Region;
   a?: string;
   b?: string;
 }
@@ -39,6 +42,7 @@ export const Route = createFileRoute("/compare")({
   validateSearch: (search: Record<string, unknown>): CompareSearch => ({
     kind: oneOf(KINDS, search.kind),
     rank: parseRank(search.rank),
+    region: isRegion(search.region) ? search.region : undefined,
     a: stringParam(search.a),
     b: stringParam(search.b),
   }),
@@ -148,9 +152,9 @@ function CompareTable({ sides }: { sides: [Side | undefined, Side | undefined] }
   );
 }
 
-function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
+function ChampionCompare({ a, b, rank, region }: { a?: string; b?: string; rank?: RankFloor; region?: Region }) {
   const { championsByApi, traitsByApi, itemsByApi } = useGameData();
-  const stats = useTierStats(rank);
+  const stats = useTierStats(rank, region);
   const side = (apiName?: string): Side | undefined => {
     const champion = apiName ? championsByApi.get(apiName) : undefined;
     if (!champion) return undefined;
@@ -195,9 +199,9 @@ function ChampionCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFl
   return <CompareTable sides={[side(a), side(b)]} />;
 }
 
-function ItemCompare({ a, b, rank }: { a?: string; b?: string; rank?: RankFloor }) {
+function ItemCompare({ a, b, rank, region }: { a?: string; b?: string; rank?: RankFloor; region?: Region }) {
   const { itemsByApi, championsByApi } = useGameData();
-  const stats = useTierStats(rank);
+  const stats = useTierStats(rank, region);
   const side = (apiName?: string): Side | undefined => {
     const item = apiName ? itemsByApi.get(apiName) : undefined;
     if (!item) return undefined;
@@ -305,22 +309,33 @@ const KIND_LABEL: Record<Kind, string> = { champions: "Champions", items: "Items
 
 function ComparePage() {
   const search = Route.useSearch();
-  const stats = useTierStats(search.rank);
-  const update = useUpdateSearch<CompareSearch>();
   const kind = search.kind ?? "champions";
+  const region = kind === "comps" ? undefined : search.region;
+  const stats = useTierStats(search.rank, region);
+  const update = useUpdateSearch<CompareSearch>();
   const options = usePickerOptions(kind, search.rank);
   const singular = KIND_LABEL[kind].toLowerCase().replace(/s$/, "");
 
   return (
     <>
       <PageHeader title="Compare" description="Two champions, items or comps side by side, from ranked games." />
-      {stats && <StatsMeta stats={stats} onRankChange={(rank) => update({ rank })} />}
+      {stats && (
+        <StatsMeta
+          stats={stats}
+          // Regional stats exist at the default rank floor only, so picking one clears the other.
+          onRankChange={(rank) => update({ rank, region: undefined })}
+          region={kind === "comps" ? undefined : { onChange: (region) => update({ region, rank: undefined }) }}
+        />
+      )}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <ToggleGroup
           type="single"
           variant="outline"
           value={kind}
-          onValueChange={(value) => value && update({ kind: value as Kind, a: undefined, b: undefined })}
+          onValueChange={(value) =>
+            value &&
+            update({ kind: value as Kind, a: undefined, b: undefined, region: value === "comps" ? undefined : region })
+          }
           aria-label="What to compare"
         >
           {KINDS.map((option) => (
@@ -344,9 +359,9 @@ function ComparePage() {
       {!stats ? (
         <NoStats />
       ) : kind === "champions" ? (
-        <ChampionCompare a={search.a} b={search.b} rank={search.rank} />
+        <ChampionCompare a={search.a} b={search.b} rank={search.rank} region={region} />
       ) : kind === "items" ? (
-        <ItemCompare a={search.a} b={search.b} rank={search.rank} />
+        <ItemCompare a={search.a} b={search.b} rank={search.rank} region={region} />
       ) : (
         <CompCompare a={search.a} b={search.b} rank={search.rank} />
       )}
