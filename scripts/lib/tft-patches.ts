@@ -120,10 +120,11 @@ export function midPatchSection(data: unknown): string {
   return sections.join("");
 }
 
-/** A balance change in the notes: `Mana: 30/120 ⇒ 20/110`. */
-const BALANCE_CHANGE = /⇒/g;
-/** An update with at least this many balance changes changes the balance; fewer is bug and performance fixes. */
-const MIN_BALANCE_CHANGES = 3;
+/**
+ * A balance change in the notes: `Mana: 30/120 ⇒ 20/110`. One is enough to start a patch: a single emergency nerf
+ * still changes how what it touches plays, and bug and performance fix updates don't list any.
+ */
+const BALANCE_CHANGE = /⇒/;
 
 /** The dated updates in a mid-patch section (each from a heading with its date), oldest first, with their text. */
 function midPatchEntries(section: string, article: PatchArticle): { since: number; text: string }[] {
@@ -164,8 +165,7 @@ export function parseMidPatches(section: string, article: PatchArticle): { lette
   let letter = "a";
   for (const entry of midPatchEntries(section, article)) {
     letter = namedLetter(entry.text, article) ?? nextLetter(letter);
-    const changes = entry.text.match(BALANCE_CHANGE)?.length ?? 0;
-    if (changes >= MIN_BALANCE_CHANGES) patches.push({ letter, since: entry.since });
+    if (BALANCE_CHANGE.test(entry.text)) patches.push({ letter, since: entry.since });
   }
   return patches;
 }

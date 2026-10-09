@@ -95,6 +95,17 @@ describe("TFT patch notes", () => {
     ]);
   });
 
+  it("starts a patch at a single balance change", () => {
+    const notes = page({
+      props: {
+        body: "<h2>MID-PATCH UPDATE</h2><h4>OCTOBER 9TH</h4><p>Hotfix: Wisp Health: 600 ⇒ 500</p><h4>OCTOBER 8TH</h4><p>Bug fixes.</p>",
+      },
+    });
+    expect(parseMidPatches(midPatchSection(nextData(notes)), articles[0]!)).toEqual([
+      { letter: "c", since: Date.UTC(2026, 9, 9, 18) },
+    ]);
+  });
+
   it("uses the letter an update names over the count", () => {
     const notes = page({
       props: {
