@@ -1,7 +1,7 @@
 import type { LittleLegend } from "../../src/lib/data/schema.ts";
 import { addCounter, bump, type Counter, counterFor, statLine } from "../../src/lib/game/stat-line.ts";
 import type { ResolvedBoard } from "./boards.ts";
-import { CDRAGON_BASE } from "./cdragon.ts";
+import { CDRAGON_BASE } from "../data/cdragon.ts";
 
 const COMPANIONS_URL = `${CDRAGON_BASE}/latest/plugins/rcp-be-lol-game-data/global/default/v1/companions.json`;
 const GAME_DATA_ASSETS = "/lol-game-data/assets/";

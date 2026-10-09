@@ -1,10 +1,10 @@
 import { RANK_FLOORS, type Region, STAT_TIERS } from "../../src/lib/data/constants.ts";
 import type { RankFloor, SetData, SetStats, StatLine, TraitStat } from "../../src/lib/data/schema.ts";
 import { addCounter, counterFor, statLine } from "../../src/lib/game/stat-line.ts";
-import { emptyCounters, mergeCounters } from "../stats/aggregate.ts";
+import { emptyCounters, mergeCounters } from "../lib/aggregate.ts";
 
-import { comparePatches } from "../stats/state.ts";
-import { type Counter, type Counters, type PatchCounters, RANK_BUCKETS, type RankBucket } from "../stats/types.ts";
+import { comparePatches } from "../store/state.ts";
+import { type Counter, type Counters, type PatchCounters, RANK_BUCKETS, type RankBucket } from "../store/types.ts";
 
 /** Minimum ranked matches before a rank floor (and patch) is trusted. */
 const MIN_MATCHES = 2000;

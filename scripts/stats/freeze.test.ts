@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { FileBlobStore } from "../stats/blob.ts";
-import type { BoardChunk } from "../stats/state.ts";
+import { FileBlobStore } from "../store/blob.ts";
+import type { BoardChunk } from "../store/state.ts";
 import { FREEZE_AFTER_DAYS, freezeSet, restoreArchive, restoreFrozenGameData, shouldFreeze } from "./freeze.ts";
 
 const chunk = (set: number, name: string): BoardChunk => ({ key: "", set, patch: "18.5", name });

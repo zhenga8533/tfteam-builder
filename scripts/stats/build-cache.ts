@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
-import type { BlobStore } from "../stats/blob.ts";
-import { forEachConcurrently } from "./parallel.ts";
+import type { BlobStore } from "../store/blob.ts";
+import { forEachConcurrently } from "../lib/parallel.ts";
 
 /**
  * The last full stats build, kept so a deploy with nothing new to build (e.g. after a site-only change) republishes it

@@ -1,5 +1,5 @@
 import type { SetData } from "../../src/lib/data/schema.ts";
-import type { BoardRow } from "../stats/types.ts";
+import type { BoardRow } from "../store/types.ts";
 import { rankableItems, resolversFor } from "./stats.ts";
 
 export interface ResolvedUnit {

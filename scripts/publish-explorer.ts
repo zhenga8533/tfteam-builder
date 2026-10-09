@@ -10,10 +10,10 @@
  */
 import { appendFile, readdir, readFile, rm } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
-import { markBuild } from "./lib/build-cache.ts";
-import { explorerHeaders, staleKeys } from "./lib/explorer-publish.ts";
+import { markBuild } from "./stats/build-cache.ts";
+import { explorerHeaders, staleKeys } from "./stats/explorer-publish.ts";
 import { forEachConcurrently } from "./lib/parallel.ts";
-import { R2BlobStore, r2ConfigFromEnv } from "./stats/r2.ts";
+import { R2BlobStore, r2ConfigFromEnv } from "./store/r2.ts";
 
 const STATS_DIR = join(import.meta.dirname, "..", "public", "data", "stats");
 /** Requests to R2 in flight at once: one at a time, hundreds of files take minutes. */

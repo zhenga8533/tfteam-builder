@@ -141,10 +141,15 @@ npm run dev
 ## Architecture
 
 ```
-scripts/            CommunityDragon data pipeline; stats/ crawler and stats build
+scripts/            entry points: build-data, crawl, build-stats, publish-explorer
+  data/             game data from CommunityDragon (transform, shop odds, set items)
+  crawl/            match crawler (Riot API client, player seeding, crawl order and report)
+  store/            stored boards and stats in R2 (or a local folder), and their types
+  stats/            stats build (tier lists, detail pages, comps, trends, Explorer, freezing)
+  lib/              shared by the above (patch notes timeline, board counting, concurrency)
 src/
   routes/           file-based routes (TanStack Router)
-  features/         builder/, comps/, stats/ and explorer/ feature modules
+  features/         builder/, comps/, stats/, explorer/ and tier-maker/ feature modules
   components/       ui/ (shadcn), game/ (icons, cards, links, hex grid), layout/
   content/          authored comps and tier lists
   lib/              data loading, game logic (board, traits, trait planner, stat lines), explorer engine
@@ -168,7 +173,7 @@ Champion, item and trait tier lists, the stat lines on database pages, and the b
 ranked games collected through the [Riot Games API](https://developer.riotgames.com/). Riot no longer includes augments in
 match data, so the augment tier list and comp guides stay hand-written.
 
-- **Crawl** (`.github/workflows/crawl.yml`, every 3 hours): `scripts/stats/crawl.ts` builds a player pool on every server
+- **Crawl** (`.github/workflows/crawl.yml`, every 3 hours): `scripts/crawl.ts` builds a player pool on every server
   and fetches their new ranked matches. Each pool is shared between tiers (40% Master+, 35% Diamond, 25% Emerald), so
   every rank floor gets games of its own; space a tier can't fill passes down, reaching Platinum and Gold only early in
   a set. A match counts toward the tier of the player it was found through. Every player's final board is stored in

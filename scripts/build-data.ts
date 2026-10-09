@@ -2,10 +2,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PATCHES } from "../src/lib/data/constants.ts";
 import { type Manifest, manifestSchema, type Patch, setDataSchema } from "../src/lib/data/schema.ts";
-import { fetchMapData, fetchTeamPlanner, fetchTftData, fetchVersion, patchLabel } from "./lib/cdragon.ts";
-import { buildShop } from "./lib/shop.ts";
+import { fetchMapData, fetchTeamPlanner, fetchTftData, fetchVersion, patchLabel } from "./data/cdragon.ts";
+import { buildShop } from "./data/shop.ts";
 import { fetchTftPatches, switcherLabels } from "./lib/tft-patches.ts";
-import { buildSet, mainlineSets } from "./lib/transform.ts";
+import { buildSet, mainlineSets } from "./data/transform.ts";
 
 const OUT_DIR = join(import.meta.dirname, "..", "public", "data");
 const force = process.argv.includes("--force");

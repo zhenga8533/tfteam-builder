@@ -1,5 +1,5 @@
 import type { ChampionStats, StatLine } from "../../src/lib/data/schema.ts";
-import type { Counter } from "../stats/types.ts";
+import type { Counter } from "../store/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
 import { bump as bumpCounter, counterFor, round, statLine } from "../../src/lib/game/stat-line.ts";
 import { parseTraitKey, traitKey } from "../../src/lib/game/traits.ts";

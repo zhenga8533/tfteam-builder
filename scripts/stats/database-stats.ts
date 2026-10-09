@@ -1,6 +1,6 @@
 import type { AutoComp, ChampionStats, ItemStats, StatLine, TraitStats } from "../../src/lib/data/schema.ts";
 import { bump as bumpCounter, counterFor, round, statLine } from "../../src/lib/game/stat-line.ts";
-import type { Counter } from "../stats/types.ts";
+import type { Counter } from "../store/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
 
 /** Minimum games before an item pairing or a unit in a trait is listed. */
