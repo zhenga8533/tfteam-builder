@@ -2,14 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChampionCard } from "@/components/game/cards";
-import { type ChoiceOption, ChoiceFilter } from "@/components/game/choice-filter";
 import { ChampionFilterBar } from "@/components/game/filters";
 import { type ChampionFilters, matchesChampionFilters, parseChampionFilters } from "@/components/game/filter-params";
 import { ChampionIcon, TraitIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
+import { DATABASE_SORT_LABELS, type DatabaseSort, orderEntries, parseDatabaseSort } from "@/features/stats/sort";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
@@ -17,25 +18,18 @@ import { share } from "@/features/stats/format";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
-import { oneOf } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
 interface ChampionSearch extends ChampionFilters {
-  sort?: "avg" | "play";
+  sort?: DatabaseSort;
 }
-
-const SORTS: ChoiceOption<"cost" | "avg" | "play">[] = [
-  { value: "cost", label: "By cost" },
-  { value: "avg", label: "By placement" },
-  { value: "play", label: "By play rate" },
-];
 
 export const Route = createFileRoute("/champions")({
   head: () => ({ meta: [{ title: "Champions · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionSearch => ({
     ...parseChampionFilters(search),
-    sort: oneOf(["avg", "play"] as const, search.sort),
+    sort: parseDatabaseSort(search.sort),
   }),
   component: ChampionsPage,
 });
@@ -125,15 +119,14 @@ function ChampionsPage() {
   const stats = useStats();
   const groups = useMemo(() => {
     const filtered = champions.filter((champion) => matchesChampionFilters(champion, search));
-    if (search.sort === "avg" && stats?.status === "ready") {
-      const score = (champion: Champion) => stats.units[champion.apiName]?.score ?? Infinity;
+    if (search.sort && stats?.status === "ready") {
       return [
-        { title: "By average placement", cost: undefined, champions: filtered.sort((a, b) => score(a) - score(b)) },
+        {
+          title: DATABASE_SORT_LABELS[search.sort],
+          cost: undefined,
+          champions: orderEntries(filtered, (champion) => stats.units[champion.apiName], search.sort),
+        },
       ];
-    }
-    if (search.sort === "play" && stats?.status === "ready") {
-      const play = (champion: Champion) => stats.units[champion.apiName]?.play ?? 0;
-      return [{ title: "By play rate", cost: undefined, champions: filtered.sort((a, b) => play(b) - play(a)) }];
     }
     return COSTS.map((cost) => ({
       title: `${cost} Cost`,
@@ -149,12 +142,7 @@ function ChampionsPage() {
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <ChampionFilterBar value={search} onChange={update} />
         {stats?.status === "ready" && (
-          <ChoiceFilter
-            options={SORTS}
-            value={search.sort ?? "cost"}
-            onChange={(sort) => update({ sort: sort === "cost" ? undefined : sort })}
-            label="Sort"
-          />
+          <DatabaseSortFilter defaultLabel="By cost" value={search.sort} onChange={(sort) => update({ sort })} />
         )}
       </div>
 

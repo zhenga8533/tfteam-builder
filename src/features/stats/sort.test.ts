@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StatLine } from "@/lib/data/schema";
-import { formatStat, parseStatSort, rankByStat } from "./sort";
+import { formatStat, orderEntries, parseStatSort, rankByStat } from "./sort";
 
 const line = (stats: Partial<StatLine>): StatLine => ({
   games: 1000,
@@ -34,5 +34,19 @@ describe("formatStat", () => {
   it("shows small play rates with a decimal and win rates to one decimal", () => {
     expect(formatStat(line({ play: 0.034 }), "play")).toBe("3.4%");
     expect(formatStat(line({ win: 0.1567 }), "win")).toBe("15.7%");
+  });
+});
+
+describe("orderEntries", () => {
+  const entries = [
+    { key: "a", line: line({ score: 4.4, play: 0.2 }) },
+    { key: "none", line: undefined },
+    { key: "b", line: line({ score: 4.1, play: 0.1 }) },
+  ];
+  const keys = (sorted: typeof entries) => sorted.map((entry) => entry.key);
+
+  it("puts the best placement or the most played first, and entries without stats last", () => {
+    expect(keys(orderEntries(entries, (entry) => entry.line, "avg"))).toEqual(["b", "a", "none"]);
+    expect(keys(orderEntries(entries, (entry) => entry.line, "play"))).toEqual(["a", "b", "none"]);
   });
 });

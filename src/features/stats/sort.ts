@@ -16,3 +16,24 @@ export const formatStat = (line: StatLine, sort: StatSort) =>
 /** Highest `sort` first; ties go to the better placement. */
 export const rankByStat = <T>(entries: T[], lineOf: (entry: T) => StatLine, sort: StatSort): T[] =>
   entries.toSorted((a, b) => lineOf(b)[sort] - lineOf(a)[sort] || lineOf(a).score - lineOf(b).score);
+
+/** How a database page can order its entries in place of its own default order. */
+export const DATABASE_SORTS = ["avg", "play"] as const;
+export type DatabaseSort = (typeof DATABASE_SORTS)[number];
+
+export const DATABASE_SORT_LABELS: Record<DatabaseSort, string> = { avg: "By placement", play: "By play rate" };
+
+export const parseDatabaseSort = (value: unknown): DatabaseSort | undefined => oneOf(DATABASE_SORTS, value);
+
+/** Best placement or most played first; entries without stats go last. */
+export const orderEntries = <T>(
+  entries: T[],
+  lineOf: (entry: T) => Pick<StatLine, "score" | "play"> | undefined,
+  sort: DatabaseSort,
+): T[] => {
+  const key = (entry: T) => (sort === "avg" ? (lineOf(entry)?.score ?? Infinity) : -(lineOf(entry)?.play ?? 0));
+  return entries.toSorted((a, b) => {
+    const [x, y] = [key(a), key(b)];
+    return x === y ? 0 : x - y;
+  });
+};

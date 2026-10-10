@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ItemCard } from "@/components/game/cards";
 import { type ItemFilters, itemKindsIn, parseItemFilters } from "@/components/game/filter-params";
 import { ItemKindFilter } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
+import { type DatabaseSort, orderEntries, parseDatabaseSort } from "@/features/stats/sort";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
@@ -17,11 +19,16 @@ import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
-type ItemSearch = ItemFilters;
+interface ItemSearch extends ItemFilters {
+  sort?: DatabaseSort;
+}
 
 export const Route = createFileRoute("/items")({
   head: () => ({ meta: [{ title: "Items · TFTeam" }] }),
-  validateSearch: parseItemFilters,
+  validateSearch: (search: Record<string, unknown>): ItemSearch => ({
+    ...parseItemFilters(search),
+    sort: parseDatabaseSort(search.sort),
+  }),
   component: ItemsPage,
 });
 
@@ -159,7 +166,12 @@ function ItemsPage() {
   const search = Route.useSearch();
   const kind = search.kind ?? "completed";
   const kinds = itemKindsIn(items);
-  const filtered = items.filter((item) => item.kind === kind && matches(item.name, search.q));
+  const filtered = useMemo(() => {
+    const shown = items.filter((item) => item.kind === kind && matches(item.name, search.q));
+    return search.sort && stats?.status === "ready"
+      ? orderEntries(shown, (item) => stats.items[item.apiName], search.sort)
+      : shown;
+  }, [items, kind, search.q, search.sort, stats]);
 
   const update = useUpdateSearch<ItemSearch>();
 
@@ -174,6 +186,9 @@ function ItemsPage() {
           placeholder="Search items"
         />
         <ItemKindFilter kinds={kinds} value={kind} onChange={(next) => next && update({ kind: next })} />
+        {stats?.status === "ready" && (
+          <DatabaseSortFilter defaultLabel="By name" value={search.sort} onChange={(sort) => update({ sort })} />
+        )}
       </div>
 
       {kind === "completed" && !search.q && <CraftingTable />}
