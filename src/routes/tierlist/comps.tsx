@@ -15,6 +15,8 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import { parsePatch, parseRank } from "@/features/stats/scope";
+import { StatRanking, StatSortFilter } from "@/features/stats/components/stat-sort";
+import { parseStatSort, rankByStat, type StatSort } from "@/features/stats/sort";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
 import { oneOf } from "@/lib/search";
@@ -27,6 +29,7 @@ interface CompSearch extends CompFilters {
   view?: View;
   rank?: RankFloor;
   patch?: string;
+  sort?: StatSort;
 }
 
 export const Route = createFileRoute("/tierlist/comps")({
@@ -37,6 +40,7 @@ export const Route = createFileRoute("/tierlist/comps")({
     view: oneOf(["stats", "guides"] as const, search.view),
     rank: parseRank(search.rank),
     patch: parsePatch(search.patch),
+    sort: parseStatSort(search.sort),
   }),
   component: CompTierListPage,
 });
@@ -97,11 +101,13 @@ const StatRows = memo(function StatRows({
   filters,
   rank,
   patch,
+  sort,
 }: {
   comps: AutoComp[];
   filters: CompFilters;
   rank?: RankFloor;
   patch?: string;
+  sort?: StatSort;
 }) {
   const { championsByApi } = useGameData();
   const championName = (apiName: string) => championsByApi.get(apiName)?.name ?? "";
@@ -118,6 +124,19 @@ const StatRows = memo(function StatRows({
   );
   const shown = useProgressiveCount(filtered.length);
   if (filtered.length === 0) return <NoMatches what="comps" />;
+  if (sort) {
+    return (
+      <StatRanking sort={sort}>
+        <div className="grid gap-2 xl:grid-cols-2">
+          {rankByStat(filtered, (comp) => comp, sort)
+            .slice(0, shown)
+            .map((comp) => (
+              <AutoCompCard key={comp.id} comp={comp} rank={rank} patch={patch} sort={sort} />
+            ))}
+        </div>
+      </StatRanking>
+    );
+  }
   // Comps come best first, so the first batches fill the top tiers.
   const rows: Partial<Record<Tier, AutoComp[]>> = Object.groupBy(filtered.slice(0, shown), (comp) => comp.tier ?? "C");
   return (
@@ -159,6 +178,9 @@ function CompTierListPage() {
             <TabsTrigger value="guides">Guides ({guides.length})</TabsTrigger>
           </TabsList>
           <CompFilterBar value={search} onChange={update}>
+            {view === "stats" && detected.length > 0 && (
+              <StatSortFilter value={search.sort} onChange={(sort) => update({ sort })} />
+            )}
             {view === "guides" && (
               <ChoiceFilter
                 options={PLAYSTYLES.map((playstyle) => ({ value: playstyle, label: playstyle }))}
@@ -184,7 +206,7 @@ function CompTierListPage() {
           ) : detected.length === 0 ? (
             <EmptyState>No comps have enough games to be detected for Set {set} yet.</EmptyState>
           ) : (
-            <StatRows comps={detected} filters={filters} rank={search.rank} patch={search.patch} />
+            <StatRows comps={detected} filters={filters} rank={search.rank} patch={search.patch} sort={filters.sort} />
           )}
         </TabsContent>
         <TabsContent value="guides">

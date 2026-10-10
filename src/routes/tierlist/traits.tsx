@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/layout/search-input";
 import { ChoiceFilter } from "@/components/game/choice-filter";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
+import { parseStatSort, type StatSort } from "@/features/stats/sort";
 import { parseStatsScope, scopeChoices, type StatsScope } from "@/features/stats/scope";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
@@ -25,6 +26,7 @@ const STYLE_LABELS: Record<BreakpointStyle, string> = {
 };
 
 interface TraitTierSearch extends StatsScope {
+  sort?: StatSort;
   q?: string;
   style?: BreakpointStyle;
 }
@@ -33,6 +35,7 @@ export const Route = createFileRoute("/tierlist/traits")({
   head: () => ({ meta: [{ title: "Trait Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): TraitTierSearch => ({
     ...parseStatsScope(search),
+    sort: parseStatSort(search.sort),
     q: stringParam(search.q),
     style: oneOf(STYLES, search.style),
   }),
@@ -68,6 +71,7 @@ function TraitTierListPage() {
       visible={visible}
       stats={stats}
       {...scopeChoices(update)}
+      sort={{ value: search.sort, onChange: (sort) => update({ sort }) }}
       toolbar={
         <>
           <SearchInput
@@ -88,7 +92,7 @@ function TraitTierListPage() {
           />
         </>
       }
-      renderEntry={(key, line) => {
+      renderEntry={(key, line, sort) => {
         const found = traitBreakpoint(key, traitsByApi);
         if (!found) return null;
         const { trait, breakpoint } = found;
@@ -97,6 +101,7 @@ function TraitTierListPage() {
             icon={<TraitIcon trait={trait} style={traitStyle(breakpoint.style)} decorative className="size-12" />}
             label={`${breakpoint.minUnits} ${trait.name}`}
             line={line}
+            sort={sort}
             play="of games"
             link={{ to: "/traits/$apiName", params: { apiName: trait.apiName } }}
             trend={<StatTrend trend={stats?.trend} kind="traits" entry={key} />}

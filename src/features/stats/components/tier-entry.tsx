@@ -2,6 +2,7 @@ import { Link, type LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import type { StatLine } from "@/lib/data/schema";
+import { formatStat, STAT_SORT_LABELS, type StatSort } from "../sort";
 import { AvgPlacement, StatSummary } from "./stat-summary";
 
 interface TierEntryProps {
@@ -15,6 +16,8 @@ interface TierEntryProps {
   trend?: ReactNode;
   /** Shows the play rate in the hover card, with this wording (see `StatSummary`). */
   play?: string;
+  /** Shows this stat under the label in place of the average placement. */
+  sort?: StatSort;
 }
 
 /** A trend badge as a chip on an icon's corner; hidden when the badge has nothing to show. */
@@ -25,10 +28,10 @@ const ENTRY_CLASS =
   "flex w-16 flex-col items-center gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 /**
- * Icon, name and average placement, with the full game card (plus stats) on hover. The trend sits on the icon's corner,
+ * Icon, name and average placement (or the stat the list is sorted by), with the full game card (plus stats) on hover. The trend sits on the icon's corner,
  * so entries with and without one are the same size.
  */
-export function TierEntry({ icon, label, line, card, link, trend, play }: TierEntryProps) {
+export function TierEntry({ icon, label, line, card, link, trend, play, sort }: TierEntryProps) {
   const content = (
     <>
       <span className="relative">
@@ -36,7 +39,14 @@ export function TierEntry({ icon, label, line, card, link, trend, play }: TierEn
         {trend && <span className={TREND_CHIP}>{trend}</span>}
       </span>
       <span className="line-clamp-2 text-center text-[11px] leading-tight text-muted-foreground">{label}</span>
-      {line && <AvgPlacement line={line} className="text-xs" />}
+      {line &&
+        (sort ? (
+          <span className="text-xs font-semibold tabular-nums" title={STAT_SORT_LABELS[sort]}>
+            {formatStat(line, sort)}
+          </span>
+        ) : (
+          <AvgPlacement line={line} className="text-xs" />
+        ))}
     </>
   );
 

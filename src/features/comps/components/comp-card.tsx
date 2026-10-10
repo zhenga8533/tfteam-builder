@@ -4,17 +4,18 @@ import { ItemCard } from "@/components/game/cards";
 import { GameHoverCard } from "@/components/game/game-hover-card";
 import { ItemIcon } from "@/components/game/icons";
 import { ChampionLink, TraitLink } from "@/components/game/links";
-import type { Comp, CompUnit } from "@/content/types";
+import type { Comp, CompUnit, Tier } from "@/content/types";
 import { TrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent, share } from "@/features/stats/format";
+import type { StatSort } from "@/features/stats/sort";
 import { useCompTrendPatch, useGameData } from "@/lib/data/hooks";
 import type { AutoComp, RankFloor, StatLine } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
 import { DIFFICULTY_TEXT } from "../styles";
 import { useAutoCompUnits } from "../use-auto-comp-units";
 import { useCompTraits } from "../use-comp-traits";
-import { GuideTrendBadge } from "./tier-badge";
+import { GuideTrendBadge, TierBadge } from "./tier-badge";
 
 const MAX_TRAITS = 8;
 
@@ -24,6 +25,8 @@ interface CompCardViewProps {
   link?: Pick<LinkProps, "to" | "params" | "search">;
   units: CompUnit[];
   badge?: ReactNode;
+  /** Shown before the title when the card isn't in a tier row. */
+  tier?: Tier;
   /** The right-hand column: placement stats, or a guide's playstyle and difficulty. */
   aside: ReactNode;
 }
@@ -32,12 +35,12 @@ interface CompCardViewProps {
  * Placement stats in a column as wide as they are: the average, then the rest in a grid, kept shorter than the board
  * beside it.
  */
-function CompStats({ line }: { line: StatLine }) {
+function CompStats({ line, sort }: { line: StatLine; sort?: StatSort }) {
   const rows = [
-    ["Top 4", percent(line.top4)],
-    ["Win", percent(line.win)],
-    ["Play", share(line.play)],
-    ["Games", count(line.games)],
+    { key: "top4", label: "Top 4", value: percent(line.top4) },
+    { key: "win", label: "Win", value: percent(line.win) },
+    { key: "play", label: "Play", value: share(line.play) },
+    { key: "games", label: "Games", value: count(line.games) },
   ];
   return (
     <>
@@ -46,10 +49,13 @@ function CompStats({ line }: { line: StatLine }) {
         <span className="text-[11px] text-muted-foreground">avg</span>
       </div>
       <dl className="grid grid-cols-4 gap-x-3 gap-y-1 text-xs sm:grid-cols-[auto_auto] sm:gap-x-4 sm:border-t sm:pt-2">
-        {rows.map(([label, value]) => (
-          <div key={label} className="whitespace-nowrap">
+        {rows.map(({ key, label, value }) => (
+          <div
+            key={key}
+            className={cn("whitespace-nowrap", key === sort && "-mx-1 rounded bg-muted px-1 ring-1 ring-border")}
+          >
             <dt className="text-[10px] text-muted-foreground">{label}</dt>
-            <dd className="font-medium tabular-nums">{value}</dd>
+            <dd className={cn("tabular-nums", key === sort ? "font-semibold" : "font-medium")}>{value}</dd>
           </div>
         ))}
       </dl>
@@ -61,7 +67,7 @@ function CompStats({ line }: { line: StatLine }) {
  * A comp's name, champions (carries first and larger, with their items) and main traits, with stats in
  * a column on the right; the whole card links to the comp.
  */
-function CompCardView({ title, link, units: board, badge, aside }: CompCardViewProps) {
+function CompCardView({ title, link, units: board, badge, tier, aside }: CompCardViewProps) {
   const { championsByApi, itemsByApi } = useGameData();
   const traits = useCompTraits(board)
     .filter(({ style }) => style !== "inactive")
@@ -84,6 +90,7 @@ function CompCardView({ title, link, units: board, badge, aside }: CompCardViewP
     >
       <div className="min-w-0 flex-1 space-y-2.5">
         <div className="flex flex-wrap items-center gap-2">
+          {tier && <TierBadge tier={tier} className="size-6 rounded-md text-sm" />}
           <h3 className="font-display font-semibold">
             {link ? (
               <Link
@@ -171,11 +178,14 @@ export const AutoCompCard = memo(function AutoCompCard({
   comp,
   rank,
   patch,
+  sort,
 }: {
   comp: AutoComp;
   rank?: RankFloor;
   /** Another of the set's patches the comp is from. */
   patch?: string;
+  /** The stat the list is ranked by: the card shows the comp's tier and highlights that stat. */
+  sort?: StatSort;
 }) {
   const trendPatch = useCompTrendPatch(rank, patch);
   // Stable across renders, so the card's trait calculation (memoized on the units) isn't redone each time.
@@ -189,7 +199,8 @@ export const AutoCompCard = memo(function AutoCompCard({
       badge={
         <TrendBadge delta={comp.trend} patch={trendPatch} className="rounded-full px-1.5 py-0.5 ring-1 ring-border" />
       }
-      aside={<CompStats line={comp} />}
+      tier={sort && (comp.tier ?? "C")}
+      aside={<CompStats line={comp} sort={sort} />}
     />
   );
 });
