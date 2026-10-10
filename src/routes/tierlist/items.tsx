@@ -6,7 +6,6 @@ import { ItemIcon } from "@/components/game/icons";
 import { SearchInput } from "@/components/layout/search-input";
 import { tierListForSet } from "@/content";
 import { StatTierList } from "@/features/stats/components/stat-tier-list";
-import { parseStatSort, type StatSort } from "@/features/stats/sort";
 import { parseStatsScope, scopeChoices, type StatsScope } from "@/features/stats/scope";
 import { StatTrend } from "@/features/stats/components/patch-trend";
 import { TierEntry } from "@/features/stats/components/tier-entry";
@@ -16,9 +15,7 @@ import type { ItemKind } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { matches, oneOf } from "@/lib/search";
 
-interface ItemTierSearch extends StatsScope, ItemFilters {
-  sort?: StatSort;
-}
+interface ItemTierSearch extends StatsScope, ItemFilters {}
 
 const RANKED_KINDS: ItemKind[] = ITEM_KINDS.filter((kind) => kind !== "component");
 
@@ -26,7 +23,6 @@ export const Route = createFileRoute("/tierlist/items")({
   head: () => ({ meta: [{ title: "Item Tier List · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ItemTierSearch => ({
     ...parseStatsScope(search),
-    sort: parseStatSort(search.sort),
     ...parseItemFilters(search),
     kind: oneOf(RANKED_KINDS, search.kind),
   }),
@@ -60,7 +56,6 @@ function ItemTierListPage() {
       visible={visible}
       stats={stats}
       {...scopeChoices(update)}
-      sort={{ value: search.sort, onChange: (sort) => update({ sort }) }}
       toolbar={
         <>
           <SearchInput
@@ -71,7 +66,7 @@ function ItemTierListPage() {
           <ItemKindFilter kinds={kinds} value={search.kind} onChange={(kind) => update({ kind })} allowNone />
         </>
       }
-      renderEntry={(apiName, line, sort) => {
+      renderEntry={(apiName, line) => {
         const item = itemsByApi.get(apiName);
         if (!item) return null;
         return (
@@ -79,7 +74,6 @@ function ItemTierListPage() {
             icon={<ItemIcon item={item} decorative className="size-12" />}
             label={item.name}
             line={line}
-            sort={sort}
             play="of games"
             link={{ to: "/items/$apiName", params: { apiName: item.apiName } }}
             trend={<StatTrend trend={stats?.trend} kind="items" entry={apiName} />}

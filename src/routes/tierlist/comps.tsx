@@ -15,8 +15,8 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import { parsePatch, parseRank } from "@/features/stats/scope";
-import { StatRanking, StatSortFilter } from "@/features/stats/components/stat-sort";
-import { parseStatSort, rankByStat, type StatSort } from "@/features/stats/sort";
+import { SortFilter } from "@/features/stats/components/stat-sort";
+import { COMP_SORTS, type CompSort, rankByStat, SORT_LABELS } from "@/features/stats/sort";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
 import { oneOf } from "@/lib/search";
@@ -29,7 +29,7 @@ interface CompSearch extends CompFilters {
   view?: View;
   rank?: RankFloor;
   patch?: string;
-  sort?: StatSort;
+  sort?: CompSort;
 }
 
 export const Route = createFileRoute("/tierlist/comps")({
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/tierlist/comps")({
     view: oneOf(["stats", "guides"] as const, search.view),
     rank: parseRank(search.rank),
     patch: parsePatch(search.patch),
-    sort: parseStatSort(search.sort),
+    sort: oneOf(COMP_SORTS, search.sort),
   }),
   component: CompTierListPage,
 });
@@ -107,7 +107,7 @@ const StatRows = memo(function StatRows({
   filters: CompFilters;
   rank?: RankFloor;
   patch?: string;
-  sort?: StatSort;
+  sort?: CompSort;
 }) {
   const { championsByApi } = useGameData();
   const championName = (apiName: string) => championsByApi.get(apiName)?.name ?? "";
@@ -126,7 +126,7 @@ const StatRows = memo(function StatRows({
   if (filtered.length === 0) return <NoMatches what="comps" />;
   if (sort) {
     return (
-      <StatRanking sort={sort}>
+      <section aria-label={SORT_LABELS[sort]} className="rounded-xl border bg-card/60 p-3">
         <div className="grid gap-2 xl:grid-cols-2">
           {rankByStat(filtered, (comp) => comp, sort)
             .slice(0, shown)
@@ -134,7 +134,7 @@ const StatRows = memo(function StatRows({
               <AutoCompCard key={comp.id} comp={comp} rank={rank} patch={patch} sort={sort} />
             ))}
         </div>
-      </StatRanking>
+      </section>
     );
   }
   // Comps come best first, so the first batches fill the top tiers.
@@ -179,7 +179,12 @@ function CompTierListPage() {
           </TabsList>
           <CompFilterBar value={search} onChange={update}>
             {view === "stats" && detected.length > 0 && (
-              <StatSortFilter value={search.sort} onChange={(sort) => update({ sort })} />
+              <SortFilter
+                defaultLabel="By tier"
+                sorts={COMP_SORTS}
+                value={search.sort}
+                onChange={(sort) => update({ sort })}
+              />
             )}
             {view === "guides" && (
               <ChoiceFilter

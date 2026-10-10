@@ -4,16 +4,16 @@ import { TraitCard } from "@/components/game/cards";
 import { ChampionLink } from "@/components/game/links";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
-import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
+import { SortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { type DatabaseSort, orderEntries, parseDatabaseSort } from "@/features/stats/sort";
+import { DATABASE_SORTS, type DatabaseSort, orderEntries } from "@/features/stats/sort";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { percent } from "@/features/stats/format";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { TraitStat } from "@/lib/data/schema";
-import { matches, stringParam } from "@/lib/search";
+import { matches, oneOf, stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/traits")({
   head: () => ({ meta: [{ title: "Traits · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): TraitSearch => ({
     q: stringParam(search.q),
-    sort: parseDatabaseSort(search.sort),
+    sort: oneOf(DATABASE_SORTS, search.sort),
   }),
   component: TraitsPage,
 });
@@ -48,14 +48,19 @@ function TraitBreakpointStats({ lines }: { lines: TraitStat[] }) {
 }
 
 /**
- * A trait's breakpoints as one line to sort by. Its placement is its best breakpoint with enough games for a tier, as
- * on its own page; rarely reached top breakpoints would otherwise win on a handful of games. A player has at most one
- * active level of a trait, so its breakpoints' play rates add up to how often it's active at all.
+ * A trait's breakpoints as one line to sort by. Its placement and top 4 rate are its best breakpoints' with enough
+ * games for a tier, as on its own page; rarely reached top breakpoints would otherwise win on a handful of games. A
+ * player has at most one active level of a trait, so its breakpoints' play rates add up to how often it's active at all.
  */
-const traitLine = (lines: TraitStat[]) => ({
-  score: lines.reduce((best, line) => (line.tier ? Math.min(best, line.score) : best), Infinity),
-  play: lines.reduce((total, line) => total + line.play, 0),
-});
+const traitLine = (lines: TraitStat[]) => {
+  const ranked = lines.filter((line) => line.tier);
+  return {
+    score: Math.min(...ranked.map((line) => line.score)),
+    top4: Math.max(...ranked.map((line) => line.top4)),
+    games: ranked.reduce((total, line) => total + line.games, 0),
+    play: lines.reduce((total, line) => total + line.play, 0),
+  };
+};
 
 function TraitsPage() {
   const { traits, champions } = useGameData();
@@ -107,7 +112,12 @@ function TraitsPage() {
           placeholder="Search traits"
         />
         {stats?.status === "ready" && (
-          <DatabaseSortFilter defaultLabel="By name" value={sort} onChange={(next) => update({ sort: next })} />
+          <SortFilter
+            defaultLabel="By name"
+            sorts={DATABASE_SORTS}
+            value={sort}
+            onChange={(next) => update({ sort: next })}
+          />
         )}
       </div>
       {sections.length === 0 ? (
