@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { TraitCard } from "@/components/game/cards";
+import { type ChoiceOption, ChoiceFilter } from "@/components/game/choice-filter";
 import { ChampionLink } from "@/components/game/links";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
@@ -10,14 +11,28 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { percent } from "@/features/stats/format";
 import { useGameData, useStats } from "@/lib/data/hooks";
-import type { TraitStat } from "@/lib/data/schema";
-import { matches, stringParam } from "@/lib/search";
+import type { Trait, TraitStat } from "@/lib/data/schema";
+import { matches, oneOf, stringParam } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
+interface TraitSearch {
+  q?: string;
+  sort?: "avg" | "play";
+}
+
+const SORTS: ChoiceOption<"name" | "avg" | "play">[] = [
+  { value: "name", label: "By name" },
+  { value: "avg", label: "By placement" },
+  { value: "play", label: "By play rate" },
+];
+
 export const Route = createFileRoute("/traits")({
   head: () => ({ meta: [{ title: "Traits · TFTeam" }] }),
-  validateSearch: (search: Record<string, unknown>): { q?: string } => ({ q: stringParam(search.q) }),
+  validateSearch: (search: Record<string, unknown>): TraitSearch => ({
+    q: stringParam(search.q),
+    sort: oneOf(["avg", "play"] as const, search.sort),
+  }),
   component: TraitsPage,
 });
 
@@ -40,13 +55,31 @@ function TraitBreakpointStats({ lines }: { lines: TraitStat[] }) {
 function TraitsPage() {
   const { traits, champions } = useGameData();
   const stats = useStats();
-  const { q } = Route.useSearch();
-  const update = useUpdateSearch<{ q?: string }>();
+  const { q, sort } = Route.useSearch();
+  const update = useUpdateSearch<TraitSearch>();
 
   const sections = useMemo(() => {
-    const withChampions = traits
-      .filter((trait) => matches(trait.name, q))
-      .map((trait) => ({ trait, champions: champions.filter((champion) => champion.traits.includes(trait.apiName)) }));
+    const ordered = traits.filter((trait) => matches(trait.name, q));
+    if (stats?.status === "ready") {
+      const linesOf = (trait: Trait) => stats.traits.filter((line) => line.trait === trait.apiName);
+      if (sort === "avg") {
+        // A trait ranks by its best breakpoint with enough games for a tier, as on its own page; rarely reached top
+        // breakpoints would otherwise win on a handful of games.
+        const best = (trait: Trait) =>
+          linesOf(trait).reduce((min, line) => (line.tier ? Math.min(min, line.score) : min), Infinity);
+        ordered.sort((a, b) => best(a) - best(b));
+      }
+      if (sort === "play") {
+        // A player has at most one active level of a trait, so its breakpoints' play rates add up to how often it's
+        // active at all.
+        const play = (trait: Trait) => linesOf(trait).reduce((total, line) => total + line.play, 0);
+        ordered.sort((a, b) => play(b) - play(a));
+      }
+    }
+    const withChampions = ordered.map((trait) => ({
+      trait,
+      champions: champions.filter((champion) => champion.traits.includes(trait.apiName)),
+    }));
     type Entry = (typeof withChampions)[number];
     const fromChampions = (entry: Entry) => entry.trait.source === "champion";
     // Unique traits belong to a single champion and have a single breakpoint.
@@ -68,18 +101,26 @@ function TraitsPage() {
         entries: withChampions.filter((e) => !fromChampions(e)),
       },
     ].filter((section) => section.entries.length > 0);
-  }, [traits, champions, q]);
+  }, [traits, champions, q, sort, stats]);
 
   return (
     <>
       <PageHeader title="Traits" description="Breakpoints, bonuses and the champions that carry each trait." />
       {stats && <StatsMeta stats={stats} />}
-      <div className="mb-6 flex">
+      <div className="mb-6 flex flex-wrap items-center gap-2">
         <SearchInput
           value={q ?? ""}
           onChange={(value) => update({ q: value || undefined })}
           placeholder="Search traits"
         />
+        {stats?.status === "ready" && (
+          <ChoiceFilter
+            options={SORTS}
+            value={sort ?? "name"}
+            onChange={(next) => update({ sort: next === "name" ? undefined : next })}
+            label="Sort"
+          />
+        )}
       </div>
       {sections.length === 0 ? (
         <EmptyState>No traits match these filters.</EmptyState>
