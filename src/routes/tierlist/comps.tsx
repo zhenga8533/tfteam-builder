@@ -181,6 +181,7 @@ function CompTierListPage() {
             {view === "stats" && detected.length > 0 && (
               <SortFilter
                 defaultLabel="By tier"
+                clearable
                 sorts={COMP_SORTS}
                 value={search.sort}
                 onChange={(sort) => update({ sort })}

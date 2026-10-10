@@ -23,7 +23,7 @@ export function NotFoundState({
   heading?: "h1" | "h2";
 }) {
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center sm:py-24">
+    <div data-not-found className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center sm:py-24">
       <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
         <Icon className="size-7" />
       </span>
