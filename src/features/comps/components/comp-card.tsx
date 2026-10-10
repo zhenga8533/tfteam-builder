@@ -8,7 +8,7 @@ import type { Comp, CompUnit, Tier } from "@/content/types";
 import { TrendBadge } from "@/features/stats/components/patch-trend";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
 import { count, percent, share } from "@/features/stats/format";
-import type { StatSort } from "@/features/stats/sort";
+import type { CompSort } from "@/features/stats/sort";
 import { useCompTrendPatch, useGameData } from "@/lib/data/hooks";
 import type { AutoComp, RankFloor, StatLine } from "@/lib/data/schema";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ interface CompCardViewProps {
  * Placement stats in a column as wide as they are: the average, then the rest in a grid, kept shorter than the board
  * beside it.
  */
-function CompStats({ line, sort }: { line: StatLine; sort?: StatSort }) {
+function CompStats({ line, sort }: { line: StatLine; sort?: CompSort }) {
   const rows = [
     { key: "top4", label: "Top 4", value: percent(line.top4) },
     { key: "win", label: "Win", value: percent(line.win) },
@@ -185,7 +185,7 @@ export const AutoCompCard = memo(function AutoCompCard({
   /** Another of the set's patches the comp is from. */
   patch?: string;
   /** The stat the list is ranked by: the card shows the comp's tier and highlights that stat. */
-  sort?: StatSort;
+  sort?: CompSort;
 }) {
   const trendPatch = useCompTrendPatch(rank, patch);
   // Stable across renders, so the card's trait calculation (memoized on the units) isn't redone each time.

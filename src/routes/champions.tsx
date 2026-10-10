@@ -8,9 +8,9 @@ import { ChampionIcon, TraitIcon } from "@/components/game/icons";
 import { COST_TEXT, COSTS } from "@/components/game/styles";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
-import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
+import { SortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { DATABASE_SORT_LABELS, type DatabaseSort, orderEntries, parseDatabaseSort } from "@/features/stats/sort";
+import { DATABASE_SORTS, type DatabaseSort, formatRate, orderEntries, SORT_LABELS } from "@/features/stats/sort";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ChampionForms } from "@/features/stats/components/champion-forms";
@@ -18,6 +18,7 @@ import { share } from "@/features/stats/format";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Champion } from "@/lib/data/schema";
+import { oneOf } from "@/lib/search";
 import { useUpdateSearch } from "@/lib/use-update-search";
 import { cn } from "@/lib/utils";
 
@@ -29,12 +30,21 @@ export const Route = createFileRoute("/champions")({
   head: () => ({ meta: [{ title: "Champions · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ChampionSearch => ({
     ...parseChampionFilters(search),
-    sort: parseDatabaseSort(search.sort),
+    sort: oneOf(DATABASE_SORTS, search.sort),
   }),
   component: ChampionsPage,
 });
 
-function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: () => void }) {
+function ChampionTile({
+  champion,
+  sort,
+  onSelect,
+}: {
+  champion: Champion;
+  /** The page's order; sorted by top 4 rate, the tile shows it in place of the play rate. */
+  sort?: DatabaseSort;
+  onSelect: () => void;
+}) {
   const { traitsByApi } = useGameData();
   const line = useStats()?.units[champion.apiName];
   return (
@@ -56,12 +66,16 @@ function ChampionTile({ champion, onSelect }: { champion: Champion; onSelect: ()
       {line && (
         <span className="flex flex-col items-end self-start">
           <AvgPlacement line={line} className="text-sm" />
-          <span
-            className="text-[11px] text-muted-foreground tabular-nums"
-            title="Share of games fielding this champion"
-          >
-            {share(line.play)} played
-          </span>
+          {sort === "top4" ? (
+            <span className="text-[11px] text-muted-foreground tabular-nums">{formatRate(line, "top4")} top 4</span>
+          ) : (
+            <span
+              className="text-[11px] text-muted-foreground tabular-nums"
+              title="Share of games fielding this champion"
+            >
+              {share(line.play)} played
+            </span>
+          )}
         </span>
       )}
     </button>
@@ -122,7 +136,7 @@ function ChampionsPage() {
     if (search.sort && stats?.status === "ready") {
       return [
         {
-          title: DATABASE_SORT_LABELS[search.sort],
+          title: SORT_LABELS[search.sort],
           cost: undefined,
           champions: orderEntries(filtered, (champion) => stats.units[champion.apiName], search.sort),
         },
@@ -142,7 +156,12 @@ function ChampionsPage() {
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <ChampionFilterBar value={search} onChange={update} />
         {stats?.status === "ready" && (
-          <DatabaseSortFilter defaultLabel="By cost" value={search.sort} onChange={(sort) => update({ sort })} />
+          <SortFilter
+            defaultLabel="By cost"
+            sorts={DATABASE_SORTS}
+            value={search.sort}
+            onChange={(sort) => update({ sort })}
+          />
         )}
       </div>
 
@@ -157,7 +176,12 @@ function ChampionsPage() {
               </h2>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
                 {group.champions.map((champion) => (
-                  <ChampionTile key={champion.apiName} champion={champion} onSelect={() => setSelected(champion)} />
+                  <ChampionTile
+                    key={champion.apiName}
+                    champion={champion}
+                    sort={search.sort}
+                    onSelect={() => setSelected(champion)}
+                  />
                 ))}
               </div>
             </section>

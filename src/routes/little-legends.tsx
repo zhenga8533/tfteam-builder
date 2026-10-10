@@ -6,9 +6,9 @@ import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
-import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
+import { SortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { type DatabaseSort, orderEntries } from "@/features/stats/sort";
+import { type DatabaseSort, formatRate, orderEntries } from "@/features/stats/sort";
 import { count, share } from "@/features/stats/format";
 import { useLittleLegends, useStats } from "@/lib/data/hooks";
 import type { LittleLegend } from "@/lib/data/schema";
@@ -27,8 +27,8 @@ interface LittleLegendSearch {
   sort?: DatabaseSort;
 }
 
-// The page is ordered by popularity already, so placement is the only other order.
-const SORTS: DatabaseSort[] = ["avg"];
+// The page is ordered by popularity already, so it has no separate play rate order.
+const SORTS = ["avg", "top4"] as const satisfies DatabaseSort[];
 
 export const Route = createFileRoute("/little-legends")({
   head: () => ({ meta: [{ title: "Little Legends · TFTeam" }] }),
@@ -79,7 +79,7 @@ function LittleLegendsPage() {
               label="Filter by kind"
               noneLabel="All kinds"
             />
-            <DatabaseSortFilter
+            <SortFilter
               defaultLabel="By popularity"
               sorts={SORTS}
               value={search.sort}
@@ -91,7 +91,7 @@ function LittleLegendsPage() {
           ) : (
             <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
               {filtered.map((legend) => (
-                <LegendCard key={legend.name} legend={legend} rank={ranked.indexOf(legend) + 1} />
+                <LegendCard key={legend.name} legend={legend} rank={ranked.indexOf(legend) + 1} sort={search.sort} />
               ))}
             </ol>
           )}
@@ -101,7 +101,16 @@ function LittleLegendsPage() {
   );
 }
 
-function LegendCard({ legend, rank }: { legend: LittleLegend; rank: number }) {
+function LegendCard({
+  legend,
+  rank,
+  sort,
+}: {
+  legend: LittleLegend;
+  rank: number;
+  /** The page's order; sorted by top 4 rate, the card shows it in place of the play rate. */
+  sort?: DatabaseSort;
+}) {
   return (
     // content-visibility skips rendering off-screen cards; there can be hundreds of legends.
     <li className="overflow-hidden rounded-xl border bg-card shadow-xs [contain-intrinsic-size:auto_16rem] [content-visibility:auto]">
@@ -123,7 +132,11 @@ function LegendCard({ legend, rank }: { legend: LittleLegend; rank: number }) {
           {legend.name}
         </p>
         <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span title={`${count(legend.games)} players`}>{share(legend.play)} of players</span>
+          {sort === "top4" ? (
+            <span>{formatRate(legend, "top4")} top 4</span>
+          ) : (
+            <span title={`${count(legend.games)} players`}>{share(legend.play)} of players</span>
+          )}
           <span>
             <AvgPlacement line={legend} /> avg
           </span>

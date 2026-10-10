@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StatLine } from "@/lib/data/schema";
-import { formatStat, orderEntries, parseStatSort, rankByStat } from "./sort";
+import { formatRate, orderEntries, rankByStat } from "./sort";
 
 const line = (stats: Partial<StatLine>): StatLine => ({
   games: 1000,
@@ -23,30 +23,28 @@ describe("rankByStat", () => {
   });
 });
 
-describe("parseStatSort", () => {
-  it("accepts the stats a list can rank by", () => {
-    expect(parseStatSort("win")).toBe("win");
-    expect(parseStatSort("avg")).toBeUndefined();
-  });
-});
-
-describe("formatStat", () => {
-  it("shows small play rates with a decimal and win rates to one decimal", () => {
-    expect(formatStat(line({ play: 0.034 }), "play")).toBe("3.4%");
-    expect(formatStat(line({ win: 0.1567 }), "win")).toBe("15.7%");
-  });
-});
-
 describe("orderEntries", () => {
   const entries = [
-    { key: "a", line: line({ score: 4.4, play: 0.2 }) },
+    { key: "a", line: line({ score: 4.4, top4: 0.55, play: 0.2 }) },
     { key: "none", line: undefined },
-    { key: "b", line: line({ score: 4.1, play: 0.1 }) },
+    { key: "low", line: line({ games: 12, score: 4.3, top4: 0.75, play: 0.01 }) },
+    { key: "b", line: line({ score: 4.1, top4: 0.6, play: 0.1 }) },
   ];
   const keys = (sorted: typeof entries) => sorted.map((entry) => entry.key);
 
   it("puts the best placement or the most played first, and entries without stats last", () => {
-    expect(keys(orderEntries(entries, (entry) => entry.line, "avg"))).toEqual(["b", "a", "none"]);
-    expect(keys(orderEntries(entries, (entry) => entry.line, "play"))).toEqual(["a", "b", "none"]);
+    expect(keys(orderEntries(entries, (entry) => entry.line, "avg"))).toEqual(["b", "low", "a", "none"]);
+    expect(keys(orderEntries(entries, (entry) => entry.line, "play"))).toEqual(["a", "b", "low", "none"]);
+  });
+
+  it("puts low samples after the rest by top 4 rate", () => {
+    expect(keys(orderEntries(entries, (entry) => entry.line, "top4"))).toEqual(["b", "a", "none", "low"]);
+  });
+});
+
+describe("formatRate", () => {
+  it("shows small play rates with a decimal", () => {
+    expect(formatRate(line({ play: 0.034 }), "play")).toBe("3.4%");
+    expect(formatRate(line({ top4: 0.567 }), "top4")).toBe("57%");
   });
 });

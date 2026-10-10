@@ -6,9 +6,9 @@ import { ItemKindFilter } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
-import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
+import { SortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
-import { type DatabaseSort, orderEntries, parseDatabaseSort } from "@/features/stats/sort";
+import { DATABASE_SORTS, type DatabaseSort, orderEntries } from "@/features/stats/sort";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
@@ -16,7 +16,7 @@ import { bestHolders } from "@/features/stats/builds";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Item } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches } from "@/lib/search";
+import { matches, oneOf } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 interface ItemSearch extends ItemFilters {
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/items")({
   head: () => ({ meta: [{ title: "Items · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ItemSearch => ({
     ...parseItemFilters(search),
-    sort: parseDatabaseSort(search.sort),
+    sort: oneOf(DATABASE_SORTS, search.sort),
   }),
   component: ItemsPage,
 });
@@ -187,7 +187,12 @@ function ItemsPage() {
         />
         <ItemKindFilter kinds={kinds} value={kind} onChange={(next) => next && update({ kind: next })} />
         {stats?.status === "ready" && (
-          <DatabaseSortFilter defaultLabel="By name" value={search.sort} onChange={(sort) => update({ sort })} />
+          <SortFilter
+            defaultLabel="By name"
+            sorts={DATABASE_SORTS}
+            value={search.sort}
+            onChange={(sort) => update({ sort })}
+          />
         )}
       </div>
 
