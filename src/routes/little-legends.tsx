@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { type ChoiceOption, ChoiceFilter } from "@/components/game/choice-filter";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
@@ -21,13 +23,20 @@ const KINDS = Object.keys(KIND_LABEL) as Kind[];
 interface LittleLegendSearch {
   q?: string;
   kind?: Kind;
+  sort?: "avg";
 }
+
+const SORTS: ChoiceOption<"play" | "avg">[] = [
+  { value: "play", label: "By popularity" },
+  { value: "avg", label: "By placement" },
+];
 
 export const Route = createFileRoute("/little-legends")({
   head: () => ({ meta: [{ title: "Little Legends · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): LittleLegendSearch => ({
     q: stringParam(search.q),
     kind: oneOf(KINDS, search.kind),
+    sort: oneOf(["avg"] as const, search.sort),
   }),
   component: LittleLegendsPage,
 });
@@ -37,7 +46,11 @@ function LittleLegendsPage() {
   const legends = useLittleLegends();
   const search = Route.useSearch();
   const update = useUpdateSearch<LittleLegendSearch>();
-  const filtered = (legends ?? []).filter(
+  const ranked = useMemo(
+    () => (search.sort === "avg" ? legends?.toSorted((a, b) => a.score - b.score) : legends) ?? [],
+    [legends, search.sort],
+  );
+  const filtered = ranked.filter(
     (legend) =>
       (matches(legend.name, search.q) || matches(legend.species, search.q)) &&
       (!search.kind || legend.kind === search.kind),
@@ -73,13 +86,19 @@ function LittleLegendsPage() {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
+            <ChoiceFilter
+              options={SORTS}
+              value={search.sort ?? "play"}
+              onChange={(sort) => update({ sort: sort === "play" ? undefined : sort })}
+              label="Sort"
+            />
           </div>
           {filtered.length === 0 ? (
             <EmptyState>No Little Legends match these filters.</EmptyState>
           ) : (
             <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
               {filtered.map((legend) => (
-                <LegendCard key={legend.name} legend={legend} rank={legends.indexOf(legend) + 1} />
+                <LegendCard key={legend.name} legend={legend} rank={ranked.indexOf(legend) + 1} />
               ))}
             </ol>
           )}
