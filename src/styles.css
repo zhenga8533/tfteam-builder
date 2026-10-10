@@ -189,6 +189,21 @@
     margin-right: 0 !important;
     --removed-body-scroll-bar-size: 0px;
   }
+  /*
+   * With the system's "reduce motion" on, transitions and animations finish at once. They're shortened rather than
+   * removed so Radix still gets the animationend that closes dialogs and menus. Loading spinners keep turning: they
+   * show that something is still happening.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *:not(.animate-spin),
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* Honeycomb board: 4 rows × 7 pointy-top hexes, odd rows offset by half a hex. */
