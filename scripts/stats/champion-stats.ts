@@ -5,7 +5,7 @@ import { bump as bumpCounter, counterFor, round, statLine } from "../../src/lib/
 import { parseTraitKey, traitKey } from "../../src/lib/game/traits.ts";
 
 /** Minimum games before a build, partner or trait is listed; larger item sets split the sample further. */
-export const MIN_CHAMPION_GAMES = { build1: 50, build2: 30, build3: 20, partner: 50, trait: 50 } as const;
+export const MIN_CHAMPION_GAMES = { build1: 50, build2: 30, build3: 30, partner: 50, trait: 50 } as const;
 
 const BUILD_MIN = [0, MIN_CHAMPION_GAMES.build1, MIN_CHAMPION_GAMES.build2, MIN_CHAMPION_GAMES.build3];
 

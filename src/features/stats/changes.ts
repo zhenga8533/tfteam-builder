@@ -9,7 +9,7 @@ export interface ChangeEntry {
   key: string;
   now?: StatLine;
   before?: PriorLine;
-  /** Change in average placement, for entries with enough games on both patches. */
+  /** Change in average placement, for entries with enough games on both patches and more than chance between them. */
   delta?: number;
 }
 

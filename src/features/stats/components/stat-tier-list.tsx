@@ -131,8 +131,8 @@ export function StatTierList({
             </p>
           )}
           {lowSample.length > 0 && (
-            <section aria-label="Low sample" className="rounded-xl border border-dashed p-3 opacity-80">
-              <h2 className="mb-1 text-sm font-semibold">Low sample</h2>
+            <section aria-label="Not ranked yet" className="rounded-xl border border-dashed p-3 opacity-80">
+              <h2 className="mb-1 text-sm font-semibold">Not ranked yet</h2>
               <p className="mb-3 text-xs text-muted-foreground">
                 Too few games to rank yet; their averages can still change a lot.
               </p>

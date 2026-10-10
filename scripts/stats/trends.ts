@@ -1,6 +1,6 @@
 import type { AutoComp, PatchHistory, PatchTrend, SetData, SetStats, StatLine } from "../../src/lib/data/schema.ts";
 import { comparePatches } from "../store/state.ts";
-import { round } from "../../src/lib/game/stat-line.ts";
+import { isRealChange, round } from "../../src/lib/game/stat-line.ts";
 import { traitKey } from "../../src/lib/game/traits.ts";
 import type { PatchCounters } from "../store/types.ts";
 import { buildNewestPatchStats, MIN_EARLY_MATCHES, MIN_GAMES } from "./stats.ts";
@@ -10,13 +10,17 @@ type Lines = Record<string, StatLine>;
 const traitLines = (stats: SetStats): Lines =>
   Object.fromEntries(stats.traits.map((line) => [traitKey(line.trait, line.minUnits), line]));
 
-/** Changes in average placement for entries with enough games on both patches (negative = improved). */
+/**
+ * Changes in average placement (negative = improved) for entries with enough games on both patches, where the change
+ * is more than their game counts would show by chance.
+ */
 function differences(current: Lines, previous: Lines, minGames: number): Record<string, number> {
   return Object.fromEntries(
     Object.entries(current).flatMap(([key, line]) => {
       const before = previous[key];
       if (!before || line.games < minGames || before.games < minGames) return [];
-      return [[key, round(line.avg - before.avg, 2)]];
+      const delta = line.avg - before.avg;
+      return isRealChange(delta, line.games, before.games) ? [[key, round(delta, 2)]] : [];
     }),
   );
 }
@@ -88,7 +92,8 @@ export function patchHistory(summaries: SetStats[]): PatchHistory {
 
 /**
  * Each comp's change in average placement since the previous patch, against every comp there that it now covers:
- * comps merge and split between patches, so a previous comp counts when its signature is one of this comp's.
+ * comps merge and split between patches, so a previous comp counts when its signature is one of this comp's. Changes
+ * within chance for the games involved are left out, as for tier list entries.
  */
 export function compTrends(current: AutoComp[], previous: AutoComp[]): AutoComp[] {
   return current.map((comp) => {
@@ -96,8 +101,8 @@ export function compTrends(current: AutoComp[], previous: AutoComp[]): AutoComp[
     const old = previous.filter((entry) => signatures.has(entry.signature));
     const games = old.reduce((sum, entry) => sum + entry.games, 0);
     if (!games) return comp;
-    const avg = old.reduce((sum, entry) => sum + entry.avg * entry.games, 0) / games;
-    return { ...comp, trend: round(comp.avg - avg, 2) };
+    const delta = comp.avg - old.reduce((sum, entry) => sum + entry.avg * entry.games, 0) / games;
+    return isRealChange(delta, comp.games, games) ? { ...comp, trend: round(delta, 2) } : comp;
   });
 }
 

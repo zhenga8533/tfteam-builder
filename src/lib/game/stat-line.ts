@@ -37,6 +37,15 @@ export const LOW_SAMPLE_GAMES = 30;
 
 export const isLowSample = (line: { games: number }) => line.games < LOW_SAMPLE_GAMES;
 
+/** Spread of single placements: every lobby has one of each place from 1 to 8. */
+const PLACEMENT_SD = Math.sqrt(63 / 12);
+/** How many standard errors a change in average placement must reach to count as more than chance. */
+const CHANGE_Z = 2;
+
+/** Whether two samples' average placements, `delta` apart, differ by more than their game counts would by chance. */
+export const isRealChange = (delta: number, games: number, previousGames: number) =>
+  Math.abs(delta) >= CHANGE_Z * PLACEMENT_SD * Math.sqrt(1 / games + 1 / previousGames);
+
 export const round = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits;
 
 export function bump(counter: Counter, placement: number) {

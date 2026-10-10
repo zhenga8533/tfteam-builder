@@ -23,7 +23,7 @@ export function AvgPlacement({ line, className }: { line: StatLine; className?: 
 }
 
 /**
- * Marks a stat with too few games to trust. Muted with a dashed outline, like the tier lists' low sample section:
+ * Marks a stat with too few games to trust. Muted with a dashed outline, like the tier lists' not-ranked section:
  * uncertain rather than bad, which the site's orange and red already mean.
  */
 export function LowSampleBadge({ className }: { className?: string }) {

@@ -9,7 +9,15 @@ import {
 import { traitStyle } from "../../src/lib/game/traits.ts";
 import type { Counter } from "../store/types.ts";
 import type { ResolvedBoard } from "./boards.ts";
-import { addCounter, bump, counterFor, emptyCounter, round, statLine } from "../../src/lib/game/stat-line.ts";
+import {
+  addCounter,
+  bump,
+  counterFor,
+  emptyCounter,
+  LOW_SAMPLE_GAMES,
+  round,
+  statLine,
+} from "../../src/lib/game/stat-line.ts";
 import { assignTiers } from "./stats.ts";
 
 export const COMP_THRESHOLDS = {
@@ -25,7 +33,7 @@ export const COMP_THRESHOLDS = {
   flexFrequency: 0.2,
   maxUnits: 9,
   /** A final level needs this many of a comp's games before its placement is shown. */
-  minLevelGames: 30,
+  minLevelGames: LOW_SAMPLE_GAMES,
   maxFlex: 6,
   /**
    * Comps whose core boards share this much (of both boards' units) are one comp: carries are whoever holds the items

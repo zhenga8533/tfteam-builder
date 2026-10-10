@@ -1,5 +1,14 @@
 import type { DeltaStat, StatLine } from "@/lib/data/schema";
-import { addCounter, bump, type Counter, counterFor, emptyCounter, round, statLine } from "@/lib/game/stat-line";
+import {
+  addCounter,
+  bump,
+  type Counter,
+  counterFor,
+  emptyCounter,
+  LOW_SAMPLE_GAMES,
+  round,
+  statLine,
+} from "@/lib/game/stat-line";
 import { type ExplorerData, ITEM_SLOTS } from "./format";
 import type { ExplorerTotals } from "./totals";
 
@@ -28,7 +37,7 @@ export interface ExplorerResult {
 }
 
 /** Below this many games a breakdown row is hidden; there are too few boards to say anything. */
-const MIN_ROW_GAMES = 30;
+const MIN_ROW_GAMES = LOW_SAMPLE_GAMES;
 
 interface Compiled {
   units: { filter: string; unit: number; minStar: number; items: number[] }[];
