@@ -29,8 +29,8 @@ const stats = (patch: string, units: Record<string, StatLine>, status: SetStats[
 });
 
 describe("patch trends", () => {
-  const p183 = stats("18.3", { Ahri: line(4.6), Sett: line(4.2), Rare: line(3, 10) });
-  const p183b = stats("18.3b", { Ahri: line(4.35), Sett: line(4.4), Rare: line(4, 10) });
+  const p183 = stats("18.3", { Ahri: line(4.6, 5000), Sett: line(4.2, 5000), Thin: line(4.5), Rare: line(3, 10) });
+  const p183b = stats("18.3b", { Ahri: line(4.35, 5000), Sett: line(4.4, 5000), Thin: line(4.2), Rare: line(4, 10) });
 
   it("compares with the newest earlier patch, skipping entries with too few games", () => {
     const older = stats("18.2", { Ahri: line(5) });
@@ -38,14 +38,21 @@ describe("patch trends", () => {
       patch: "18.3",
       units: { Ahri: -0.25, Sett: 0.2 },
       items: {},
-      traits: { "Blossom:5": 0 },
     });
+  });
+
+  it("leaves out changes within chance for the games behind them", () => {
+    const trend = patchTrend(p183b, [p183])!;
+    // 0.3 places over two samples of a few hundred games is within chance.
+    expect(trend.units).not.toHaveProperty("Thin");
+    expect(trend.traits).toEqual({});
   });
 
   it("keeps every entry's earlier average, play rate and games, however few games it had", () => {
     expect(patchTrend(p183b, [p183])?.before?.units).toEqual({
-      Ahri: [4.6, 0.1, MIN_GAMES.unit],
-      Sett: [4.2, 0.1, MIN_GAMES.unit],
+      Ahri: [4.6, 0.1, 5000],
+      Sett: [4.2, 0.1, 5000],
+      Thin: [4.5, 0.1, MIN_GAMES.unit],
       Rare: [3, 0.1, 10],
     });
   });
@@ -64,17 +71,18 @@ describe("patch trends", () => {
   });
 
   it("doesn't compare items counted per board with items counted per copy", () => {
-    const items = (avg: number) => ({ Gauntlet: line(avg, MIN_GAMES.item) });
-    const perCopy = { ...stats("18.3", {}), items: items(4.2) };
+    const items = (avg: number) => ({ Gauntlet: line(avg, 5000) });
+    const perCopy = { ...stats("18.3", {}), items: items(4.5) };
     const perBoard = { ...stats("18.3b", {}), items: items(4), itemsPerBoard: true };
     expect(patchTrend(perBoard, [perCopy])?.items).toEqual({});
     expect(patchHistory([perCopy, perBoard]).items["Gauntlet"]).toEqual([null, 4]);
-    expect(patchTrend({ ...perBoard, patch: "18.4" }, [perBoard])?.items).toEqual({ Gauntlet: 0 });
+    const nextPatch = { ...perBoard, patch: "18.4", items: items(3.5) };
+    expect(patchTrend(nextPatch, [perBoard])?.items).toEqual({ Gauntlet: -0.5 });
   });
 });
 
 describe("comp trends", () => {
-  const comp = (signature: string, avg: number, games = 100, variants: string[] = []) =>
+  const comp = (signature: string, avg: number, games = 2000, variants: string[] = []) =>
     ({ id: signature, signature, variants, avg, games }) as AutoComp;
 
   it("compares each comp with the same comp on the previous patch", () => {
@@ -86,8 +94,14 @@ describe("comp trends", () => {
   });
 
   it("compares a merged comp with every previous comp it now covers, weighted by games", () => {
-    const [merged] = compTrends([comp("a", 4, 400, ["b"])], [comp("a", 3, 300), comp("b", 7, 100)]);
-    expect(merged!.trend).toBe(0);
+    // The previous comps average (3 × 300 + 7 × 100) / 400 = 4.
+    const [merged] = compTrends([comp("a", 3.5, 400, ["b"])], [comp("a", 3, 300), comp("b", 7, 100)]);
+    expect(merged!.trend).toBe(-0.5);
+  });
+
+  it("leaves out changes within chance for the games behind them", () => {
+    const [thin] = compTrends([comp("a", 3.7, 150)], [comp("a", 4, 150)]);
+    expect(thin!.trend).toBeUndefined();
   });
 
   it("lists previous comps no current comp covers", () => {

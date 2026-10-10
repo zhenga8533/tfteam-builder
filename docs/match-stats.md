@@ -53,8 +53,8 @@ against a timeline read from [Riot's patch notes](https://teamfighttactics.leagu
   the set; early in a new set, lower rank floors instead. The stats line on each page says which patch and floor.
 - **Tiers:** pages show each entry's real average placement. Tiers and "best" orderings rank by that average pulled
   toward 4.5 when there are few games, so a handful of lucky games can't top a list. The top 10% are S, the next 25%
-  A, the next 35% B and the rest C. Entries with too few games for a tier are listed as low sample; under 30 games
-  is marked low sample everywhere. `src/content/tierlists` can override individual tiers.
+  A, the next 35% B and the rest C. Entries with too few games for a tier are listed as not ranked yet; under 30
+  games is marked low sample everywhere. `src/content/tierlists` can override individual tiers.
 - **Rank floors** (Master+, Diamond+, Emerald+, …): each has its own tier lists and comps when it has enough games and
   differs from its neighbours by at least 10% in games.
 - **Regions:** tier lists and Compare can narrow to one region at the default floor, once it has 1,000 matches.
@@ -68,7 +68,8 @@ against a timeline read from [Riot's patch notes](https://teamfighttactics.leagu
   player is ahead, so Δ is the fairer comparison.
 - **Patch history and trends:** each patch's tier list stats, comps and raw counters are saved permanently, even after
   its boards are pruned. Detail pages chart average placement and play rate per patch; Patch Changes and trend
-  badges compare with the previous patch.
+  badges compare with the previous patch. A change in average placement is shown only when it's at least twice what
+  chance would give for the games on both patches (and at least 0.05), so thin samples need bigger moves.
 
 ## Detected comps
 

@@ -49,5 +49,8 @@ export function timeAgo(iso: string, now = Date.now()) {
   return RELATIVE.format(Math.round(hours / 24), "day");
 }
 
-/** Movement in average placement smaller than this is noise between patches, so it isn't shown. */
+/**
+ * Movement in average placement smaller than this isn't shown, however many games back it: the stats build already
+ * leaves out changes within chance, and this keeps out real but negligible ones.
+ */
 export const MIN_TREND = 0.05;
