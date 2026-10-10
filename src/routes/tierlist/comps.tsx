@@ -15,8 +15,8 @@ import { NoStats } from "@/features/stats/components/no-stats";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
 import { useActiveSet, useAutoComps, useGameData, useTierStats } from "@/lib/data/hooks";
 import { parsePatch, parseRank } from "@/features/stats/scope";
-import { StatSortFilter } from "@/features/stats/components/stat-sort-filter";
-import { parseStatSort, rankByStat, STAT_SORT_LABELS, type StatSort } from "@/features/stats/sort";
+import { StatRanking, StatSortFilter } from "@/features/stats/components/stat-sort";
+import { parseStatSort, rankByStat, type StatSort } from "@/features/stats/sort";
 import type { AutoComp, RankFloor } from "@/lib/data/schema";
 import { computeTraits } from "@/lib/game/traits";
 import { oneOf } from "@/lib/search";
@@ -126,7 +126,7 @@ const StatRows = memo(function StatRows({
   if (filtered.length === 0) return <NoMatches what="comps" />;
   if (sort) {
     return (
-      <section aria-label={`By ${STAT_SORT_LABELS[sort].toLowerCase()}`} className="rounded-xl border bg-card/60 p-3">
+      <StatRanking sort={sort}>
         <div className="grid gap-2 xl:grid-cols-2">
           {rankByStat(filtered, (comp) => comp, sort)
             .slice(0, shown)
@@ -134,7 +134,7 @@ const StatRows = memo(function StatRows({
               <AutoCompCard key={comp.id} comp={comp} rank={rank} patch={patch} sort={sort} />
             ))}
         </div>
-      </section>
+      </StatRanking>
     );
   }
   // Comps come best first, so the first batches fill the top tiers.

@@ -6,10 +6,10 @@ import type { Tier, TierRows } from "@/content/types";
 import { TierBadge } from "@/features/comps/components/tier-badge";
 import { TierRows as TierRowsView } from "@/features/comps/components/tier-rows";
 import type { RankFloor, SetStats, StatLine } from "@/lib/data/schema";
-import { rankByStat, STAT_SORT_LABELS, type StatSort } from "../sort";
+import { rankByStat, type StatSort } from "../sort";
 import { tierListRows } from "../tiers";
 import { NoStats } from "./no-stats";
-import { StatSortFilter } from "./stat-sort-filter";
+import { StatRanking, StatSortFilter } from "./stat-sort";
 import { type PatchChoice, type RegionChoice, StatsMeta } from "./stats-meta";
 
 interface StatTierListProps {
@@ -82,7 +82,8 @@ function EntryList({ keys, renderEntry, lines, pinned, tiers, sort }: EntryListP
 /**
  * A tier list ranked by match stats, with hand-written overrides from `src/content` (pinned). Entries with too
  * few games for a tier (rare breakpoints such as prismatic traits) are listed after the tiers. Without stats it
- * shows the hand-written fallback list, if there is one.
+ * shows the hand-written fallback list, if there is one. With `sort`, the tiered entries can instead be ranked by
+ * one stat in a single list, each marked with its tier.
  */
 export function StatTierList({
   title,
@@ -147,10 +148,7 @@ export function StatTierList({
         <div className="space-y-3">
           {ranked ? (
             ranked.keys.length > 0 && (
-              <section
-                aria-label={`By ${STAT_SORT_LABELS[ranked.sort].toLowerCase()}`}
-                className="rounded-xl border bg-card/60 p-3"
-              >
+              <StatRanking sort={ranked.sort}>
                 <EntryList
                   keys={ranked.keys}
                   lines={byKey}
@@ -158,7 +156,7 @@ export function StatTierList({
                   tiers={tiers}
                   sort={ranked.sort}
                 />
-              </section>
+              </StatRanking>
             )
           ) : (
             <TierRowsView
