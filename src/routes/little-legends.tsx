@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { type ChoiceOption, ChoiceFilter } from "@/components/game/choice-filter";
+import { ChoiceFilter } from "@/components/game/choice-filter";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/layout/search-input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { NoStats } from "@/features/stats/components/no-stats";
 import { AvgPlacement } from "@/features/stats/components/stat-summary";
+import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
+import { type DatabaseSort, orderEntries } from "@/features/stats/sort";
 import { count, share } from "@/features/stats/format";
 import { useLittleLegends, useStats } from "@/lib/data/hooks";
 import type { LittleLegend } from "@/lib/data/schema";
@@ -23,20 +24,18 @@ const KINDS = Object.keys(KIND_LABEL) as Kind[];
 interface LittleLegendSearch {
   q?: string;
   kind?: Kind;
-  sort?: "avg";
+  sort?: DatabaseSort;
 }
 
-const SORTS: ChoiceOption<"play" | "avg">[] = [
-  { value: "play", label: "By popularity" },
-  { value: "avg", label: "By placement" },
-];
+// The page is ordered by popularity already, so placement is the only other order.
+const SORTS: DatabaseSort[] = ["avg"];
 
 export const Route = createFileRoute("/little-legends")({
   head: () => ({ meta: [{ title: "Little Legends · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): LittleLegendSearch => ({
     q: stringParam(search.q),
     kind: oneOf(KINDS, search.kind),
-    sort: oneOf(["avg"] as const, search.sort),
+    sort: oneOf(SORTS, search.sort),
   }),
   component: LittleLegendsPage,
 });
@@ -47,7 +46,7 @@ function LittleLegendsPage() {
   const search = Route.useSearch();
   const update = useUpdateSearch<LittleLegendSearch>();
   const ranked = useMemo(
-    () => (search.sort === "avg" ? legends?.toSorted((a, b) => a.score - b.score) : legends) ?? [],
+    () => (legends && search.sort ? orderEntries(legends, (legend) => legend, search.sort) : (legends ?? [])),
     [legends, search.sort],
   );
   const filtered = ranked.filter(
@@ -73,24 +72,18 @@ function LittleLegendsPage() {
               onChange={(q) => update({ q: q || undefined })}
               placeholder="Search Little Legends"
             />
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              value={search.kind ?? ""}
-              onValueChange={(kind) => update({ kind: oneOf(KINDS, kind) })}
-              aria-label="Filter by kind"
-            >
-              {Object.entries(KIND_LABEL).map(([kind, label]) => (
-                <ToggleGroupItem key={kind} value={kind} className="px-3">
-                  {label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
             <ChoiceFilter
-              options={SORTS}
-              value={search.sort ?? "play"}
-              onChange={(sort) => update({ sort: sort === "play" ? undefined : sort })}
-              label="Sort"
+              options={KINDS.map((kind) => ({ value: kind, label: KIND_LABEL[kind] }))}
+              value={search.kind}
+              onChange={(kind) => update({ kind })}
+              label="Filter by kind"
+              noneLabel="All kinds"
+            />
+            <DatabaseSortFilter
+              defaultLabel="By popularity"
+              sorts={SORTS}
+              value={search.sort}
+              onChange={(sort) => update({ sort })}
             />
           </div>
           {filtered.length === 0 ? (

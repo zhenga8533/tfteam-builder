@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ItemCard } from "@/components/game/cards";
-import { type ChoiceOption, ChoiceFilter } from "@/components/game/choice-filter";
 import { type ItemFilters, itemKindsIn, parseItemFilters } from "@/components/game/filter-params";
 import { ItemKindFilter } from "@/components/game/filters";
 import { ChampionIcon, ItemIcon } from "@/components/game/icons";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { DatabaseSortFilter } from "@/features/stats/components/stat-sort";
 import { StatsMeta } from "@/features/stats/components/stats-meta";
+import { type DatabaseSort, orderEntries, parseDatabaseSort } from "@/features/stats/sort";
 import { SearchInput } from "@/components/layout/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { AvgPlacement, StatSummary } from "@/features/stats/components/stat-summary";
@@ -15,24 +16,18 @@ import { bestHolders } from "@/features/stats/builds";
 import { useGameData, useStats } from "@/lib/data/hooks";
 import type { Item } from "@/lib/data/schema";
 import { useUpdateSearch } from "@/lib/use-update-search";
-import { matches, oneOf } from "@/lib/search";
+import { matches } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 interface ItemSearch extends ItemFilters {
-  sort?: "avg" | "play";
+  sort?: DatabaseSort;
 }
-
-const SORTS: ChoiceOption<"name" | "avg" | "play">[] = [
-  { value: "name", label: "By name" },
-  { value: "avg", label: "By placement" },
-  { value: "play", label: "By play rate" },
-];
 
 export const Route = createFileRoute("/items")({
   head: () => ({ meta: [{ title: "Items · TFTeam" }] }),
   validateSearch: (search: Record<string, unknown>): ItemSearch => ({
     ...parseItemFilters(search),
-    sort: oneOf(["avg", "play"] as const, search.sort),
+    sort: parseDatabaseSort(search.sort),
   }),
   component: ItemsPage,
 });
@@ -173,16 +168,9 @@ function ItemsPage() {
   const kinds = itemKindsIn(items);
   const filtered = useMemo(() => {
     const shown = items.filter((item) => item.kind === kind && matches(item.name, search.q));
-    if (stats?.status !== "ready") return shown;
-    if (search.sort === "avg") {
-      const score = (item: Item) => stats.items[item.apiName]?.score ?? Infinity;
-      return shown.sort((a, b) => score(a) - score(b));
-    }
-    if (search.sort === "play") {
-      const play = (item: Item) => stats.items[item.apiName]?.play ?? 0;
-      return shown.sort((a, b) => play(b) - play(a));
-    }
-    return shown;
+    return search.sort && stats?.status === "ready"
+      ? orderEntries(shown, (item) => stats.items[item.apiName], search.sort)
+      : shown;
   }, [items, kind, search.q, search.sort, stats]);
 
   const update = useUpdateSearch<ItemSearch>();
@@ -199,12 +187,7 @@ function ItemsPage() {
         />
         <ItemKindFilter kinds={kinds} value={kind} onChange={(next) => next && update({ kind: next })} />
         {stats?.status === "ready" && (
-          <ChoiceFilter
-            options={SORTS}
-            value={search.sort ?? "name"}
-            onChange={(sort) => update({ sort: sort === "name" ? undefined : sort })}
-            label="Sort"
-          />
+          <DatabaseSortFilter defaultLabel="By name" value={search.sort} onChange={(sort) => update({ sort })} />
         )}
       </div>
 
